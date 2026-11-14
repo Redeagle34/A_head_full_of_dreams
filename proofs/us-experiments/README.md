@@ -10,6 +10,7 @@ added. Nothing here changes the pipeline or the website.
 - `results/` the saved metrics
 - `figures/` the charts
 - `damage-research.md` full notes on estimating damage if a fire happens
+- `models/` the three trained models, their training table and `MODEL_CARDS.md`
 
 Scope: contiguous U.S. plus Alaska, FIRMS standard archive 2000–2025,
 `type == 0`, MODIS confidence ≥ 30, VIIRS confidence nominal or high. Regions
@@ -273,3 +274,30 @@ land managers and firefighters. One way to serve all of them from the map:
   tells a responder how much to rely on the map for new starts.
 - **A data page for scientists**: method, the validation tables above,
   per-sensor series and downloads.
+
+## 10. Trained models
+
+`models/` holds the three saved models from section 4, the full training table
+(286,649 rows) and `MODEL_CARDS.md`, which states for each model the question
+it answers, training, validation and test years, row counts, inputs, scores,
+reliability and limits. `models/predict_example.py` shows how to load them.
+Before wiring them into the map, read "The output is not a real-world
+probability" in the cards.
+
+## 11. How this compares with another public entry (SHIFT)
+
+Read on 2026-11-14 from github.com/squadronzero/project-shift (Apache-2.0).
+It is a global harmonized calendar with its own list of scientific limits.
+Points where the work in this repository and in this folder differs:
+
+- It converts with ratios and assumes the VIIRS / MODIS ratio does not change
+  with fire activity. We measure that the ratio falls as activity rises
+  (slope 0.71 where a fixed ratio means 1).
+- It does not use the Sofiev & Kouznetsov observation operator; this
+  repository does.
+- Its outside check is GFED, which is itself built from MODIS. Section 3 here
+  checks against agency reports that do not depend on either sensor.
+- It flags cloudy months; it has no per-fire-size detection rate, no reported
+  fires, no fire potential and no damage estimate.
+
+Its repository may have changed since we read it.
