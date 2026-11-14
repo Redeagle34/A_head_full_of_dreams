@@ -1,0 +1,82 @@
+{
+ "forward_train2013-20_test2021-25": {
+  "M0_ratio": {
+   "region_month_median_abs_log_err": 0.139,
+   "US_month_MAPE": 0.108,
+   "US_year_err": {
+    "2021": 0.013,
+    "2022": -0.073,
+    "2023": -0.072,
+    "2024": -0.058,
+    "2025": -0.127
+   }
+  },
+  "M1_powerlaw": {
+   "region_month_median_abs_log_err": 0.119,
+   "US_month_MAPE": 0.077,
+   "US_year_err": {
+    "2021": -0.009,
+    "2022": -0.066,
+    "2023": -0.053,
+    "2024": -0.055,
+    "2025": -0.106
+   }
+  },
+  "M1_powerlaw_coef": {
+   "lM": -0.289
+  },
+  "M2_powerlaw+frp+night": {
+   "region_month_median_abs_log_err": 0.121,
+   "US_month_MAPE": 0.077,
+   "US_year_err": {
+    "2021": -0.01,
+    "2022": -0.07,
+    "2023": -0.052,
+    "2024": -0.059,
+    "2025": -0.109
+   }
+  },
+  "M2_powerlaw+frp+night_coef": {
+   "lM": -0.294,
+   "lF": -0.091,
+   "night": 0.481
+  }
+ },
+ "backward_train2016-20_test2013-15": {
+  "M0_ratio": {
+   "region_month_median_abs_log_err": 0.119,
+   "US_month_MAPE": 0.064,
+   "US_year_err": {
+    "2013": 0.058,
+    "2014": 0.07,
+    "2015": 0.076
+   }
+  },
+  "M1_powerlaw": {
+   "region_month_median_abs_log_err": 0.112,
+   "US_month_MAPE": 0.093,
+   "US_year_err": {
+    "2013": 0.103,
+    "2014": 0.098,
+    "2015": 0.055
+   }
+  },
+  "M1_powerlaw_coef": {
+   "lM": -0.319
+  },
+  "M2_powerlaw+frp+night": {
+   "region_month_median_abs_log_err": 0.107,
+   "US_month_MAPE": 0.09,
+   "US_year_err": {
+    "2013": 0.102,
+    "2014": 0.101,
+    "2015": 0.049
+   }
+  },
+  "M2_powerlaw+frp+night_coef": {
+   "lM": -0.337,
+   "lF": -0.093,
+   "night": 0.602
+  }
+ }
+}

@@ -1,0 +1,169 @@
+{
+ "n_samples": 286649,
+ "class_counts": {
+  "1": 149912,
+  "0": 136737
+ },
+ "dropped_no_features": 103351,
+ "A_temporal": {
+  "baseline_erc": 0.733,
+  "baseline_bi": 0.654,
+  "baseline_vpd": 0.724,
+  "baseline_fm100": 0.724,
+  "baseline_log_pop": 0.661,
+  "baseline_log_clim_m": 0.607,
+  "lgbm_weather_only": {
+   "AUC": 0.824,
+   "PR_AUC": 0.856
+  },
+  "lgbm_static_only": {
+   "AUC": 0.813,
+   "PR_AUC": 0.87
+  },
+  "lgbm_clim_only": {
+   "AUC": 0.678,
+   "PR_AUC": 0.749
+  },
+  "lgbm_all_minus_clim": {
+   "AUC": 0.893,
+   "PR_AUC": 0.919
+  },
+  "lgbm_all": {
+   "AUC": 0.893,
+   "PR_AUC": 0.92
+  },
+  "test_base_rate": 0.5898
+ },
+ "A_temporal_by_region_AUC": {
+  "Central": 0.869,
+  "East": 0.843,
+  "West": 0.873
+ },
+ "A_region_transfer": {
+  "West": {
+   "global_other_regions_AUC": 0.718,
+   "regional_model_AUC": 0.898,
+   "erc_only_AUC": 0.649
+  },
+  "Central": {
+   "global_other_regions_AUC": 0.735,
+   "regional_model_AUC": 0.872,
+   "erc_only_AUC": 0.655
+  },
+  "East": {
+   "global_other_regions_AUC": 0.793,
+   "regional_model_AUC": 0.858,
+   "erc_only_AUC": 0.691
+  }
+ },
+ "A_tree_depth3_AUC": 0.78,
+ "A_tree_depth3_rules": "|--- fm1000 <= 15.2\n|   |--- log_pop <= 1.6\n|   |   |--- treecover <= 13.5\n|   |   |   |--- value: [-0.2]\n|   |   |--- treecover >  13.5\n|   |   |   |--- value: [1.7]\n|   |--- log_pop >  1.6\n|   |   |--- pr30 <= 15.4\n|   |   |   |--- value: [2.8]\n|   |   |--- pr30 >  15.4\n|   |   |   |--- value: [1.4]\n|--- fm1000 >  15.2\n|   |--- vpd <= 0.3\n|   |   |--- tmmx <= 274.8\n|   |   |   |--- value: [-5.4]\n|   |   |--- tmmx >  274.8\n|   |   |   |--- value: [-3.8]\n|   |--- vpd >  0.3\n|   |   |--- erc_l1 <= 27.0\n|   |   |   |--- value: [-2.7]\n|   |   |--- erc_l1 >  27.0\n|   |   |   |--- value: [-1.2]\n",
+ "A_tree_depth5_AUC": 0.83,
+ "A_shap_mean_abs": {
+  "fm1000": 0.5089,
+  "log_pop": 0.4623,
+  "lc": 0.3451,
+  "rmin": 0.3426,
+  "treecover": 0.3324,
+  "pr30": 0.3057,
+  "elevation": 0.2701,
+  "log_clim_y": 0.252,
+  "frg": 0.2376,
+  "slope": 0.1951,
+  "mfri": 0.1853,
+  "tmmx": 0.1774,
+  "doy": 0.1661,
+  "erc_l1": 0.1585,
+  "erc": 0.1537,
+  "vpd_l1": 0.1442,
+  "srad": 0.1426,
+  "vpd": 0.1217,
+  "log_clim_m": 0.1096,
+  "pr": 0.0712,
+  "erc7": 0.0677,
+  "vs": 0.0632,
+  "rmax": 0.0628,
+  "erc_max30": 0.059,
+  "vs_l1": 0.0562,
+  "fm100_l1": 0.0434,
+  "bi": 0.0348,
+  "fm100": 0.0326
+ },
+ "B_large_ge100ac": {
+  "baseline_erc": 0.542,
+  "baseline_bi": 0.571,
+  "baseline_vpd": 0.574,
+  "baseline_fm1000": 0.527,
+  "baseline_log_pop": 0.666,
+  "baseline_log_clim_m": 0.584,
+  "lgbm_weather_only": {
+   "AUC": 0.684,
+   "PR_AUC": 0.167
+  },
+  "lgbm_all_minus_clim": {
+   "AUC": 0.782,
+   "PR_AUC": 0.293
+  },
+  "lgbm_all": {
+   "AUC": 0.788,
+   "PR_AUC": 0.303
+  },
+  "test_base_rate": 0.0793
+ },
+ "B100_shap_mean_abs": {
+  "log_pop": 0.5257,
+  "elevation": 0.2898,
+  "treecover": 0.2534,
+  "lc": 0.184,
+  "frg": 0.1472,
+  "tmmx": 0.1372,
+  "vs": 0.1298,
+  "vpd": 0.1245,
+  "doy": 0.1234,
+  "mfri": 0.1087,
+  "log_clim_m": 0.1013,
+  "rmin": 0.0984,
+  "vpd_l1": 0.0959,
+  "bi": 0.0888,
+  "pr30": 0.0741,
+  "log_clim_y": 0.0688,
+  "erc_max30": 0.061,
+  "slope": 0.0544,
+  "srad": 0.0427,
+  "erc": 0.0412,
+  "fm100": 0.0341,
+  "pr": 0.0298,
+  "rmax": 0.0261,
+  "erc_l1": 0.0241,
+  "vs_l1": 0.02,
+  "fm100_l1": 0.0184,
+  "erc7": 0.0181,
+  "fm1000": 0.0143
+ },
+ "B_large_ge1000ac": {
+  "baseline_erc": 0.614,
+  "baseline_bi": 0.61,
+  "baseline_vpd": 0.614,
+  "baseline_fm1000": 0.605,
+  "baseline_log_pop": 0.736,
+  "baseline_log_clim_m": 0.561,
+  "lgbm_weather_only": {
+   "AUC": 0.703,
+   "PR_AUC": 0.057
+  },
+  "lgbm_all_minus_clim": {
+   "AUC": 0.801,
+   "PR_AUC": 0.114
+  },
+  "lgbm_all": {
+   "AUC": 0.81,
+   "PR_AUC": 0.123
+  },
+  "test_base_rate": 0.0226
+ },
+ "B_label_rates": {
+  "n_ignitions_with_size": 123302,
+  "share_ge100": 0.0972,
+  "share_ge1000": 0.0311
+ }
+}

@@ -1,0 +1,110 @@
+{
+ "wf_by_size": [
+  {
+   "size": "<1 ac",
+   "n": 49666,
+   "VIIRS": 0.021,
+   "MODIS": 0.006,
+   "ANY": 0.023
+  },
+  {
+   "size": "1-10",
+   "n": 9343,
+   "VIIRS": 0.095,
+   "MODIS": 0.021,
+   "ANY": 0.101
+  },
+  {
+   "size": "10-100",
+   "n": 4679,
+   "VIIRS": 0.257,
+   "MODIS": 0.095,
+   "ANY": 0.283
+  },
+  {
+   "size": "100-1k",
+   "n": 1855,
+   "VIIRS": 0.495,
+   "MODIS": 0.289,
+   "ANY": 0.523
+  },
+  {
+   "size": "1k-10k",
+   "n": 663,
+   "VIIRS": 0.564,
+   "MODIS": 0.48,
+   "ANY": 0.59
+  },
+  {
+   "size": ">10k",
+   "n": 160,
+   "VIIRS": 0.706,
+   "MODIS": 0.625,
+   "ANY": 0.719
+  }
+ ],
+ "by_type": [
+  {
+   "IncidentTypeCategory": "RX",
+   "n": 10133,
+   "VIIRS": 0.368,
+   "MODIS": 0.202,
+   "unknown_size": 0.21
+  },
+  {
+   "IncidentTypeCategory": "WF",
+   "n": 66366,
+   "VIIRS": 0.069,
+   "MODIS": 0.028,
+   "unknown_size": 0.0
+  }
+ ],
+ "wf100_by_region": [
+  {
+   "region": "Alaska",
+   "n": 144,
+   "VIIRS": 0.743,
+   "MODIS": 0.646
+  },
+  {
+   "region": "Central",
+   "n": 676,
+   "VIIRS": 0.567,
+   "MODIS": 0.339
+  },
+  {
+   "region": "East",
+   "n": 426,
+   "VIIRS": 0.688,
+   "MODIS": 0.378
+  },
+  {
+   "region": "West",
+   "n": 1487,
+   "VIIRS": 0.433,
+   "MODIS": 0.329
+  }
+ ],
+ "lag_hours_first_VIIRS_vs_discovery_wf100": {
+  "median": 1.2,
+  "share_before_discovery": 0.329,
+  "p90": 20.9
+ },
+ "wf_by_cause": [
+  {
+   "FireCause": "Human",
+   "n": 21255,
+   "ANY": 0.089
+  },
+  {
+   "FireCause": "Natural",
+   "n": 9236,
+   "ANY": 0.09
+  },
+  {
+   "FireCause": "Undetermined",
+   "n": 35875,
+   "ANY": 0.06
+  }
+ ]
+}
