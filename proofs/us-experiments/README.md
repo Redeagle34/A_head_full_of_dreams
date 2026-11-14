@@ -215,3 +215,61 @@ Ideas not in the map yet:
 Not verified: exact licence wording of each catalogue entry beyond what the
 provider pages state; completeness of OpenStreetMap fire stations; NASA GIBS as
 a drop-in basemap.
+
+## 8. Data sources checked and ready to use
+
+All answered on 2026-11-14. None needs a paid account. "EE" means the Google
+Earth Engine catalogue id (free account and project needed).
+
+| Need | Source | Where | Note |
+|---|---|---|---|
+| Live detections | FIRMS area API: `VIIRS_NOAA20_NRT`, `VIIRS_NOAA21_NRT`, `MODIS_NRT`, `LANDSAT_NRT`, `GOES_NRT` | firms.modaps.eosdis.nasa.gov/api/area | Needs MAP_KEY. GOES limited to a 1–2 day range. S-NPP NRT stopped 2026-11-02 |
+| Yearly archive without a key | FIRMS country files | `firms.modaps.eosdis.nasa.gov/data/country/<sensor>/<year>/<sensor>_<year>_United_States.csv` | modis, viirs-snpp, viirs-jpss1. No NOAA-21 files, no 2026 file |
+| Reported fires and prescribed burns | NIFC WFIGS Incident Locations | `services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations/FeatureServer/0/query` | 431,631 records, 2014 →. Records appear a median of 9 minutes after discovery. No structure or fatality fields |
+| Fire perimeters | NIFC WFIGS perimeters; NASA FEDS | NIFC open data; `openveda.cloud/api/features` | FEDS collections listed, not used yet |
+| Weather warnings | NWS alerts API | `api.weather.gov/alerts/active` | Red Flag Warnings; 0 active when checked |
+| Daily weather and fire danger | gridMET | EE `IDAHO_EPSCOR/GRIDMET` | 4 km, 1979 →, about 3 days behind. ERC, BI, fuel moisture, VPD, wind |
+| Fire regime, vegetation | LANDFIRE FRG, MFRI, VDep, EVT | EE `LANDFIRE/Fire/...`, `LANDFIRE/Vegetation/...` | 30 m |
+| Burn severity | MTBS mosaics and boundaries | EE `USFS/GTAC/MTBS/...` | 30 m, 1984 → |
+| Burned area | MCD64A1; FIRMS `BA_MODIS`, `BA_VIIRS` | EE; FIRMS | Monthly |
+| Structure loss per incident | ICS-209-PLUS | figshare 10.6084/m9.figshare.19858927.v3 | 1999–2020 |
+| Buildings and people | GHSL built-up and population; GPW | EE `JRC/GHSL/P2023A/...`, `CIESIN/GPWv411/...` | Global, so the method transfers outside the U.S. |
+| Smoke | NOAA HMS smoke polygons | `satepsanone.nesdis.noaa.gov/pub/FIRE/web/HMS/Smoke_Polygons/Shapefile/<yyyy>/<mm>/` | Daily shapefiles |
+| Lightning | GOES-19 GLM | `s3://noaa-goes19/GLM-L2-LCFA` | Public bucket, 180 files per hour |
+| Geostationary fire | GOES-18 FDCF | EE | Every 10 minutes, coarse |
+| Soil moisture | SMAP L4 | EE | Not used yet |
+| Old Landsat scenes | Landsat Collection 2 | EE; Planetary Computer STAC | Landsat 5 back to 1984 |
+| Fire stations | OpenStreetMap `amenity=fire_station` | Overpass API | 14,487 U.S. points. Send a User-Agent header or it answers 406 |
+
+Did not work from a script: FPA FOD download (403), WRC full archive (403),
+HIFLD fire stations (address no longer valid).
+
+Licence warning: `pyretechnics` (fire-behaviour library) moved to a non-OSI
+licence on 2026-10-05; details in `damage-research.md`.
+
+## 9. Product ideas, by audience
+
+The challenge names early-warning staff, emergency responders, scientists,
+land managers and firefighters. One way to serve all of them from the map:
+
+- **A briefing for the area on screen**, in this order: burning now → today's
+  fire potential → why → if a fire starts → is this normal (your area
+  calendar) → how sure are we.
+- **Fire potential in familiar words**: the five fire-danger levels
+  responders already use (Low to Extreme), plus a number and "× normal for
+  this week". A chart of this year against the usual range, in the style of
+  the NWCG Fire Danger PocketCard, answers "why".
+- **How sure are we**: a badge per area built from section 3 (fire size the
+  satellites reliably see here) and from cloud cover and time between passes.
+- **Fire-blind zones**: places and days where cloud or pass gaps hide fire
+  while danger is high; fill them with reported fires, lightning and the
+  model's risk. Not built.
+- **Suggested priority**: when several fires burn, rank them by chance of
+  growing large × what is exposed, and show the closest stations. Label it a
+  suggestion, not a dispatch order.
+- **Good-fire windows** for land managers: days when weather allows a
+  prescribed burn in a landscape adapted to frequent fire.
+- **Time to first detection** (section 3) as a stated fact per region: it
+  tells a responder how much to rely on the map for new starts.
+- **A data page for scientists**: method, the validation tables above,
+  per-sensor series and downloads.
