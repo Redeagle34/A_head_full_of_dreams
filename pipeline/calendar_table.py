@@ -1,7 +1,8 @@
 """Step 3: build the state x week x series calendar table.
 
 Run:  python pipeline/calendar_table.py     (after pipeline/ingest.py)
-Output: data/calendar/calendar.parquet with one row per state, week and series.
+Output: data/calendar/calendar.parquet with one row per state, week and series,
+        data/calendar/detections.parquet with the state-tagged detections.
 
 Series: modis (Terra + Aqua together), terra, aqua, viirs-snpp, viirs-jpss1.
 Only vegetation-fire detections (FIRMS type 0) are counted.
@@ -50,7 +51,8 @@ def build(con):
     load_states(con)
     con.execute(f"""
         CREATE TABLE det AS
-        SELECT d.sensor, d.satellite, d.acq_date, d.latitude, d.longitude, d.frp, s.state
+        SELECT d.sensor, d.satellite, d.acq_date, d.acq_time, d.daynight,
+               d.latitude, d.longitude, d.scan, d.track, d.frp, s.state
         FROM read_parquet('{PARQUET.as_posix()}/*/*/*.parquet',
                           hive_partitioning=true, union_by_name=true) d
         LEFT JOIN states s ON ST_Contains(s.geom, ST_Point(d.longitude, d.latitude))
@@ -102,6 +104,9 @@ def main():
     check(con)
     OUT.mkdir(parents=True, exist_ok=True)
     con.execute(f"COPY calendar TO '{(OUT / 'calendar.parquet').as_posix()}' (FORMAT parquet)")
+    # State-tagged detections, reused by harmonization and by later downloads.
+    con.execute(f"COPY (SELECT * FROM det WHERE state IS NOT NULL) "
+                f"TO '{(OUT / 'detections.parquet').as_posix()}' (FORMAT parquet)")
     total, unassigned = con.execute("SELECT count(*), count(*) FILTER (WHERE state IS NULL) FROM det").fetchone()
     print(f"type-0 detections: {total}; outside every state polygon: {unassigned} "
           f"({100 * unassigned / total:.2f}%)")

@@ -114,3 +114,21 @@ Limits to state in the report:
   Hawaii have every detection assigned to the right state. 2,895 detections
   (0.03%) fall outside every state polygon (coast and border) and are not counted.
   Grid: 0.1 degree cells, not equal-area. State borders: U.S. Census 2023, 1:500,000.
+- Step 4 passed (2026-11-14). `python pipeline/harmonize.py` (3 seconds) writes
+  `data/calendar/harmonized.parquet`: per state and week, Aqua observed, VIIRS S-NPP
+  raw, VIIRS-as-MODIS from the operator, and `modis_equivalent_cell_days` with a
+  standard deviation. Scored on withheld years 2021-2025 against real Aqua, at
+  state-week level (error = sum of absolute differences / Aqua total):
+  raw VIIRS 3.07; one multiplier 0.53; multiplier per state and season 0.39;
+  operator with published coefficients and no fitting 0.34 (total within 1% of
+  Aqua); operator plus a state-season factor 0.31.
+  Decisions made by the data: comparison target is Aqua, not Terra + Aqua, because
+  Aqua and S-NPP pass at the same local time. The mean MODIS pixel (2.45 km2) is
+  used; averaging over swath pixel sizes over-predicted by 32% and was rejected on
+  the training years 2013-2020.
+  Known failures: Hawaii (operator predicts 954 cell-days where Aqua saw 83 in
+  2021-2025; Kilauea lava is labeled as vegetation fire and VIIRS sees it far more
+  often). By state the operator ranges from 0.77 (NC) to 1.36 (AZ) of Aqua. Summer
+  is the worst season. MODIS cloud cover at VIIRS overpass time is not modeled.
+  NOAA-20 is not harmonized yet (S-NPP only). The standard deviation covers
+  detection chance only, not coefficient or cloud error.
