@@ -1,0 +1,269 @@
+{
+  "title": "MODIS and VIIRS burning activity",
+  "layout": "tree",
+  "lead": "Use comparable observations to establish a historical baseline. Follow the branches for prevention, incident review, and forecasts.",
+  "nodes": [
+    {
+      "id": "calendar",
+      "label": "Regional burning calendar",
+      "status": "partly",
+      "detail": "Help users examine regional burning history and apply it to prevention, incident review, and forecasts.",
+      "theory": "fire regime analysis"
+    },
+    {
+      "id": "harmonize",
+      "label": "Comparable sensor records",
+      "status": "partly",
+      "detail": "Different footprint sizes and observation schedules can change detection counts. Test how well older MODIS and newer VIIRS records line up.",
+      "priority": 1,
+      "theory": "measurement comparability"
+    },
+    {
+      "id": "compare",
+      "label": "Historical activity patterns",
+      "status": "open",
+      "detail": "Explain what is typical for a place and season, and identify periods with unusually high observed activity.",
+      "priority": 1,
+      "theory": "seasonal baseline"
+    },
+    {
+      "id": "use",
+      "label": "User decisions",
+      "status": "open",
+      "detail": "Use consistent evidence to help firefighters review incidents and help land managers assess where preventive work may be warranted.",
+      "priority": 1,
+      "theory": "decision support"
+    },
+    {
+      "id": "context",
+      "label": "Event context",
+      "status": "partly",
+      "detail": "Assess which independent records can explain a detection or corroborate where and when an event occurred.",
+      "priority": 2,
+      "theory": "evidence triangulation"
+    },
+    {
+      "id": "metric",
+      "label": "Common activity measure",
+      "status": "open",
+      "detail": "Which spatial and time units make hotspot activity reasonably comparable across sensors?"
+    },
+    {
+      "id": "overlap",
+      "label": "Overlap period validation",
+      "status": "open",
+      "detail": "How closely do sensors agree in withheld regions or seasons, and how much do observation gaps affect the result?"
+    },
+    {
+      "id": "baseline",
+      "label": "Seasonal reference periods",
+      "status": "open",
+      "detail": "How can users compare recent activity with earlier years for the same season and region?"
+    },
+    {
+      "id": "critical",
+      "label": "Unusual activity periods",
+      "status": "open",
+      "detail": "Which methods highlight anomalies and recurring critical windows without confusing missing observations with low activity?"
+    },
+    {
+      "id": "workflows",
+      "label": "Audience workflows",
+      "status": "open",
+      "detail": "Which questions should each audience answer using the calendar, map, and downloadable outputs?"
+    },
+    {
+      "id": "triage",
+      "label": "Review priorities",
+      "status": "open",
+      "detail": "Which evidence supports a decision to review an observation and how can uncertainty be communicated?"
+    },
+    {
+      "id": "burns",
+      "label": "Planned burn records",
+      "status": "open",
+      "detail": "Where are reliable planned or completed burn records available, and how closely can they match a hotspot in place and time?"
+    },
+    {
+      "id": "aircraft",
+      "label": "Airborne observations",
+      "status": "partly",
+      "detail": "Where can the team obtain aircraft-derived infrared perimeters, and how well can they check satellite timing and extent?"
+    },
+    {
+      "id": "prevent",
+      "label": "Prevention planning",
+      "status": "open",
+      "detail": "Identify candidate zones for fuel treatment based on treatment suitability and expected reduction in harm.",
+      "priority": 2,
+      "theory": "wildfire risk assessment"
+    },
+    {
+      "id": "action",
+      "label": "Incident review",
+      "status": "open",
+      "detail": "Help responders review recent detections quickly and let scientists inspect the supporting observations.",
+      "priority": 2,
+      "theory": "situational awareness"
+    },
+    {
+      "id": "forecast",
+      "label": "Future activity forecasts",
+      "status": "open",
+      "detail": "Estimate where and when activity is more likely and test predictions on years withheld from training.",
+      "priority": 2,
+      "theory": "spatiotemporal forecasting"
+    },
+    {
+      "id": "treatment",
+      "label": "Treatment suitability",
+      "status": "open",
+      "detail": "Which fuel, terrain, ecological, exposure, and treatment history datasets can support expert review?"
+    },
+    {
+      "id": "target",
+      "label": "Forecast target",
+      "status": "open",
+      "detail": "Should the forecast estimate observed hotspot activity or new wildfire ignitions, and what records can verify it?"
+    },
+    {
+      "id": "skill",
+      "label": "Forecast validation",
+      "status": "open",
+      "detail": "Can retrospective forecasts using only information available at the time beat the seasonal historical baseline?"
+    },
+    {
+      "id": "recency",
+      "label": "Detection recency",
+      "status": "open",
+      "detail": "What source, observation time, confidence, and corroboration should responders and scientists see?"
+    }
+  ],
+  "edges": [
+    {
+      "from": "harmonize",
+      "to": "calendar",
+      "kind": "part of"
+    },
+    {
+      "from": "compare",
+      "to": "calendar",
+      "kind": "part of"
+    },
+    {
+      "from": "use",
+      "to": "calendar",
+      "kind": "part of"
+    },
+    {
+      "from": "context",
+      "to": "calendar",
+      "kind": "part of"
+    },
+    {
+      "from": "metric",
+      "to": "harmonize",
+      "kind": "part of"
+    },
+    {
+      "from": "overlap",
+      "to": "harmonize",
+      "kind": "part of"
+    },
+    {
+      "from": "baseline",
+      "to": "compare",
+      "kind": "part of"
+    },
+    {
+      "from": "critical",
+      "to": "compare",
+      "kind": "part of"
+    },
+    {
+      "from": "burns",
+      "to": "context",
+      "kind": "part of"
+    },
+    {
+      "from": "aircraft",
+      "to": "context",
+      "kind": "part of"
+    },
+    {
+      "from": "harmonize",
+      "to": "compare",
+      "kind": "needs",
+      "label": "supports comparison"
+    },
+    {
+      "from": "compare",
+      "to": "use",
+      "kind": "needs",
+      "label": "informs decisions"
+    },
+    {
+      "from": "context",
+      "to": "triage",
+      "kind": "needs",
+      "label": "supports review"
+    },
+    {
+      "from": "prevent",
+      "to": "use",
+      "kind": "part of"
+    },
+    {
+      "from": "action",
+      "to": "use",
+      "kind": "part of"
+    },
+    {
+      "from": "workflows",
+      "to": "action",
+      "kind": "part of"
+    },
+    {
+      "from": "triage",
+      "to": "action",
+      "kind": "part of"
+    },
+    {
+      "from": "treatment",
+      "to": "prevent",
+      "kind": "part of"
+    },
+    {
+      "from": "recency",
+      "to": "action",
+      "kind": "part of"
+    },
+    {
+      "from": "forecast",
+      "to": "calendar",
+      "kind": "part of"
+    },
+    {
+      "from": "target",
+      "to": "forecast",
+      "kind": "part of"
+    },
+    {
+      "from": "skill",
+      "to": "forecast",
+      "kind": "part of"
+    },
+    {
+      "from": "compare",
+      "to": "forecast",
+      "kind": "needs",
+      "label": "provides baseline"
+    },
+    {
+      "from": "context",
+      "to": "prevent",
+      "kind": "needs",
+      "label": "adds burn history"
+    }
+  ]
+}
