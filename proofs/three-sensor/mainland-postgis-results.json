@@ -1,0 +1,17 @@
+{
+  "reopened_persistent_database": true,
+  "regional": [
+    {
+      "state": "CA",
+      "found": true
+    },
+    {
+      "state": "GA",
+      "found": true
+    }
+  ],
+  "postgis": "3.6 USE_GEOS=1 USE_PROJ=1 USE_STATS=1",
+  "distinct_observations_after_replay": 47178,
+  "nearby_selected": 390,
+  "matches_export_ids": true
+}

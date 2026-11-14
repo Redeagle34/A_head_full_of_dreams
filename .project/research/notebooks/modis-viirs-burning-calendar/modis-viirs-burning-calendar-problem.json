@@ -45,25 +45,25 @@
     {
       "id": "metric",
       "label": "Common activity measure",
-      "status": "open",
+      "status": "partly",
       "detail": "Which spatial and time units make hotspot activity reasonably comparable across sensors?"
     },
     {
       "id": "overlap",
       "label": "Overlap period validation",
-      "status": "open",
+      "status": "partly",
       "detail": "How closely do sensors agree in withheld regions or seasons, and how much do observation gaps affect the result?"
     },
     {
       "id": "baseline",
       "label": "Seasonal reference periods",
-      "status": "open",
+      "status": "partly",
       "detail": "How can users compare recent activity with earlier years for the same season and region?"
     },
     {
       "id": "critical",
       "label": "Unusual activity periods",
-      "status": "open",
+      "status": "partly",
       "detail": "Which methods highlight anomalies and recurring critical windows without confusing missing observations with low activity?"
     },
     {
@@ -75,13 +75,13 @@
     {
       "id": "triage",
       "label": "Review priorities",
-      "status": "open",
+      "status": "partly",
       "detail": "Which evidence supports a decision to review an observation and how can uncertainty be communicated?"
     },
     {
       "id": "burns",
       "label": "Planned burn records",
-      "status": "open",
+      "status": "partly",
       "detail": "Where are reliable planned or completed burn records available, and how closely can they match a hotspot in place and time?"
     },
     {
@@ -93,7 +93,7 @@
     {
       "id": "prevent",
       "label": "Prevention planning",
-      "status": "open",
+      "status": "partly",
       "detail": "Identify candidate zones for fuel treatment based on treatment suitability and expected reduction in harm.",
       "priority": 2,
       "theory": "wildfire risk assessment"
@@ -101,7 +101,7 @@
     {
       "id": "action",
       "label": "Incident review",
-      "status": "open",
+      "status": "partly",
       "detail": "Help responders review recent detections quickly and let scientists inspect the supporting observations.",
       "priority": 2,
       "theory": "situational awareness"
@@ -109,7 +109,7 @@
     {
       "id": "forecast",
       "label": "Future activity forecasts",
-      "status": "open",
+      "status": "partly",
       "detail": "Estimate where and when activity is more likely and test predictions on years withheld from training.",
       "priority": 2,
       "theory": "spatiotemporal forecasting"
@@ -117,26 +117,44 @@
     {
       "id": "treatment",
       "label": "Treatment suitability",
-      "status": "open",
+      "status": "partly",
       "detail": "Which fuel, terrain, ecological, exposure, and treatment history datasets can support expert review?"
     },
     {
       "id": "target",
       "label": "Forecast target",
-      "status": "open",
-      "detail": "Should the forecast estimate observed hotspot activity or new wildfire ignitions, and what records can verify it?"
+      "status": "known",
+      "detail": "Estimate satellite-observed burning activity during the following seven days. Grid size and reference platform remain open."
     },
     {
       "id": "skill",
       "label": "Forecast validation",
-      "status": "open",
+      "status": "partly",
       "detail": "Can retrospective forecasts using only information available at the time beat the seasonal historical baseline?"
     },
     {
       "id": "recency",
       "label": "Detection recency",
-      "status": "open",
+      "status": "partly",
       "detail": "What source, observation time, confidence, and corroboration should responders and scientists see?"
+    },
+    {
+      "id": "landsat",
+      "label": "Landsat imagery",
+      "status": "partly",
+      "detail": "Check active-fire points and optical surface change where clear scenes are available."
+    },
+    {
+      "id": "vegetation",
+      "label": "Vegetation and fuels",
+      "status": "partly",
+      "detail": "Check how mapped fuels support prevention and whether recent vegetation observations improve forecasts."
+    },
+    {
+      "id": "smoke",
+      "label": "Smoke plumes",
+      "status": "partly",
+      "detail": "Check plume context for recent events and whether smoke available at issue time adds forecast skill."
     }
   ],
   "edges": [
@@ -264,6 +282,33 @@
       "to": "prevent",
       "kind": "needs",
       "label": "adds burn history"
+    },
+    {
+      "from": "landsat",
+      "to": "context",
+      "kind": "part of"
+    },
+    {
+      "from": "vegetation",
+      "to": "context",
+      "kind": "part of"
+    },
+    {
+      "from": "smoke",
+      "to": "context",
+      "kind": "part of"
+    },
+    {
+      "from": "vegetation",
+      "to": "forecast",
+      "kind": "needs",
+      "label": "tests forecast gains"
+    },
+    {
+      "from": "smoke",
+      "to": "forecast",
+      "kind": "needs",
+      "label": "tests forecast gains"
     }
   ]
 }

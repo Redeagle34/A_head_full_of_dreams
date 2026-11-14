@@ -1,0 +1,72 @@
+{
+  "park_fire": {
+    "catalog_scenes": 1,
+    "samples": [
+      {
+        "scene": "LC09_L2SP_044032_20240727_02_T1",
+        "acquired_utc": "2024-07-27T18:44:43.243802Z",
+        "qa_pixel": 21824,
+        "flags": [],
+        "coverage": "clear_land",
+        "footprint_fractions": null
+      }
+    ]
+  },
+  "oregon": {
+    "catalog_scenes": 2,
+    "samples": [
+      {
+        "scene": "LC08_L2SP_043029_20240728_02_T1",
+        "acquired_utc": "2024-07-28T18:37:31.804628Z",
+        "qa_pixel": 55052,
+        "flags": [
+          "cirrus",
+          "cloud"
+        ],
+        "coverage": "cloud_or_shadow",
+        "footprint_fractions": null
+      },
+      {
+        "scene": "LC09_L2SP_044029_20240727_02_T1",
+        "acquired_utc": "2024-07-27T18:43:31.579228Z",
+        "qa_pixel": 21824,
+        "flags": [],
+        "coverage": "clear_land",
+        "footprint_fractions": null
+      }
+    ]
+  },
+  "georgia_live_selection": {
+    "catalog_scenes": 2,
+    "samples": [
+      {
+        "scene": "LC09_L2SP_017038_20261109_02_T1",
+        "acquired_utc": "2026-11-09T16:00:56.714154Z",
+        "qa_pixel": 21824,
+        "flags": [],
+        "coverage": "clear_land",
+        "footprint_fractions": {
+          "clear_land": 1.0
+        },
+        "minutes_from_modis": 64.95
+      },
+      {
+        "scene": "LC09_L2SP_017037_20261109_02_T1",
+        "acquired_utc": "2026-11-09T16:00:32.823138Z",
+        "qa_pixel": 21824,
+        "flags": [],
+        "coverage": "clear_land",
+        "footprint_fractions": {
+          "clear_land": 1.0
+        },
+        "minutes_from_modis": 64.55
+      }
+    ],
+    "modis_time_utc": "2026-11-09T14:56:00+00:00",
+    "coverage_by_window": {
+      "30": "no_scene_with_90_percent_clear_within_window",
+      "90": "at_least_90_percent_clear",
+      "180": "at_least_90_percent_clear"
+    }
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "coverage_join": "CMR regional granule candidates only; individual fire-mask pixels have not been decoded.",
+  "archive_case_days": 12,
+  "grid_cell_days": 4003,
+  "both_sensors_detected_in_cell_day": 329,
+  "candidate_overpasses": [
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-07",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-07",
+      "sensor": "VIIRS",
+      "granules": 4
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-08",
+      "sensor": "MODIS",
+      "granules": 3
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-08",
+      "sensor": "VIIRS",
+      "granules": 4
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-09",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-09",
+      "sensor": "VIIRS",
+      "granules": 2
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-25",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-25",
+      "sensor": "VIIRS",
+      "granules": 3
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-26",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-26",
+      "sensor": "VIIRS",
+      "granules": 2
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-27",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-27",
+      "sensor": "VIIRS",
+      "granules": 2
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-15",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-15",
+      "sensor": "VIIRS",
+      "granules": 3
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-16",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-16",
+      "sensor": "VIIRS",
+      "granules": 2
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-17",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-17",
+      "sensor": "VIIRS",
+      "granules": 2
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-23",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-23",
+      "sensor": "VIIRS",
+      "granules": 3
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-24",
+      "sensor": "MODIS",
+      "granules": 4
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-24",
+      "sensor": "VIIRS",
+      "granules": 4
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-25",
+      "sensor": "MODIS",
+      "granules": 2
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-25",
+      "sensor": "VIIRS",
+      "granules": 4
+    }
+  ],
+  "raw_mask_access": {
+    "MODIS": {
+      "file": "MYD14.A2022250.1000.061.2022251112251.hdf",
+      "http": 401,
+      "host": "urs.earthdata.nasa.gov"
+    },
+    "VIIRS": {
+      "file": "VJ114IMG.A2022250.0842.002.2024090085033.nc",
+      "http": 401,
+      "host": "urs.earthdata.nasa.gov"
+    }
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "tiles_requested": 33,
+  "radius_km": 30,
+  "meaning": "Counts of returned hotspots after spatial filtering. Zero detections leaves coverage unknown.",
+  "counts": [
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-07",
+      "sensor": "MODIS",
+      "observations": 37
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-07",
+      "sensor": "VIIRS",
+      "observations": 308
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-08",
+      "sensor": "MODIS",
+      "observations": 46
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-08",
+      "sensor": "VIIRS",
+      "observations": 336
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-09",
+      "sensor": "MODIS",
+      "observations": 91
+    },
+    {
+      "case": "california_autumn",
+      "date_utc": "2022-09-09",
+      "sensor": "VIIRS",
+      "observations": 706
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-25",
+      "sensor": "MODIS",
+      "observations": 316
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-25",
+      "sensor": "VIIRS",
+      "observations": 1713
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-26",
+      "sensor": "MODIS",
+      "observations": 165
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-26",
+      "sensor": "VIIRS",
+      "observations": 1000
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-27",
+      "sensor": "MODIS",
+      "observations": 28
+    },
+    {
+      "case": "california_summer",
+      "date_utc": "2024-07-27",
+      "sensor": "VIIRS",
+      "observations": 205
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-15",
+      "sensor": "MODIS",
+      "observations": 0
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-15",
+      "sensor": "VIIRS",
+      "observations": 6
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-16",
+      "sensor": "MODIS",
+      "observations": 0
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-16",
+      "sensor": "VIIRS",
+      "observations": 0
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-17",
+      "sensor": "MODIS",
+      "observations": 0
+    },
+    {
+      "case": "georgia_winter",
+      "date_utc": "2024-02-17",
+      "sensor": "VIIRS",
+      "observations": 0
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-23",
+      "sensor": "MODIS",
+      "observations": 0
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-23",
+      "sensor": "VIIRS",
+      "observations": 1
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-24",
+      "sensor": "MODIS",
+      "observations": 0
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-24",
+      "sensor": "VIIRS",
+      "observations": 0
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-25",
+      "sensor": "MODIS",
+      "observations": 0
+    },
+    {
+      "case": "oregon_summer",
+      "date_utc": "2024-07-25",
+      "sensor": "VIIRS",
+      "observations": 0
+    }
+  ],
+  "count_scaling_diagnostic": {
+    "fit_case": "california_summer",
+    "factor": 5.7328094302554025,
+    "cases": [
+      {
+        "case": "california_autumn",
+        "MODIS": 174,
+        "VIIRS": 1350,
+        "scaled_modis": 997.51,
+        "raw_absolute_error": 1176,
+        "scaled_absolute_error": 352.49
+      },
+      {
+        "case": "georgia_winter",
+        "MODIS": 0,
+        "VIIRS": 6,
+        "scaled_modis": 0.0,
+        "raw_absolute_error": 6,
+        "scaled_absolute_error": 6.0
+      },
+      {
+        "case": "oregon_summer",
+        "MODIS": 0,
+        "VIIRS": 1,
+        "scaled_modis": 0.0,
+        "raw_absolute_error": 1,
+        "scaled_absolute_error": 1.0
+      }
+    ],
+    "limits": "Small selected windows with unknown coverage. These comparisons are an illustration, not validation."
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "input_sha256": {
+    "usa_contiguous_and_hawaii_c6.1.kmz": "8f65e6b0a9bc995f8b628782b4d399c7e7197cd50cb2df896a7fc18d18305a89",
+    "usa_contiguous_and_hawaii_noaa-20-viirs-c2.kmz": "7bfc77999de47d01b242365381e0f83ba856b4f1e38362f6e80466cd6588fc2b",
+    "usa_contiguous_and_hawaii_noaa-21-viirs-c2.kmz": "2706b461d468f1cf3d71b37f633eedd7572dd377f658b1e4dbfacac9b151bc28",
+    "usa_contiguous_and_hawaii_landsat.kmz": "b1b2df57abb5bf5718c34455c2c758d6ef018e261dff43c03de0ab904062f58f",
+    "alaska_c6.1.kmz": "99a843b723798bea5b4829e4978de10a00853810df3c04d6c90eef426f37ea52",
+    "alaska_noaa-20-viirs-c2.kmz": "6d5f5c680daa24a7a999ac7d6f79569dcae840c300b989970012fb32380bb9bc",
+    "alaska_noaa-21-viirs-c2.kmz": "e63456a4ee67490bfdb9894ae0e470bab332dd51d32de83fd552ddee5f3bd525"
+  },
+  "boundary_sha256": "7bc773d83c01b6df69b8aada9c2b5983d97f22f4551947cc5c00b87c663223ef",
+  "raw_footprints": {
+    "usa_contiguous_and_hawaii_c6.1.kmz": 1833,
+    "usa_contiguous_and_hawaii_noaa-20-viirs-c2.kmz": 10593,
+    "usa_contiguous_and_hawaii_noaa-21-viirs-c2.kmz": 10348,
+    "usa_contiguous_and_hawaii_landsat.kmz": 33339,
+    "alaska_c6.1.kmz": 0,
+    "alaska_noaa-20-viirs-c2.kmz": 0,
+    "alaska_noaa-21-viirs-c2.kmz": 5
+  },
+  "outside_state_mask": {
+    "usa_contiguous_and_hawaii_c6.1.kmz": 326,
+    "usa_contiguous_and_hawaii_noaa-20-viirs-c2.kmz": 1573,
+    "usa_contiguous_and_hawaii_noaa-21-viirs-c2.kmz": 1555,
+    "usa_contiguous_and_hawaii_landsat.kmz": 1691,
+    "alaska_c6.1.kmz": 0,
+    "alaska_noaa-20-viirs-c2.kmz": 0,
+    "alaska_noaa-21-viirs-c2.kmz": 0
+  },
+  "distinct_us_native_observations": 47741,
+  "observations_by_sensor": {
+    "MODIS": 1507,
+    "VIIRS": 17818,
+    "Landsat": 28416
+  },
+  "states_with_detections": [
+    "AK",
+    "AL",
+    "AR",
+    "AZ",
+    "CA",
+    "CO",
+    "CT",
+    "DE",
+    "FL",
+    "GA",
+    "HI",
+    "IA",
+    "ID",
+    "IL",
+    "IN",
+    "KS",
+    "KY",
+    "LA",
+    "MA",
+    "MD",
+    "ME",
+    "MI",
+    "MN",
+    "MO",
+    "MS",
+    "MT",
+    "NC",
+    "ND",
+    "NE",
+    "NH",
+    "NJ",
+    "NM",
+    "NV",
+    "NY",
+    "OH",
+    "OK",
+    "OR",
+    "PA",
+    "RI",
+    "SC",
+    "SD",
+    "TN",
+    "TX",
+    "UT",
+    "VA",
+    "VT",
+    "WA",
+    "WI",
+    "WV",
+    "WY"
+  ],
+  "observed_interval_utc": [
+    "2026-11-07T19:46:00+00:00",
+    "2026-11-14T19:28:01+00:00"
+  ],
+  "candidate_match_pairs_by_minutes": {
+    "30": {
+      "VIIRS": 0,
+      "Landsat": 0
+    },
+    "90": {
+      "VIIRS": 224,
+      "Landsat": 455
+    },
+    "180": {
+      "VIIRS": 1962,
+      "Landsat": 515
+    }
+  },
+  "modis_parents_with_both_comparisons_at_180_minutes": 2,
+  "selection": {
+    "state": "GA",
+    "longitude": -82.13371,
+    "latitude": 32.6085,
+    "radius_km": 20,
+    "native_observations": 390,
+    "grid_evidence_rows": 532,
+    "candidate_pairs": 28,
+    "center_candidate_sensors": [
+      "Landsat",
+      "VIIRS"
+    ]
+  },
+  "coverage": "Unknown for unmatched detections. Alaska Landsat is unavailable from the rolling endpoint.",
+  "limits": "Pair counts describe overlapping estimated detection footprints, not accuracy, confirmed wildfire, or event counts."
+}

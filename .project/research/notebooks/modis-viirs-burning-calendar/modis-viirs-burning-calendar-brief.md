@@ -45,3 +45,19 @@ Native research. One focused pass per round until an unresolved question could c
 First, it is very important to have comparable sensor records, and that is a problem that we need to solve. Second, Getting the historical activity patterns and using time analysis for it would be important, and I believe that it is right. Third, for user decisions, like the questions that you have proposed. Finally, like the event context and using more information to corroborate the detection of an event.
 
 Now what we have detected is that there are three objectives that need to be completed here: 1) Prevention, goal is to determine zones that should be corrected in order to minimize worse future wildfires (like indicating for firefighters places in earth that should be previously burned for prevention). 2) Action: Make it simple for firefighters and maintain enough detail for scientists and similar to help anyone do the correct actions when they need it. 3) Future analysis and historical series: Do a time series analysis to use historical data to predict future spots in which fires are likely to occur.
+
+## Forecast target (user's words)
+
+The forecast estimate should be of where satellites are likely to observe burning activity next week.
+
+## U.S. scope and added datasets
+
+We would like to focus as a team in the United States of America (but maintain for another version the extension to Mexico or other parts of the world). Now, we like the distictions of the goals (starting from Sensor harmonization to the historical calendar, prevention and action). We have also an idea of integrating LANSAT for high resoltuion imagery, and possibly aggregate other data as Vegetation Detection, and Smoke detection to help the data analysis algorithms.
+
+## National scope and work before prototyping
+
+Before making any prototype, the prototype would be about the whole united states. What I would like to analyze now is about how we are going to aggregate the data and make it useful for a model (we will need to investigate which type of model we are going to use and how it is going to work). Moreover, we will need to test the different Apis of data and see how to add them to our databases, and moreover see how to make it easy to access through a prototype in a website. What do you think?
+
+## Three-sensor MVP (user's words)
+
+Lets talk about doing a minimum viable product. We believe that it should be the google earth like website that aggregates only the data of Landsat (ground truth), Modis and VIIRS and ingest it through batches and show it to the user. It should have the simple controls for fire fighters (as setting their location and seeing the fires around) and the downloadable data files and reports for scientists. Lets save the data in an easily scalable system for when more data is ingested and start with a sensor agreement of the VIIRS sensors scale (for the MODIS larger scale, one can define that each subpixel that of VIIRs that the MODIS pixel covers has a the same value). What do you think?
