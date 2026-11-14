@@ -142,3 +142,19 @@ Limits to state in the report:
   - Partial-day outages and MODIS cloud cover at VIIRS overpass time are not
     modeled. The standard deviation covers detection chance only.
   - Before 2012 there is no VIIRS; the calendar uses MODIS as observed.
+- Step 5 built, check NOT passed (2026-11-14). `python pipeline/export_web.py`
+  writes `web/data/calendar.json` (1.6 MB, 50 states, 1,227 weeks from July 2002)
+  and `web/data/states.geojson`. `web/index.html` shows: state map (click to
+  select), state and year selectors, week-by-year heatmap with unusual and record
+  weeks outlined, usual fire season bar, focus-year line against the typical
+  range with the VIIRS MODIS-equivalent estimate, and a list of unusual periods.
+  Verified in a browser: page loads without errors; map click, state, year range
+  and Hawaii note work.
+  Check result: California, week of 22 July 2024 (Park Fire) has 114 cell-days
+  against a 90% level of 113.4 and ranks at 0.90 of other years, just under the
+  flag threshold; the next two weeks rank 0.78 and 0.51. At whole-state level one
+  large fire in California does not stand out against late-July weeks of 2008,
+  2018, 2020 and 2021. The threshold was not changed to force a pass. Finer
+  regions (county or drawn area) are the proposed fix.
+  Limits: Hawaii is not on the map (dropdown only). Weeks before July 2002
+  (Terra only, 2000-2002) are not shown; Terra is not converted to Aqua units.

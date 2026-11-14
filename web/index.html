@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>U.S. Burning Calendar</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+  :root { --ink:#1d1b16; --muted:#6b665c; --line:#ddd6c8; --paper:#faf7f0; --card:#fff; --accent:#b3260a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 system-ui, "Segoe UI", sans-serif; color:var(--ink); background:var(--paper); }
+  header { padding:18px 24px 10px; border-bottom:1px solid var(--line); }
+  h1 { margin:0; font-size:22px; letter-spacing:-.01em; }
+  header p { margin:4px 0 0; color:var(--muted); max-width:80ch; }
+  main { display:grid; grid-template-columns:minmax(280px, 360px) 1fr; gap:16px; padding:16px 24px 40px; }
+  @media (max-width: 900px) { main { grid-template-columns:1fr; padding:12px 16px 32px; } header { padding:14px 16px 8px; } }
+  section { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px 16px; min-width:0; }
+  h2 { margin:0 0 2px; font-size:15px; }
+  .hint { color:var(--muted); font-size:13px; margin:0 0 10px; }
+  #map { height:260px; border-radius:6px; border:1px solid var(--line); }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 3px; }
+  select { width:100%; padding:7px 8px; font:inherit; border:1px solid var(--line); border-radius:6px; background:#fff; }
+  .row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .stack { display:grid; gap:16px; align-content:start; min-width:0; }
+  .chart { overflow-x:auto; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--muted); margin-top:8px; }
+  .sw { display:inline-block; width:12px; height:12px; vertical-align:-1px; margin-right:5px; border-radius:2px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:5px 8px 5px 0; border-bottom:1px solid var(--line); }
+  th { font-weight:600; color:var(--muted); font-size:12.5px; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .tag { font-size:12px; padding:1px 7px; border-radius:10px; background:#fde9d9; color:#8a3a00; }
+  .tag.record { background:var(--accent); color:#fff; }
+  .note { background:#fff6d6; border:1px solid #ecd98a; border-radius:6px; padding:8px 10px; font-size:13.5px; margin-top:10px; }
+  .scroll { max-height:300px; overflow:auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>U.S. Burning Calendar</h1>
+  <p>Weekly burning activity seen by satellite since 2002, in one comparable unit: MODIS (Aqua) active cell-days.
+     VIIRS detections are converted to that unit, so the record continues when MODIS has gaps.</p>
+</header>
+<main>
+  <div class="stack">
+    <section>
+      <h2>Region</h2>
+      <p class="hint">Click a state. Darker = larger share of unusual weeks in the selected years.</p>
+      <div id="map"></div>
+      <label for="state">State</label>
+      <select id="state"></select>
+      <div class="row">
+        <div><label for="from">From year</label><select id="from"></select></div>
+        <div><label for="to">To year</label><select id="to"></select></div>
+        <div><label for="focus">Focus year</label><select id="focus"></select></div>
+      </div>
+      <div id="stateNote"></div>
+    </section>
+    <section>
+      <h2>Unusual periods</h2>
+      <p class="hint">Runs of weeks above 90% of the same weeks in other years.</p>
+      <div class="scroll"><table id="periods"></table></div>
+    </section>
+  </div>
+  <div class="stack">
+    <section>
+      <h2 id="heatTitle">Calendar</h2>
+      <p class="hint">Each square is one week. Outlined squares are unusual; thick outlines are records for that time of year. The bar on top marks the usual fire season.</p>
+      <div id="heat" class="chart"></div>
+      <div class="legend">
+        <span><span class="sw" style="outline:1.5px solid #111; background:#fff"></span>unusual week</span>
+        <span><span class="sw" style="outline:3px solid #111; background:#fff"></span>record week</span>
+        <span><span class="sw" style="background:#3b6ea5"></span>usual fire season</span>
+        <span><span class="sw" style="background:#d9d9d9"></span>not observed</span>
+      </div>
+    </section>
+    <section>
+      <h2 id="lineTitle">Focus year against typical</h2>
+      <p class="hint">Shaded band: range that holds 80% of other years. Where VIIRS exists, its MODIS-equivalent estimate is drawn next to what MODIS saw.</p>
+      <div id="line" class="chart"></div>
+    </section>
+  </div>
+</main>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/dist/plot.umd.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const SOURCE = ["MODIS (Aqua) observed", "MODIS-equivalent from VIIRS (Aqua incomplete)", "scaled from partly observed week"];
+let DATA, WEEKS, map, mapReady = false;
+const sel = { state: "CA", from: 2002, to: 2025, focus: 2024 };
+
+// ISO year and week of a Monday week start.
+function isoWeek(dateStr) {
+  const th = new Date(dateStr + "T00:00:00Z"); th.setUTCDate(th.getUTCDate() + 3);
+  const jan1 = Date.UTC(th.getUTCFullYear(), 0, 1);
+  return { yr: th.getUTCFullYear(), wk: Math.floor((th - jan1) / 864e5 / 7) + 1 };
+}
+const fmt = d => new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+
+function rows(state) {
+  const s = DATA.states[state];
+  return WEEKS.map((w, i) => ({ ...w, i, value: s.value[i], source: s.source[i], aqua: s.aqua[i],
+    vm: s.viirs_as_modis[i], sd: s.sd[i], rank: s.rank[i], flag: s.flag[i],
+    p50: s.clim.p50[w.wk - 1], p90: s.clim.p90[w.wk - 1], p10: s.clim.p10[w.wk - 1] }));
+}
+const inRange = r => r.yr >= sel.from && r.yr <= sel.to;
+
+function tip(r) {
+  if (r.value == null) return `Week of ${fmt(r.date)}\nnot observed`;
+  return `Week of ${fmt(r.date)}\n${r.value} cell-days — ${SOURCE[r.source]}\n` +
+    `typical ${r.p50} (up to ${r.p90})` +
+    (r.flag === 2 ? "\nRECORD for this time of year" : r.flag === 1 ? "\nunusual for this time of year" : "");
+}
+
+function drawHeat() {
+  const s = DATA.states[sel.state], data = rows(sel.state).filter(inRange);
+  const years = d3.range(sel.from, sel.to + 1);
+  $("heatTitle").textContent = `${s.name}: burning calendar ${sel.from}–${sel.to}`;
+  const season = s.clim.critical.map((c, k) => ({ wk: k + 1, c })).filter(d => d.c);
+  const chart = Plot.plot({
+    width: 980, height: 46 + 17 * years.length, marginLeft: 44, marginTop: 30, padding: 0.06,
+    x: { domain: d3.range(1, 54), axis: "top", label: "week of year", tickFormat: d => d % 4 === 1 ? d : "", tickSize: 0 },
+    y: { domain: years, label: null, tickSize: 0 },
+    color: { type: "sqrt", scheme: "YlOrRd", legend: true, label: DATA.unit, unknown: "#d9d9d9" },
+    marks: [
+      Plot.cell(data, { x: "wk", y: "yr", fill: "value", title: tip }),
+      Plot.cell(data.filter(d => d.flag), { x: "wk", y: "yr", fill: "none", stroke: "#111",
+        strokeWidth: d => d.flag === 2 ? 2.4 : 1, inset: 0.5 }),
+      Plot.ruleY(season.length ? [years[0]] : [], { x1: null }),
+      Plot.tickX(season, { x: "wk", y: years[0], stroke: "#3b6ea5", strokeWidth: 12, dy: -15, strokeLinecap: "butt",
+        title: () => "usual fire season" })
+    ]
+  });
+  $("heat").replaceChildren(chart);
+}
+
+function drawLine() {
+  const s = DATA.states[sel.state], yr = rows(sel.state).filter(r => r.yr === sel.focus);
+  $("lineTitle").textContent = `${s.name}, ${sel.focus} against typical`;
+  const clim = d3.range(1, 54).map(wk => ({ wk, p10: s.clim.p10[wk - 1], p50: s.clim.p50[wk - 1], p90: s.clim.p90[wk - 1] }));
+  const chart = Plot.plot({
+    width: 980, height: 300, marginLeft: 48,
+    x: { label: "week of year", domain: [1, 53] },
+    y: { label: DATA.unit, grid: true, nice: true },
+    color: { legend: true, domain: ["MODIS (Aqua) observed", "MODIS-equivalent from VIIRS", "typical (median)"],
+             range: ["#b3260a", "#1f6f8b", "#777"] },
+    marks: [
+      Plot.areaY(clim, { x: "wk", y1: "p10", y2: "p90", fill: "#bbb", fillOpacity: 0.35, curve: "monotone-x" }),
+      Plot.lineY(clim, { x: "wk", y: "p50", stroke: () => "typical (median)", strokeDasharray: "3 3", curve: "monotone-x" }),
+      Plot.areaY(yr.filter(d => d.vm != null), { x: "wk", y1: d => Math.max(0, d.vm - 2 * d.sd), y2: d => d.vm + 2 * d.sd,
+        fill: "#1f6f8b", fillOpacity: 0.18 }),
+      Plot.lineY(yr.filter(d => d.vm != null), { x: "wk", y: "vm", stroke: () => "MODIS-equivalent from VIIRS", strokeWidth: 1.6 }),
+      Plot.lineY(yr.filter(d => d.aqua != null), { x: "wk", y: "aqua", stroke: () => "MODIS (Aqua) observed", strokeWidth: 2 }),
+      Plot.dot(yr.filter(d => d.flag), { x: "wk", y: "value", r: d => d.flag === 2 ? 5 : 3.5, stroke: "#111", fill: "#fff", title: tip }),
+      Plot.ruleY([0])
+    ]
+  });
+  $("line").replaceChildren(chart);
+}
+
+function drawPeriods() {
+  const data = rows(sel.state).filter(inRange), periods = [];
+  let cur = null;
+  for (const r of data) {
+    if (r.flag) {
+      if (!cur) periods.push(cur = { start: r.date, end: r.date, n: 0, peak: r, record: false });
+      cur.end = r.date; cur.n++; cur.record ||= r.flag === 2;
+      if (r.value > cur.peak.value) cur.peak = r;
+    } else cur = null;
+  }
+  periods.reverse();
+  $("periods").innerHTML = periods.length
+    ? "<tr><th>Period</th><th class='num'>Weeks</th><th class='num'>Peak</th><th class='num'>Typical</th><th></th></tr>" +
+      periods.map(p => `<tr><td>${fmt(p.start)}${p.n > 1 ? " – " + fmt(p.end) : ""}</td><td class="num">${p.n}</td>` +
+        `<td class="num">${p.peak.value}</td><td class="num">${p.peak.p50}</td>` +
+        `<td><span class="tag ${p.record ? "record" : ""}">${p.record ? "record" : "unusual"}</span></td></tr>`).join("")
+    : "<tr><td>No unusual weeks in these years.</td></tr>";
+}
+
+function drawMap() {
+  if (!mapReady) return;
+  for (const f of map.getSource("states")._data.features) {
+    const st = f.properties.state, s = DATA.states[st];
+    let n = 0, total = 0;
+    WEEKS.forEach((w, i) => { if (w.yr >= sel.from && w.yr <= sel.to) { total++; if (s.flag[i]) n++; } });
+    map.setFeatureState({ source: "states", id: f.id }, { share: total ? n / total : 0, selected: st === sel.state });
+  }
+}
+
+function draw() {
+  $("stateNote").innerHTML = sel.state === "HI"
+    ? '<div class="note">Hawaii: values include lava from Kilauea, which satellites record as fire. VIIRS sees it far more often than MODIS, so the VIIRS-based estimate is too high here.</div>' : "";
+  drawHeat(); drawLine(); drawPeriods(); drawMap();
+}
+
+function fill(id, values, selected, label = v => v) {
+  $(id).innerHTML = values.map(v => `<option value="${v}"${v == selected ? " selected" : ""}>${label(v)}</option>`).join("");
+}
+
+async function init() {
+  const [cal, geo] = await Promise.all([fetch("data/calendar.json").then(r => r.json()), fetch("data/states.geojson").then(r => r.json())]);
+  DATA = cal;
+  WEEKS = cal.weeks.map(date => ({ date, ...isoWeek(date) }));
+  // A year needs at least 4 weeks of data to be offered (drops the stub ISO year at the end).
+  const years = [...d3.rollup(WEEKS, v => v.length, w => w.yr)].filter(([, n]) => n >= 4).map(([y]) => y);
+  sel.from = years[0]; sel.to = years.at(-1);
+  fill("state", Object.keys(cal.states).sort((a, b) => cal.states[a].name.localeCompare(cal.states[b].name)), sel.state, v => cal.states[v].name);
+  fill("from", years, sel.from); fill("to", years, sel.to); fill("focus", years, sel.focus);
+  $("state").onchange = e => { sel.state = e.target.value; draw(); };
+  $("focus").onchange = e => { sel.focus = +e.target.value; drawLine(); };
+  $("from").onchange = e => { sel.from = +e.target.value; if (sel.to < sel.from) { sel.to = sel.from; $("to").value = sel.to; } draw(); };
+  $("to").onchange = e => { sel.to = +e.target.value; if (sel.from > sel.to) { sel.from = sel.to; $("from").value = sel.from; } draw(); };
+  draw();
+
+  map = new maplibregl.Map({ container: "map", attributionControl: false, dragRotate: false,
+    style: { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#eef1f4" } }] },
+    bounds: [[-125, 24], [-66.5, 49.5]], fitBoundsOptions: { padding: 8 } });
+  map.on("load", () => {
+    map.addSource("states", { type: "geojson", data: geo });
+    map.addLayer({ id: "fill", type: "fill", source: "states", paint: {
+      "fill-color": ["interpolate", ["linear"], ["coalesce", ["feature-state", "share"], 0], 0, "#fff5eb", 0.05, "#fdd0a2", 0.08, "#fd8d3c", 0.12, "#d94801", 0.2, "#7f2704"] } });
+    map.addLayer({ id: "line", type: "line", source: "states", paint: {
+      "line-color": ["case", ["boolean", ["feature-state", "selected"], false], "#111", "#8a8578"],
+      "line-width": ["case", ["boolean", ["feature-state", "selected"], false], 2.5, 0.5] } });
+    map.on("click", "fill", e => { sel.state = e.features[0].properties.state; $("state").value = sel.state; draw(); });
+    map.on("mousemove", "fill", () => map.getCanvas().style.cursor = "pointer");
+    map.on("mouseleave", "fill", () => map.getCanvas().style.cursor = "");
+    mapReady = true; drawMap();
+  });
+}
+init();
+</script>
+</body>
+</html>
