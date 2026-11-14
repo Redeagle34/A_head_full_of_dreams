@@ -106,3 +106,11 @@ Limits to state in the report:
   A second run gave identical counts. 2023 counts equal step 1 minus Alaska rows.
   Still missing: 2026. The yearly archive has no 2026 file yet; recent months need
   the FIRMS API with a MAP_KEY (free, requested by a team member).
+- Step 3 passed (2026-11-14). `python pipeline/calendar_table.py` (about 4 minutes)
+  writes `data/calendar/calendar.parquet`: 178,684 rows, 48 contiguous states plus
+  DC and Hawaii, weeks starting Monday, series modis / terra / aqua / viirs-snpp /
+  viirs-jpss1, vegetation-fire detections (type 0) only. Checks: calendar totals
+  equal source detections for every series; three boxes inside Kansas, Georgia and
+  Hawaii have every detection assigned to the right state. 2,895 detections
+  (0.03%) fall outside every state polygon (coast and border) and are not counted.
+  Grid: 0.1 degree cells, not equal-area. State borders: U.S. Census 2023, 1:500,000.
