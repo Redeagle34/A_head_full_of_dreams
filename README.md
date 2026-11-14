@@ -26,26 +26,71 @@ unit across the whole period.
    observation operator: for each VIIRS fire, the probability that MODIS on the
    Aqua satellite would have detected it.
 4. Compare every week with the same weeks in other years to flag unusual weeks.
-5. Show it on a static web page.
+5. Show it on a full-screen map: search a place, pick dates, zoom in, and read
+   the fire layer and the history of the area on screen.
+
+## The map page
+
+- **Top bar:** place search, date range, quick dates and examples.
+- **Filters:** satellite data (MODIS + VIIRS combined, VIIRS only, MODIS only,
+  none) and what the color shows (fire intensity, days with fire, unusual versus
+  normal).
+- **Fire layer:** transparent colored squares over satellite imagery. Squares
+  get finer as you zoom in, down to the finest size the data supports:
+
+| Satellite data | Finest square | Period |
+|---|---|---|
+| VIIRS only | 375 m | 2012 – 2025 |
+| MODIS only | 1 km | 2000 – 2025 |
+| MODIS + VIIRS combined (MODIS-equivalent) | 1.5 km | 2002 – 2025 |
+
+- **Area history:** weekly calendar of whatever is on screen, with unusual and
+  record weeks, the usual fire season, and a CSV download.
+- **State overview:** the earlier state-by-state calendar, at `/states.html`.
 
 ## Repository structure
 
 ```
-pipeline/
-  ingest.py           step 2  download FIRMS archive, store as Parquet
-  calendar_table.py   step 3  assign states, build state x week x sensor table
-  harmonize.py        step 4  VIIRS -> MODIS-equivalent, scored on withheld years
-  export_web.py       step 5  data files for the website, unusual-week flags
+pipeline/               builds the data, in this order
+  ingest.py             download FIRMS archive, store as Parquet
+  calendar_table.py     assign states, build state x week x sensor table
+  harmonize.py          VIIRS -> MODIS-equivalent, scored on withheld years
+  export_web.py         data files for the state overview page
+  build_db.py           data/fire.duckdb, the database the server reads
+server/                 FastAPI application
+  main.py               routes and input checks only
+  queries.py            the SQL behind each route
+  grid.py               map grid: cell size, cell of a point, cell bounds
+  stats.py              typical range, unusual and record weeks
+  db.py                 read-only DuckDB connection
+  config.py             paths, limits, .env loading
 web/
-  index.html          the calendar page (MapLibre + Observable Plot, no build step)
-  data/               calendar.json, states.geojson (generated, committed)
-data/                 raw CSV and Parquet (generated, not in git, about 1.6 GB)
-proofs/               early feasibility scripts and their saved results
+  index.html            map page: layout
+  style.css             map page: appearance
+  app.js                map page: behaviour (sections are listed at the top)
+  states.html           state overview page
+  data/                 calendar.json, states.geojson (generated, committed)
+data/                   raw CSV, Parquet, fire.duckdb (generated, not in git)
+proofs/                 early feasibility scripts and their saved results
 .project/
-  SPEC.md             plan, decisions and measured results for every step
-  research/           background research, sources and findings
-requirements.txt      duckdb
+  SPEC.md               plan, decisions and measured results for every step
+  research/             background research, sources and findings
+.env.example            template for .env (reserved place for FIRMS_MAP_KEY)
+requirements.txt        duckdb, fastapi, uvicorn
 ```
+
+## Server API
+
+| Route | Answers |
+|---|---|
+| `GET /api/meta` | first and last day of each layer |
+| `GET /api/cells?layer&bbox&start&end&metric` | colored grid cells for the view |
+| `GET /api/calendar?layer&bbox` | weekly history of the area, with flags |
+| `GET /api/detections.csv?layer&bbox&start&end` | observations behind the layer |
+
+`layer` is `viirs`, `modis` or `both`; `bbox` is `west,south,east,north`;
+`metric` is `intensity`, `days` or `unusual`. Interactive documentation is at
+`/docs` when the server runs.
 
 ## Pipeline
 
@@ -58,7 +103,9 @@ Census state borders ──calendar_table──> data/calendar/calendar.parquet
                          harmonize ──> data/calendar/harmonized.parquet
                                    │
                         export_web ──> web/data/calendar.json
-                                       web/data/states.geojson ──> web/index.html
+                                       web/data/states.geojson ──> web/states.html
+
+data/calendar/detections.parquet ──build_db──> data/fire.duckdb ──server──> web/index.html
 ```
 
 | Script | Input | Output | Run time |
@@ -66,13 +113,15 @@ Census state borders ──calendar_table──> data/calendar/calendar.parquet
 | `ingest.py` | FIRMS country archive, U.S. files | Parquet per sensor and year, Alaska removed | about 20 minutes (download) |
 | `calendar_table.py` | Parquet, U.S. Census state borders | weekly table per state and series; state-tagged detections | about 4 minutes |
 | `harmonize.py` | state-tagged detections | weekly MODIS-equivalent values with standard deviation | seconds |
-| `export_web.py` | calendar and harmonized tables | website data with flags and typical ranges | seconds |
+| `export_web.py` | calendar and harmonized tables | state overview data with flags and typical ranges | seconds |
+| `build_db.py` | state-tagged detections | `fire.duckdb` with the three map layers (156 MB) | seconds |
 
 Every script can be run again safely: it rebuilds its output from its input and
 prints its own checks.
 
-Storage is Parquet files queried with DuckDB. No database server is needed. A
-PostGIS database is planned for the nearby-search step.
+Storage is Parquet files and one DuckDB file. The server opens the DuckDB file
+read-only; map queries answer in well under a second. A PostGIS database can be
+added if a later step needs it.
 
 ## Data sources
 
@@ -161,22 +210,34 @@ python pipeline/export_web.py
 ```
 
 ```bash
-python -m http.server 8765 --directory web
+python pipeline/build_db.py
 ```
 
-Then open http://localhost:8765. The website data in `web/data/` is committed, so
-the last command alone is enough to view the calendar.
+```bash
+python -m uvicorn server.main:app --port 8780
+```
+
+Then open http://localhost:8780. The data must be built once (first five
+commands, about 25 minutes, mostly download); after that only the last command
+is needed.
 
 ## Known limits
 
-- **Regions are whole states.** One large fire in a big state may not stand out.
-  The Park Fire week (22 July 2024, California) ranks at the 90% level but is not
-  flagged.
+- **Whole-state calendars hide single fires.** On the state overview page the
+  Park Fire week (22 July 2024, California) is not flagged. On the map page, the
+  history of the Park Fire area flags it as a record week.
 - **Hawaii is unreliable.** Lava from Kilauea is recorded as vegetation fire and
-  VIIRS sees it far more often than MODIS. Hawaii is also not drawn on the map
-  (state list only).
-- **2000–2002 is not shown.** Those years have Terra only, and Terra is not
-  converted to Aqua units.
+  VIIRS sees it far more often than MODIS.
+- **The combined layer starts in July 2002.** Before that only Terra flew, and
+  Terra is not converted to Aqua units. MODIS only goes back to November 2000.
+- **Single-sensor layers are not comparable over time.** "VIIRS only" has one
+  satellite until 2018 and two after; "MODIS only" has one until 2002. Use the
+  combined layer to compare years.
+- **Colors are relative to the view.** The scale stretches to the squares on
+  screen, so the same color can mean different values after zooming.
+- **Third-party services.** Satellite imagery comes from Esri World Imagery,
+  map labels from OpenFreeMap, place search from OpenStreetMap Nominatim. Their
+  terms and rate limits apply.
 - **2026 is missing.** FIRMS has no yearly file yet; recent months need the FIRMS
   API with a MAP_KEY (kept in `.env`, never in git).
 - **Clouds and partial outages are not modeled.** No detection under cloud looks
@@ -193,9 +254,9 @@ the last command alone is enough to view the calendar.
 | 2. Full ingest | done |
 | 3. Calendar table | done |
 | 4. Harmonization | done |
-| 5. Calendar screen | built; Park Fire check not passed at state level |
-| 6. Downloads: CSV and report | next |
-| 7. Nearby map for firefighters | planned |
+| 5. Calendar screen | done as the map page; Park Fire area flagged as a record week |
+| 6. Downloads: CSV and report | CSV done; report planned |
+| 7. Nearby map for firefighters | place search and "my location" done; radius search planned |
 | 8. Landsat 30 m cross-check layer | planned |
 | 9. Seven-day forecast | planned |
 | 10. Prevention and context layers (fuels, treatments, smoke, vegetation, aircraft) | planned |

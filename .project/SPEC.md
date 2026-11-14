@@ -158,3 +158,58 @@ Limits to state in the report:
   regions (county or drawn area) are the proposed fix.
   Limits: Hawaii is not on the map (dropdown only). Weeks before July 2002
   (Terra only, 2000-2002) are not shown; Terra is not converted to Aqua units.
+
+## Map explorer (decided 2026-11-14, src: user)
+
+The state calendar page was informative but hard to read. The product becomes a
+full-screen map, like FIRMS or Google Earth, with the calendar as a panel for the
+area on screen.
+
+- Search bar on top: place, and date range up to the latest data.
+- Transparent color layer over the map; zoom into a place of interest.
+- Filters: data source MODIS, VIIRS, both, or none.
+- Resolution follows the data source:
+
+| Selection | Grid | Period |
+|---|---|---|
+| VIIRS only | 375 m | 2012 - latest |
+| MODIS only | 1 km | 2000 - latest |
+| Both (one harmonized layer, MODIS-equivalent) | 1.5 km | 2002 - latest |
+| None | basemap only | - |
+
+- Color can show: fire intensity (default), days with fire, or unusual versus normal.
+- Server: FastAPI + DuckDB, code split into small readable modules.
+- FIRMS MAP_KEY is not used now; `.env.example` reserves its place.
+- Calendar for the area on screen replaces the county question: any area gets
+  its own "typical".
+
+### Map explorer result (2026-11-14)
+
+Built: `pipeline/build_db.py`, `server/` (FastAPI + DuckDB), `web/index.html`,
+`web/style.css`, `web/app.js`. The earlier page is kept as `web/states.html`.
+
+Verified in a browser on the local server: page loads without errors; globe
+with satellite imagery; fire layer for the whole country; Park Fire example
+zooms in and shows the burn footprint at 1.5 km; VIIRS only at 375 m; unusual
+versus normal; place search (Lake Tahoe); area history panel; CSV download.
+
+Checks:
+- Database: native layers hold exactly the source detections; satellite weights
+  add up to 1 on every day; every observation has a weight.
+- Speed: Park Fire area 0.04 s; whole country, one year 0.09 s; whole country,
+  all VIIRS years 0.65 s; area history for the whole country 0.5 s.
+- Step 5 check now passes at area level: in the Park Fire area the week of
+  22 July 2024 is a record week (542 cell-days) and the next two are unusual, in
+  all three layers.
+
+Not done or not verified:
+- Data ends 31 December 2025; the MAP_KEY place is reserved in `.env.example`.
+- The harmonized layer at 1.5 km cells is not scored against Aqua at cell level;
+  the score in step 4 is at state-week level.
+- "Days with fire" for single-sensor layers counts a day when any satellite of
+  the family saw fire, so periods with two satellites detect slightly more.
+- Color scale adapts to the squares on screen.
+- Not tested: phone layout, "My location", clicking a square for its popup.
+- Still open from the original plan: scientist report, radius search for
+  firefighters, Landsat layer, seven-day forecast, prevention layers, Hawaii
+  volcano mask, Terra years 2000-2002 in the combined layer.
