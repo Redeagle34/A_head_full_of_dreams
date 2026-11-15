@@ -13,3 +13,5 @@ data/*
 # not read by the server
 data/events/event_cell_days.parquet
 data/events/*.log
+# presentation video (not served)
+video
