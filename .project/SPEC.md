@@ -390,3 +390,50 @@ Not done or not verified:
   only without `earthengine-api`, so Landsat pictures would be off there.
 - 3D satellites were not looked at on a wide screen; "My location" needs a real
   device.
+
+## Scientific report (decided 2026-11-15, src: user)
+
+Decision: teammates rebuild the data themselves (no shared data file). Then the
+scientist report: aggregated over places the reader selects, with a checkbox
+list of what to include.
+
+Built:
+- `server/report.py`: places are any mix of states and boxes, turned into one
+  condition so nothing is counted twice. Eleven sections, one function each.
+- Routes `GET /api/report/sections`, `POST /api/report`.
+- `web/report.html`, `report.css`, `report.js`: builder (states as checkboxes,
+  areas by place search or from the map, dates, sections as checkboxes) and a
+  printable document with charts; CSV per table, JSON of the whole report,
+  print or save as PDF.
+- **Report** button on the map: opens the report for the area and dates on screen.
+- `build_db.py`: every database row now carries its state (exact state filter;
+  database 170 MB), and a rebuild keeps the table of danger levels.
+- `queries.weekly()`: the weekly series for any place condition; the area
+  calendar of the map uses it with a box.
+
+Checked:
+- Self-checks of `server/report.py` (place conditions, bad input refused, window
+  sums) pass.
+- California + Oregon + a Flint Hills box, July to September 2024: 1.0 s; 7,782
+  active cell-days, 2.1 times the median of 23 other years; 2,137 fires; week of
+  22 July 2024 is a record. All states, whole record: 2.1 s.
+- Bad requests answer 400 with a plain message (no place, long state name,
+  dates reversed, unknown section, box with west after east).
+- Browser: all 11 sections draw with their charts and tables, no console
+  errors; unticking sections removes them; All and None for states; place
+  search adds Butte County as an area; removing an area; the Report button on
+  the map opens the report with the area and dates; at phone width nothing
+  scrolls sideways.
+
+Not done or not verified:
+- Print and PDF output was not looked at; neither were the CSV and JSON files
+  opened (the links are made and named).
+- Charts were checked by count, not by eye, except the first screen.
+- An area is the box around a place, not its outline. States are exact.
+- A fire belongs to the state where most of it burned and to a box when its
+  centre is inside, so a fire across a border is counted in one place only.
+- No trend test or confidence intervals; the yearly section is descriptive.
+- Vegetation covers fires of 10 km2 or more; reported fires start in 2014.
+- The area name passed from the map can be stale while the map is still moving.
+- Still open from the original plan: seven-day forecast, prevention layers,
+  Hawaii volcano mask, Terra 2000-2002, 2026 data.

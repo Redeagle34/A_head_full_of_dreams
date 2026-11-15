@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fire report · Burning Calendar</title>
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+
+<!-- Left: what goes into the report. Not printed. -->
+<aside id="builder" class="builder">
+  <a class="back" href="index.html">← Map</a>
+  <h1>Fire report</h1>
+  <p class="hint">Choose places, dates and sections, then build. The report adds the places together; nothing is counted twice where they overlap.</p>
+
+  <section>
+    <h2>1. Places</h2>
+    <div class="row">
+      <h3>States</h3>
+      <button id="statesAll" type="button">All</button>
+      <button id="statesNone" type="button">None</button>
+    </div>
+    <div id="states" class="states" role="group" aria-label="States"></div>
+
+    <h3>Areas</h3>
+    <ul id="boxes" class="boxes"></ul>
+    <div class="row">
+      <input id="place" type="search" placeholder="Add a county, park or city" autocomplete="off" aria-label="Search a place to add">
+      <button id="placeAdd" type="button">Add</button>
+    </div>
+    <p id="placeNote" class="hint">An area is the box around the place found. On the map page, “Report” adds the area on screen.</p>
+  </section>
+
+  <section>
+    <h2>2. Dates</h2>
+    <div class="row">
+      <label>From <input id="start" type="date"></label>
+      <label>To <input id="end" type="date"></label>
+    </div>
+    <label>Quick <select id="quick"></select></label>
+  </section>
+
+  <section>
+    <h2>3. Sections</h2>
+    <div class="row">
+      <button id="sectionsAll" type="button">All</button>
+      <button id="sectionsNone" type="button">None</button>
+    </div>
+    <div id="sections" class="sections" role="group" aria-label="Sections of the report"></div>
+  </section>
+
+  <div class="go">
+    <button id="build" type="button" class="primary">Build report</button>
+    <button id="print" type="button" disabled>Print or save as PDF</button>
+    <button id="json" type="button" disabled>Download data (JSON)</button>
+  </div>
+  <p id="status" class="status" aria-live="polite"></p>
+</aside>
+
+<!-- Right: the report itself. -->
+<main id="report" class="report">
+  <p class="empty">The report appears here.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/dist/plot.umd.min.js"></script>
+<script src="report.js"></script>
+</body>
+</html>

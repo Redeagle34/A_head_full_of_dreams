@@ -28,8 +28,14 @@ def meta():
     return {layer: {"first_day": a.isoformat(), "last_day": b.isoformat()} for layer, a, b in rows}
 
 
-def _daily_sql(layer, size_m, date_filter, join="", key=""):
-    """SQL giving one row per cell and day: r, c, acq_date, [key,] d (fire day), f (intensity)."""
+IN_BBOX = "o.lat BETWEEN $south AND $north AND o.lon BETWEEN $west AND $east"
+
+
+def _daily_sql(layer, size_m, date_filter, join="", key="", place=IN_BBOX):
+    """SQL giving one row per cell and day: r, c, acq_date, [key,] d (fire day), f (intensity).
+
+    `place` is the condition on the observations `o` that says where: a box by default.
+    """
     row, col = cell_sql(size_m, "o.lat", "o.lon")
     fire_day = "sum(w.w * s.q)" if layer == "both" else "max(s.q)"
     return f"""
@@ -38,7 +44,7 @@ def _daily_sql(layer, size_m, date_filter, join="", key=""):
                      1 - exp(sum(ln(greatest(1 - o.p, 1e-9)))) AS q, sum(o.p * o.frp) AS f
               FROM obs o {join}
               WHERE o.layer = $layer AND {date_filter}
-                AND o.lat BETWEEN $south AND $north AND o.lon BETWEEN $west AND $east
+                AND ({place})
               GROUP BY ALL) s
         JOIN day_w w ON w.layer = $layer AND w.source = s.source AND w.acq_date = s.acq_date
         GROUP BY ALL"""
@@ -108,12 +114,17 @@ def calendar(layer, bbox):
     Value = active cell-days per week on a 1.5 km grid.
     """
     west, south, east, north = bbox
+    return weekly(layer, IN_BBOX, {"west": west, "south": south, "east": east, "north": north})
+
+
+def weekly(layer, place, params):
+    """The same for any place: `place` is a condition on the observations `o`, `params` its values."""
     cur = db.cursor()
     first, last = cur.execute("SELECT first_day, last_day FROM meta WHERE layer = ?", [layer]).fetchone()
     rows = cur.execute(
-        f"SELECT date_trunc('week', acq_date)::DATE AS week, sum(d) FROM ({_daily_sql(layer, CALENDAR_CELL_M, 'true')}) "
-        "GROUP BY ALL",
-        {"layer": layer, "west": west, "south": south, "east": east, "north": north}).fetchall()
+        f"SELECT date_trunc('week', acq_date)::DATE AS week, sum(d) FROM "
+        f"({_daily_sql(layer, CALENDAR_CELL_M, 'true', place=place)}) GROUP BY ALL",
+        {"layer": layer} | params).fetchall()
     by_week = dict(rows)
     week = first - datetime.timedelta(days=first.weekday())
     weeks = []

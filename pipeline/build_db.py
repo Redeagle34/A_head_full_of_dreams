@@ -3,7 +3,7 @@
 Run:  python pipeline/build_db.py     (after pipeline/calendar_table.py)
 
 Tables
-  obs    one row per fire observation, for each of the three map layers:
+  obs    one row per fire observation, with its U.S. state, for each of the three map layers:
            layer 'viirs'  every VIIRS detection (375 m)
            layer 'modis'  every MODIS detection (1 km)
            layer 'both'   the harmonized layer in MODIS-equivalent units:
@@ -41,24 +41,24 @@ def build(con):
         WITH native AS (
             SELECT CASE WHEN sensor = 'modis' THEN 'modis' ELSE 'viirs' END AS layer,
                    CASE WHEN sensor = 'modis' THEN lower(satellite) ELSE sensor END AS source,
-                   acq_date, latitude AS lat, longitude AS lon, coalesce(frp, 0) AS frp, 1.0 AS p
+                   acq_date, latitude AS lat, longitude AS lon, coalesce(frp, 0) AS frp, 1.0 AS p, state
             FROM {DET}),
         -- VIIRS -> MODIS-equivalent: sum power per 1.5 km cell and overpass, keep the
         -- strongest overpass per day part, then apply the observation operator.
         looks AS (
             SELECT sensor, acq_date, daynight, acq_time, {row} AS r, {col} AS c,
-                   sum(frp) AS frp, avg(latitude) AS lat, avg(longitude) AS lon
+                   sum(frp) AS frp, avg(latitude) AS lat, avg(longitude) AS lon, mode(state) AS state
             FROM {DET} WHERE sensor LIKE 'viirs%' GROUP BY ALL),
         clusters AS (
             SELECT sensor, acq_date, daynight, r, c, max(frp) AS frp,
-                   arg_max(lat, frp) AS lat, arg_max(lon, frp) AS lon
+                   arg_max(lat, frp) AS lat, arg_max(lon, frp) AS lon, arg_max(state, frp) AS state
             FROM looks GROUP BY ALL),
         equivalent AS (
             SELECT 'both' AS layer, sensor AS source, acq_date, lat, lon, frp,
-                   detect_probability(frp, {MEAN_PIXEL_KM2}, daynight) AS p
+                   detect_probability(frp, {MEAN_PIXEL_KM2}, daynight) AS p, state
             FROM clusters)
         SELECT * FROM native
-        UNION ALL SELECT 'both', source, acq_date, lat, lon, frp, p FROM native WHERE source = 'aqua'
+        UNION ALL SELECT 'both', source, acq_date, lat, lon, frp, p, state FROM native WHERE source = 'aqua'
         UNION ALL SELECT * FROM equivalent WHERE p >= {MIN_PROBABILITY}
         ORDER BY layer, acq_date
     """)
@@ -100,11 +100,28 @@ def check(con):
     assert con.execute("SELECT min(p) >= 0 AND max(p) <= 1 FROM obs").fetchone()[0]
 
 
+LEVELS = ROOT / "data" / "danger" / "danger_levels.parquet"
+
+
+def keep_danger_levels():
+    """pipeline/danger_model.py stores the meaning of the danger levels in this database: carry it over a rebuild."""
+    if not DB.exists():
+        return
+    con = duckdb.connect(str(DB), read_only=True)
+    if con.execute("SELECT count(*) FROM information_schema.tables WHERE table_name = 'danger_levels'").fetchone()[0]:
+        LEVELS.parent.mkdir(parents=True, exist_ok=True)
+        con.execute(f"COPY danger_levels TO '{LEVELS.as_posix()}' (FORMAT parquet)")
+    con.close()
+
+
 def main():
+    keep_danger_levels()
     DB.unlink(missing_ok=True)
     con = duckdb.connect(str(DB))
     build(con)
     check(con)
+    if LEVELS.exists():
+        con.execute(f"CREATE TABLE danger_levels AS SELECT * FROM '{LEVELS.as_posix()}'")
     for r in con.execute("SELECT * FROM meta").fetchall():
         print(*r)
     con.close()

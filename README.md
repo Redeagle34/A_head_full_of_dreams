@@ -51,7 +51,35 @@ unit across the whole period.
   red). Show the fires on screen (largest first) or around a point: choose my
   location, the map centre or a click, and a distance; the most dangerous come
   first, then the nearest. Click a fire for its rating and its details.
+- **Report:** opens the scientific report for the area and dates on screen (below).
 - **State overview:** the earlier state-by-state calendar, at `/states.html`.
+
+## Scientific report
+
+`/report.html`, or the **Report** button on the map. Three choices, then **Build report**:
+
+1. **Places:** any mix of U.S. states (tick them) and areas (search a county, park or
+   city; or come from the map, which adds the area on screen). The report adds the
+   places together and counts nothing twice where they overlap.
+2. **Dates.**
+3. **Sections:** tick what the report should hold.
+
+| Section | What it shows |
+|---|---|
+| Summary | fires, area, largest fire, activity against normal for the same dates |
+| Fire activity by year | the harmonized series per year, 2002 onward |
+| Seasonal pattern | a typical year by week, and the usual fire season |
+| Unusual and record weeks | each week of the period against its time of year |
+| Fires in the period | counts by size, and the 15 largest with their danger level |
+| Danger levels of the fires | fires per level, and what each level meant in 2022-2025 |
+| Vegetation burned | land cover inside the burned-area map |
+| Reported fires the satellites missed | share of agency reports seen, by fire size |
+| MODIS and VIIRS side by side | raw detections of each sensor per year |
+| Methods and limits, Data sources | how the numbers are made and from what |
+
+The report can be printed or saved as PDF, every table can be downloaded as CSV, and
+all its numbers as one JSON file. To add or change a section: `SECTIONS` and one function
+in `server/report.py`, and the function of the same name in `RENDER` in `web/report.js`.
 
 ## Fire danger rating
 
@@ -139,6 +167,8 @@ Added on the branch `fire-events-satellite-globe`. Method, sources and measured 
 | `GET /api/events/{id}/sharp` | Landsat pictures before and after, burn severity (Earth Engine; set `EE_PROJECT` in `.env`) |
 | `GET /api/reported?bbox&start&end&missed` | reported wildfires; `missed` is `satellite`, `model`, `both` or `all` |
 | `GET /api/tle` | orbit data of the satellites (CelesTrak, cached 6 hours) |
+| `GET /api/report/sections` | the sections a report can hold |
+| `POST /api/report` | the report as data. Body: `states` (two-letter codes), `boxes` (`name`, `bbox`), `start`, `end`, `sections` |
 
 ## Repository structure
 
@@ -160,6 +190,7 @@ server/                 FastAPI application
   grid.py               map grid: cell size, cell of a point, cell bounds
   stats.py              typical range, unusual and record weeks
   events.py             the fires: in a map view, around a point, one by one; reported fires
+  report.py             the scientific report: places, sections, fixed text
   fires.py              the danger rating in words: level names, exposure, conditions
   db.py                 read-only DuckDB connection
   config.py             paths, limits, .env loading
@@ -168,6 +199,7 @@ web/
   style.css             map page: appearance
   app.js                map page: behaviour (sections are listed at the top)
   fires.js              map page: the Fires panel, fire markers and the search around a point
+  report.html, report.css, report.js   scientific report page
   states.html           state overview page
   data/                 calendar.json, states.geojson (generated, committed)
 data/                   raw CSV, Parquet, fire.duckdb (generated, not in git)
@@ -226,7 +258,7 @@ Google Earth Engine ──danger_inputs──> data/danger/inputs_place.parquet,
 | `calendar_table.py` | Parquet, U.S. Census state borders | weekly table per state and series; state-tagged detections | about 4 minutes |
 | `harmonize.py` | state-tagged detections | weekly MODIS-equivalent values with standard deviation | seconds |
 | `export_web.py` | calendar and harmonized tables | state overview data with flags and typical ranges | seconds |
-| `build_db.py` | state-tagged detections | `fire.duckdb` with the three map layers (156 MB) | seconds |
+| `build_db.py` | state-tagged detections | `fire.duckdb` with the three map layers, each row with its state (170 MB) | seconds |
 | `fire_events.py` | state-tagged detections | the fires: one row each, their cells, their cell-days | seconds |
 | `danger_fires.py` | fires, state-tagged detections | what VIIRS saw of each fire, day by day | seconds |
 | `danger_inputs.py` | fires, Earth Engine | weather and place inputs per fire | about 17 minutes |
@@ -355,7 +387,8 @@ python pipeline/danger_inputs.py
 python pipeline/danger_model.py
 ```
 
-Run `danger_model.py` again after every `build_db.py`, with the server stopped.
+`build_db.py` keeps the table of danger levels when it is run again, so the model does
+not have to be trained again after it.
 
 ```bash
 python -m uvicorn server.main:app --port 8780

@@ -15,6 +15,8 @@ Routes
   GET /api/tle              orbit data of the fire-watching satellites
   GET /api/events/{id}/sharp  Landsat pictures before and after, and burn severity
   GET /api/reported         reported wildfires, optionally only those missed
+  GET /api/report/sections  the sections a report can hold
+  POST /api/report          the scientific report for chosen places, dates and sections
   GET /                     the website in web/
 """
 import datetime
@@ -24,7 +26,9 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import db, events, fires, queries, satellites
+from pydantic import BaseModel
+
+from . import db, events, fires, queries, report, satellites
 from .config import WEB_DIR
 
 Layer = Literal["viirs", "modis", "both"]
@@ -161,4 +165,31 @@ def tle():
 
 
 # Last, so /api/... routes win.
+class Box(BaseModel):
+    name: str = "Area"
+    bbox: tuple[float, float, float, float]         # west, south, east, north
+
+
+class ReportRequest(BaseModel):
+    states: list[str] = []
+    boxes: list[Box] = []
+    start: datetime.date
+    end: datetime.date
+    sections: list[str] = list(report.SECTIONS)
+
+
+@app.get("/api/report/sections")
+def report_sections():
+    return [{"key": key, "title": title} for key, title in report.SECTIONS.items()]
+
+
+@app.post("/api/report")
+def make_report(request: ReportRequest):
+    try:
+        return report.build(request.states, [b.model_dump() for b in request.boxes], request.start, request.end,
+                            request.sections)
+    except report.BadRequest as e:
+        raise HTTPException(400, str(e))
+
+
 app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

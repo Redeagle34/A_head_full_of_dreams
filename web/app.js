@@ -360,6 +360,11 @@ function wireControls() {
     () => setStatus("Location is not available in this browser."));
   for (const [id, button] of Object.entries(PANELS)) $(button).onclick = () => togglePanel(id);
   $("panelClose").onclick = () => togglePanel("panel", false);
+  // The report page opens with the area on screen and the dates of the time bar (see report.js).
+  $("reportBtn").onclick = () => {
+    const name = $("areaName").textContent.trim() || "Area on screen";
+    location.href = `report.html?${new URLSearchParams({ start: state.start, end: state.end, box: `${name}|${viewParams().bbox}` })}`;
+  };
   $("layerChoices").addEventListener("change", e => { state.layer = e.target.value; refresh(); });
   $("metricChoices").addEventListener("change", e => { state.metric = e.target.value; refresh(); });
   $("baseChoices").addEventListener("change", e => { state.base = e.target.value; setBasemap(); });
