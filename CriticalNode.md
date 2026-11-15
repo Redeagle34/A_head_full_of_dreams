@@ -73,21 +73,45 @@ We do not use Burn-P3. We build a **Monte Carlo fire spread simulator based on a
 
 The minimal version uses only ignition and flammability. Wind and slope are added afterward.
 
+### Grounding of the jump probability
+
+The probability that fire jumps from a burning cell to a neighbor follows the cellular-automaton model of **Alexandridis et al. (2008)**, which is itself a simplification of the physical rate-of-spread model of **Rothermel (1972)**. The split of responsibilities:
+
+- **Rothermel (1972), INT-RP-115** gives the physics: the real rate of spread and intensity as a function of fuel load, fuel moisture, fuel surface-area-to-volume ratio, wind, and slope. It is accurate but heavy to compute per cell.
+- **Alexandridis et al. (2008)** turns that physics into a per-cell jump probability that is cheap enough to run thousands of times in a cellular automaton.
+
+The Alexandridis probability that fire spreads from a burning cell to a neighbor is:
+
+```
+p_burn = p_h * (1 + p_veg) * (1 + p_den) * p_wind * p_slope
+```
+
+| Term | Meaning | Source in this project |
+|---|---|---|
+| `p_h` | Base probability under no wind and flat terrain. Calibrated from past fires. | Fit against FIRMS history |
+| `p_veg` | Vegetation type factor (lookup table by class). | Land cover (MCD12Q1) or NDVI |
+| `p_den` | Vegetation density factor. | NDVI |
+| `p_wind` | `exp[V * (c1 + c2 * (cos(theta) - 1))]`, with V wind speed and theta the angle between wind direction and spread direction. | ERA5 or NASA POWER |
+| `p_slope` | Slope factor. Fire climbs uphill faster. `exp(a_s * slope)` aligned with the spread direction. | DEM (SRTM) |
+
+`c1`, `c2`, and `a_s` are parameters tuned against observed fires, as in Alexandridis et al. (2008) and the recent satellite-data cellular-automaton work (California 2025, using NDVI, wind and slope validated against real burn scars).
+
 ### The spread model
 
 For each simulated fire:
 1. Ignite a cell, chosen at random with probability proportional to its historical ignition density.
-2. The fire tries to pass to neighboring cells. The jump probability to a neighbor depends on: the neighbor's flammability, whether the slope rises toward it, and whether the wind blows in that direction.
+2. The fire tries to pass to neighboring cells. The jump probability is `p_burn` above, combining vegetation, density, wind, and slope.
 3. Repeat the spread until the fire passes to no neighbor (it dies out).
 4. Record which cells burned and which jumps occurred.
 
-Core of the simulator:
+Core of the simulator (the factor functions implement the Alexandridis terms above):
 
 ```python
 import numpy as np
 
-def spread_once(ignition, flammability, slope_factor, wind_factor, rng):
-    """One simulated fire. Returns the burned cells and the i->j jumps."""
+def spread_once(ignition, p_burn, rng):
+    """One simulated fire. p_burn(c, nb) is the Alexandridis jump probability.
+    Returns the burned cells and the i->j jumps."""
     burning = {ignition}
     burned = set()
     frontier = [ignition]
@@ -98,8 +122,8 @@ def spread_once(ignition, flammability, slope_factor, wind_factor, rng):
         for nb in neighbors(c):
             if nb in burned:
                 continue
-            # jump probability: fuel x slope x wind
-            p = flammability[nb] * slope_factor(c, nb) * wind_factor(c, nb)
+            # jump probability p_burn (Alexandridis): veg, density, wind, slope
+            p = p_burn(c, nb)
             if rng.random() < p:
                 jumps.append((c, nb))        # counts toward p_ij
                 if nb not in burning:
@@ -160,40 +184,10 @@ def critical_nodes(G, budget):
 
 The greedy gives a **good, not necessarily optimal** solution. It can get stuck in a local optimum. It is a deliberate trade-off: we exchange the optimality guarantee for speed and simplicity. This is stated plainly in the pitch.
 
----
-
-## 5. Integration with the current project
-
-The module sits on top of the existing architecture without breaking it.
-
-```
-pipeline/
-  layers.py          download and clip land cover, slope, and wind to the 0.1 degree grid
-  simulate.py        run the Monte Carlo -> burn_prob.parquet and spread.parquet
-  critical_nodes.py  read spread.parquet, run the greedy -> critical.parquet
-server/
-  queries.py         + SQL for the new layers
-  main.py            + route GET /api/critical?bbox&budget
-web/
-  app.js             + "critical cells" layer and + "burn probability" layer
-data/
-  layers.parquet, burn_prob.parquet, spread.parquet, critical.parquet
-```
-
-Flow:
-
-```
-FIRMS (ignition density) ┐
-land cover, slope, wind  ┼─ simulate.py ─> burn_prob.parquet
-                         │                 spread.parquet ─ critical_nodes.py ─> critical.parquet
-                         │                                                            │
-                                                                   server /api/critical ─> web (map layer)
-```
-
----
-
 ## References
 
-- Yemshanov et al. (2021), *Detecting critical nodes in forest landscape networks to reduce wildfire spread*, PLOS ONE. [https://doi.org/10.1371/journal.pone.0258060](https://doi.org/10.1371/journal.pone.0258060)
+- Yemshanov et al. (2021), *Detecting critical nodes in forest landscape networks to reduce wildfire spread*, PLOS ONE. [https://doi.org/10.1371/journal.pone.0258060](https://doi.org/10.1371/journal.pone.0258060) (critical node detection, the objective function)
+- Alexandridis, Vakalis, Siettos, Bafas (2008), *A cellular automata model for forest fire spread prediction: The case of the wildfire that swept through Spetses Island in 1990*, Applied Mathematics and Computation 204(2):191-201. (the per-cell jump probability used in the Monte Carlo)
+- Rothermel, R. C. (1972), *A mathematical model for predicting fire spread in wildland fuels*, USDA Forest Service Research Paper INT-RP-115. [https://research.fs.usda.gov/treesearch/32533](https://research.fs.usda.gov/treesearch/32533) (physical rate-of-spread model behind the factors: fuel, moisture, wind, slope)
 - Matsypura, Prokopyev, Zahar (2018), *Wildfire fuel management: network-based models and optimization of prescribed burning*, European Journal of Operational Research 264(2):774-796. (original CND formulation)
 - Parisien et al., Burn-P3, Canadian Forest Service. (reference simulator replaced here by our own Monte Carlo)
