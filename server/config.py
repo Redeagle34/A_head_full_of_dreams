@@ -29,3 +29,4 @@ _load_dotenv()
 FIRMS_MAP_KEY = os.environ.get("FIRMS_MAP_KEY", "")                    # detections after the yearly archive
 EE_PROJECT = os.environ.get("EE_PROJECT", "")                          # Google Earth Engine project id
 EE_SERVICE_ACCOUNT_KEY = os.environ.get("EE_SERVICE_ACCOUNT_KEY", "")  # optional path to a key file
+EE_SERVICE_ACCOUNT_JSON = os.environ.get("EE_SERVICE_ACCOUNT_JSON", "")  # or the text of that file (Vercel)

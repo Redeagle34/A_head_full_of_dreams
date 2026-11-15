@@ -6,12 +6,16 @@ into positions and overpass times with the SGP4 model (satellite.js).
 
 CelesTrak asks clients not to fetch more often than the data changes, so answers
 are cached on disk for six hours. If CelesTrak cannot be reached, the last cache
-is used, and failing that the snapshot committed in web/data/tle.json.
+is used, and failing that the snapshot committed in web/data/tle.json. The cache
+file is data/tle_cache.json, or the path in TLE_CACHE_PATH; if it cannot be
+written (read-only disk), the answer is given without caching.
 
 Run  python -m server.satellites  to refresh that snapshot.
 """
 import datetime
 import json
+import os
+import pathlib
 import urllib.request
 
 from .config import ROOT, WEB_DIR
@@ -20,7 +24,7 @@ from .config import ROOT, WEB_DIR
 SATELLITES = {"terra": 25994, "aqua": 27424, "suomi-npp": 37849,
               "noaa-20": 43013, "noaa-21": 54234, "landsat-8": 39084}
 URL = "https://celestrak.org/NORAD/elements/gp.php?CATNR={}&FORMAT=TLE"
-CACHE = ROOT / "data" / "tle_cache.json"
+CACHE = pathlib.Path(os.environ.get("TLE_CACHE_PATH", ROOT / "data" / "tle_cache.json"))
 SNAPSHOT = WEB_DIR / "data" / "tle.json"
 MAX_AGE = datetime.timedelta(hours=6)
 
@@ -55,8 +59,11 @@ def tle():
         fresh = _download()
     except Exception:                       # network down, CelesTrak busy, odd answer
         return cached or _read(SNAPSHOT) or {"fetched": None, "source": "none", "satellites": {}}
-    CACHE.parent.mkdir(parents=True, exist_ok=True)
-    CACHE.write_text(json.dumps(fresh), encoding="utf-8")
+    try:
+        CACHE.parent.mkdir(parents=True, exist_ok=True)
+        CACHE.write_text(json.dumps(fresh), encoding="utf-8")
+    except OSError:                         # read-only disk
+        pass
     return fresh
 
 

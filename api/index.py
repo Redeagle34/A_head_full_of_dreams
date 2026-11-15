@@ -1,8 +1,11 @@
 """Vercel entry point: the same application as `uvicorn server.main:app`.
 
 Vercel refuses files above 100 MB, so data/fire.duckdb is uploaded in pieces
-(data/deploy/fire.duckdb.part*, made with `split -b 90M`) and joined here in
-/tmp when the function starts.
+(data/deploy/fire.duckdb.part*, made by pipeline/prepare_deploy.py) and joined
+here in /tmp when the function starts. /tmp is the only folder a Vercel function
+can write to, so the cache of satellite orbits goes there too.
+
+Answers are compressed: a Vercel function may not answer with more than 4.5 MB.
 """
 import os
 import pathlib
@@ -23,5 +26,10 @@ if parts:
                     shutil.copyfileobj(src, out)
         tmp.replace(target)
     os.environ["FIRE_DB_PATH"] = str(target)
+os.environ.setdefault("TLE_CACHE_PATH", "/tmp/tle_cache.json")
 
-from server.main import app  # noqa: E402,F401
+from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
+
+from server.main import app  # noqa: E402
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
