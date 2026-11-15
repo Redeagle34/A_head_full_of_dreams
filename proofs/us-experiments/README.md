@@ -301,3 +301,108 @@ Points where the work in this repository and in this folder differs:
   fires, no fire potential and no damage estimate.
 
 Its repository may have changed since we read it.
+
+## 12. All ideas in one table
+
+Status words: **measured** = numbers in this folder; **trained** = model saved
+in `models/`; **source checked** = the data answered on 2026-11-14 but nothing
+is built; **idea** = not started. "Why" gives the measurement or source behind
+each idea; numbers come from sections 2 to 5.
+
+| # | Idea | Why | For whom | Data it needs | Status | Where |
+|---|---|---|---|---|---|---|
+| 1 | Harmonized MODIS + VIIRS calendar with unusual weeks | The challenge asks for it. Naive counts jump 3.42× when VIIRS arrives, so an unharmonized record shows a false rise | everyone | FIRMS archive | measured (and built in this repository) | section 2 |
+| 2 | Count active cell-days, not detections, before converting | Removes a third of the sensor gap before any model (ratio 5.86 → 4.01) and the ratio varies less | scientists | FIRMS archive | measured | section 2 |
+| 3 | Region and year correction on top of the observation operator | The operator is 16% low in the East and 18% high in the West; a user comparing regions would be misled | scientists | FIRMS overlap years | measured, not applied | section 2, `results/obsop_region_month.csv` |
+| 4 | Power-law conversion as a simple cross-check | Cheap independent check: error 0.119 against 0.139 for a fixed ratio on held-out years | scientists | FIRMS overlap years | measured | `results/conversion_models.json` |
+| 5 | State the orbit-drift limit after 2021 | Every method drifts 5–13% after 2021; saying so is more honest than hiding it | scientists | – | measured as a symptom, cause not isolated | section 2 |
+| 6 | Check against reported fires (independent ground truth) | Scoring a MODIS-equivalent layer against MODIS is circular; agency reports depend on neither sensor | scientists, judges | NIFC WFIGS | measured | section 3 |
+| 7 | "What satellites miss": detection rate by fire size and region | 2% of fires under 1 acre are seen and 72% over 10,000: a blank map does not mean no fire | responders, scientists | WFIGS + FIRMS | measured | section 3 |
+| 8 | Reported-but-not-seen fire markers on the map | Reports appear a median of 9 minutes after discovery, before most satellite passes | responders | WFIGS live + FIRMS live | source checked | section 8 |
+| 9 | Time from discovery to first detection, per region | Median 1.2 h, slowest tenth over 20.9 h: tells a responder how far to trust the map for new starts | responders | WFIGS + FIRMS | measured (national) | section 3 |
+| 10 | Fire-blind zones: cloud × time between passes × danger | Even fires over 10,000 acres go unmatched 28% of the time within 3 days; cloud and gaps between passes are a likely part of the reason. Not measured | early warning | cloud mask, orbit tracks, gridMET | idea | section 9 |
+| 11 | Fill blind zones with data satellites do not give: reports, lightning, model risk | Where the satellites are blind, other evidence is the only evidence | early warning | WFIGS, GOES GLM, models | source checked | sections 8, 9 |
+| 12 | "How sure are we" badge per area | One plain sentence per area turns sections 2 and 3 into something a non-specialist can act on | everyone | ideas 7 and 10 | idea | section 9 |
+| 13 | Burning now: live detections, perimeters | The map stops at 2025; the named users work on today's fires | responders | FIRMS area API, WFIGS perimeters, FEDS | source checked | section 8 |
+| 14 | Red Flag Warning banner | The official warning responders already act on; showing it avoids contradicting it | responders | api.weather.gov | source checked | section 8 |
+| 15 | Today's fire potential (chance a fire starts) | 0.893 against 0.733 for the standard index on years never seen in training | early warning, firefighters | gridMET + static layers | trained, not calibrated | section 4, `models/` |
+| 16 | Regional models instead of one national model | A model trained elsewhere drops to 0.72–0.79; trained in the region it reaches 0.86–0.90. Agrees with Shmuel et al. 2025 | scientists | same | measured, not saved | section 4 |
+| 17 | Three-question decision tree as the plain "why" | Three questions reach 0.78, above the standard index, and can be read aloud. Same approach as Shmuel et al. 2025 | firefighters | same | measured (0.78) | `results/prediction_results.json` |
+| 18 | Fire potential in the five fire-danger words, plus "× normal" | Firefighters already use the five levels; a new scale would need training | firefighters | idea 15 | idea | section 9 |
+| 19 | This year against the usual range (PocketCard-style chart) | The NWCG PocketCard is the format crews are trained to read | firefighters | gridMET history | idea | section 9 |
+| 20 | Top reasons for today's level (driest fuels, wind, no rain) | A level without reasons is not trusted; the strongest inputs are already known (fuel moisture, humidity, rain) | firefighters | model explanations | measured nationally, not per place | `figures/pred_shap_A_B.png` |
+| 21 | Chance a start becomes large (100 / 1,000 acres) | 0.79–0.81 where the standard index is near chance (0.54): most starts stay small, and this separates them | responders | same as 15 | trained | section 4, `models/` |
+| 22 | People and buildings exposed if it burns | Built-up surface within 5 km lifts structure-loss prediction from 0.71 to 0.78; flame-length layers add nothing | emergency managers | GHSL built-up within 5 km | measured | section 5, `damage-research.md` |
+| 23 | Vegetation damage if it burns | High-severity share is 0.2% in grass, 1.6% in shrub, 10.2% in forest, and 7.5% versus 23% by fire regime within forest | land managers | land cover type × LANDFIRE fire regime, MTBS | measured | section 5 |
+| 24 | Expected impact = start × large × damage, shown as three factors | The standard risk form (likelihood × consequence, Scott et al. 2013); one number alone hides why a place is red | everyone | ideas 15, 21, 22, 23 | idea, parts ready | section 5 |
+| 25 | Good fire versus bad fire | Low-severity fire in a frequent-fire landscape is beneficial (Steel et al. 2015); treating all fire as bad misleads land managers | land managers | LANDFIRE fire regime, WFIGS prescribed-burn flag | measured in part | sections 3, 5 |
+| 26 | Prescribed burns shown apart from wildfires | Prescribed burns are seen five times as often as wildfires, so they inflate the calendar where burning is planned | land managers, scientists | WFIGS `RX` | measured (seen 37% versus 7%) | section 3 |
+| 27 | Good-fire windows: days suitable for prescribed burning | Land managers are a named audience and need the opposite of a danger alert. Reference: Matsypura et al. 2018 (abstract only) | land managers | gridMET + fire regime | idea | section 9 |
+| 28 | Nearest fire stations | Requested as critical for responders; the points exist as open data | firefighters | OpenStreetMap | source checked, completeness unknown | section 8 |
+| 29 | Suggested priority when several fires burn: chance of large × exposed, closest stations | When resources are short the question is which fire first; the two factors that answer it are ideas 21 and 22 | dispatch, responders | ideas 21, 22, 28 | idea | section 9 |
+| 30 | Ranked list "highest potential today" | Early-warning staff scan many areas; a ranked list is faster than panning a map | early warning | idea 15 | idea | – |
+| 31 | Smoke: plume outlines as context and as a hint of fire under cloud | Smoke is visible when the fire under it is not, and it affects crews and the public directly | responders | NOAA HMS polygons | source checked | section 8 |
+| 32 | Lightning as a cause of new starts | Natural causes are 30% of wildfire reports with a known cause in 2023–2024 (9,236 of 30,491) | early warning | GOES GLM | source checked | section 8 |
+| 33 | Landsat 30 m detections for close-up views | 30 m shows the fire edge that 375 m and 1 km cannot | responders, scientists | FIRMS `LANDSAT_NRT` | source checked | section 8 |
+| 34 | Landsat check of the pre-2012 MODIS-only years | Before 2012 there is no VIIRS to check MODIS against; Landsat is the only finer record | scientists | Landsat 5 / 7 Collection 2 | proof of concept (5 of 5 scenes) | `results/landsat5_fire_poc_2007.csv` |
+| 35 | Geostationary detections between polar passes | Polar satellites pass a few times a day; the slowest tenth of first detections takes over 20.9 h | responders | FIRMS `GOES_NRT`, GOES FDCF | source checked | section 8 |
+| 36 | Briefing for the area on screen, in a fixed order | The named users ask 'what about my area today', not 'which layer shall I turn on' | everyone | all of the above | idea | section 9 |
+| 37 | Click any unit: county, grid cell or drawn area | The area calendar already works for any box, so the cost is small | everyone | area calendar already supports any box | idea | – |
+| 38 | Month and year views and "× median" next to the weekly calendar | Weekly cells are noisy for small areas; managers plan by season and year | scientists, managers | calendar table | idea | – |
+| 39 | Data page for scientists: method, validation, per-sensor series, downloads | Scientists are a named audience and need the method and its errors, not the briefing | scientists | this folder | numbers ready | sections 2–5 |
+| 40 | Short scroll story for first-time visitors and judges | A first-time visitor needs one worked example to understand the units | judges, public | one example fire | idea | – |
+| 41 | Method works outside the U.S. with global layers | The challenge is global; these inputs exist worldwide. Not tested | global users | GHSL, GPW, FIRMS, MODIS products | not tested | section 8 |
+
+## 13. Research used, and what each decision rests on
+
+How much of each paper was read is stated, because a title is not evidence.
+
+**Read in full or in the relevant parts**
+
+| Source | What we took from it | Decision it supports |
+|---|---|---|
+| Sofiev & Kouznetsov 2026, *Geosci. Model Dev.* 19:10123 (CC BY 4.0) | detection-limit and detection-probability formulas and parameters for MODIS and VIIRS | convert VIIRS to MODIS-equivalent with a physical operator, not a ratio; direction VIIRS → MODIS because a missed fire cannot be recreated |
+| Shmuel, Lazebnik, Heifetz, Glickman & Price 2025, *npj Natural Hazards*, doi:10.1038/s44304-025-00126-y | regional fire-weather models beat global ones (0.79 → 0.86 with one decision tree per country) | test regional against national models (idea 16); offer a small decision tree as the readable version (idea 17); use a single index as the baseline to beat |
+| Parks et al. 2018, *Environ. Res. Lett.* 13:044037 | drivers of high-severity fire in western U.S. forests: live fuel carries 53% of the influence, fire weather 23%, climate 14%, terrain 10% | predict vegetation damage from vegetation type and fire regime (idea 23) |
+| SHIFT repository and its limits file (Apache-2.0) | how a ratio-based calendar is built and where its authors say it is weak | section 11 |
+| FRP_OOp repository (GPL-3) | checked the published parameters against the code; code not copied | same as Sofiev & Kouznetsov |
+| Team repository pipeline and server | – | section 6 |
+
+**Abstract only** (details and DOIs in `damage-research.md`)
+
+| Source | Point used |
+|---|---|
+| Dillon et al. 2011; Birch et al. 2015 | terrain and existing vegetation cover dominate burn severity |
+| Parks et al. 2019 | how satellite severity indices relate to field severity |
+| Heward et al. 2013 | fire radiative power per pixel is not a reliable severity measure → we do not turn FRP into damage |
+| Syphard et al. 2012; Knapp et al. 2021 | structure loss depends on housing arrangement and neighbouring structures → use built-up surface nearby (idea 22) |
+| Higuera et al. 2023 | rising structure loss in the West, mostly from human-caused fires |
+| Steel et al. 2015 | in frequent-fire forests, severity rises with time since last fire → good versus bad fire (idea 25) |
+| St. Denis et al. 2023, *Sci. Data* 10:112 | the ICS-209-PLUS incident data set used for the structure-loss test |
+
+**Title or data description only**: Scott, Thompson & Calkin 2013 (risk =
+likelihood × consequence, the shape of idea 24); Finney et al. 2011;
+Radeloff et al. 2018; Thode et al. 2011; Wooster et al. 2005;
+Schroeder et al. 2014; Abatzoglou 2013 (gridMET).
+
+**Our own measurements that decided something**
+
+| Decision | Evidence |
+|---|---|
+| Count cell-days, not detections | ratio 5.86 → 4.01 and steadier (section 2) |
+| Do not use modelled flame length as severity or as structure risk | scores 0.32–0.39 against MTBS; adds nothing to structure loss (section 5) |
+| Do not use past satellite fire frequency as a predictor | 0.893 with and without it (section 4) |
+| Do not present the fire-start score as a percentage yet | reliability table in `models/MODEL_CARDS.md` |
+| Train on reports, not on satellite detections | satellites see 2% of the smallest fires (section 3) |
+| gridMET for weather | 4 km, daily since 1979, already contains ERC and fuel moisture for the U.S. |
+| Split by year, not at random | neighbouring days and places are near-copies; a random split would flatter the score |
+
+**Saved but not used**
+
+| Source | Why not |
+|---|---|
+| Zeng et al. 2026, *Fire* 9:511, doi:10.3390/fire9110511 (review of 811 papers on machine learning for forest-fire prediction) | read only after the models were trained. Its conclusions (tree ensembles strong for susceptibility; open problems are class imbalance, transfer between regions, interpretability) agree with what we found, but it did not shape any choice |
+| Sengupta & Woodford 2025, *Appl. Comput. Geosci.*, doi:10.1016/j.acags.2025.100266 (review of explainable machine learning for wildfire prediction) | could not be opened; not read |
+| Matsypura, Prokopyev & Zahar 2018, *Eur. J. Oper. Res.*, doi:10.1016/j.ejor.2017.06.050 (optimizing prescribed burning) | title and abstract only; a candidate reference for idea 27, nothing built on it |
+| Shmuel et al. code files | not used; our models are written separately |
+| NASA GFWED fire-weather database | considered for weather; gridMET chosen for the U.S. (finer grid, includes ERC). GFWED remains the option for use outside the U.S. |
