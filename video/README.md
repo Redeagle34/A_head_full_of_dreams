@@ -6,18 +6,15 @@ La animación es una página web donde cada fotograma depende solo del tiempo (`
 - `GUION.md`: guión con tiempos y texto para grabar la voz.
 - `out/video_1080p60.mp4`: el video renderizado.
 
-## Poner las fotos de las 5 personas
+## Fotos de las personas
 
-1. Guarda las fotos como `assets/people/persona1.png` … `persona5.png` (también sirve `.jpg`). Se recortan solas para llenar el marco; conviene que sean verticales.
-2. Cambia los nombres en `PEOPLE`, al inicio de `main.js` (`'Integrante 1'`, etc.). Ahí también están la posición, el tamaño y el lado por el que entra cada persona.
+Ya están puestas: `assets/people/persona1.png` … `persona4.png`, recortadas sin fondo con `tools/cutout.py` (sin modelos de IA: superpíxeles + color de la pared). Para cambiar una foto, recórtala con
 
-| # | Entra por | Lugar |
-|---|---|---|
-| 1 | derecha | abajo a la derecha (al frente) |
-| 2 | derecha | detrás de la 1, más arriba |
-| 3 | izquierda | abajo a la izquierda (al frente) |
-| 4 | izquierda | detrás de la 3, más arriba |
-| 5 | abajo | centro, delante de la Tierra |
+```bash
+python A_head_full_of_dreams/video/tools/cutout.py foto.jpg A_head_full_of_dreams/video/assets/people/persona1.png
+```
+
+Posición, tamaño, lado de entrada y color del papel de cada persona: `PEOPLE`, al inicio de `main.js`.
 
 ## Ver y renderizar
 

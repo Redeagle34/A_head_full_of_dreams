@@ -17,12 +17,11 @@ const R0 = 280; // chalk globe radius (px)
 
 // ------------------------------------------------------------------ people (placeholders)
 // Put photos in assets/people/persona1.png ... persona5.png (or .jpg) and change the names.
-const PEOPLE = [
-  { name: 'Integrante 1', x: 1560, y: 790, w: 250, h: 310, rot: 0.05, from: 'right', t: 10.25, back: false },
-  { name: 'Integrante 2', x: 1735, y: 510, w: 200, h: 250, rot: -0.07, from: 'right', t: 10.55, back: true },
-  { name: 'Integrante 3', x: 360, y: 790, w: 250, h: 310, rot: -0.05, from: 'left', t: 10.85, back: false },
-  { name: 'Integrante 4', x: 185, y: 510, w: 200, h: 250, rot: 0.07, from: 'left', t: 11.15, back: true },
-  { name: 'Integrante 5', x: 960, y: 935, w: 230, h: 280, rot: -0.02, from: 'bottom', t: 11.45, back: false },
+const PEOPLE = [ // img: assets/people/personaN.png (background removed), h: height in px, bottom-anchored
+  { img: 3, x: 185, h: 640, from: 'left', t: 11.1, rot: -0.04, paper: '#f3e7cf' },
+  { img: 2, x: 1610, h: 770, from: 'right', t: 11.35, rot: 0.035, paper: '#dfe9f2' },
+  { img: 1, x: 560, h: 450, from: 'left', t: 11.6, rot: 0.03, paper: '#f6d9c4' },
+  { img: 4, x: 960, h: 335, from: 'bottom', t: 11.85, rot: -0.015, paper: '#d9efd9' },
 ];
 
 // ------------------------------------------------------------------ math
@@ -234,6 +233,14 @@ const ICONS = {
     { pts: resample([[0, -0.58], [0, -0.24]], 0.05) }, { pts: resample([[0, 0.24], [0, 0.58]], 0.05) },
     { pts: resample([[-0.58, 0], [-0.24, 0]], 0.05) }, { pts: resample([[0.24, 0], [0.58, 0]], 0.05) },
   ],
+  chart: [
+    { pts: resample([[-0.5, -0.48], [-0.5, 0.45], [0.52, 0.45]], 0.05) },
+    { pts: resample([[-0.42, 0.3], [-0.22, 0.08], [-0.04, 0.17], [0.04, 0.04]], 0.04), w: 1.1 },
+    { pts: resample([[0.1, -0.04], [0.18, -0.15]], 0.04) }, { pts: resample([[0.25, -0.22], [0.33, -0.32]], 0.04) }, { pts: resample([[0.4, -0.38], [0.48, -0.48]], 0.04) },
+  ],
+  bolt: [
+    { pts: resample([[0.1, -0.56], [-0.3, 0.06], [-0.02, 0.06], [-0.13, 0.56], [0.31, -0.1], [0.03, -0.1], [0.1, -0.56]], 0.05) },
+  ],
   lens: [
     { pts: circlePts(-0.08, -0.08, 0.32, 48), closed: true },
     { pts: resample([[0.16, 0.16], [0.48, 0.48]], 0.05), w: 2.2 },
@@ -290,85 +297,105 @@ function chalkGlobe(ctx, t, cx, cy, R, alpha, flameAlpha = 1) {
 }
 
 // ------------------------------------------------------------------ scene 1 data
-const FL = [ // x, baseY, size, tEnter, from, palette
-  [520, 650, 175, 0.08, 'bottom', 0], [1400, 650, 195, 0.28, 'bottom', 1], [960, 668, 240, 0.5, 'bottom', 0],
-  [200, 640, 145, 0.78, 'left', 2], [1720, 640, 155, 0.98, 'right', 3],
-  [745, 640, 120, 2.3, 'bottom', 1], [1180, 642, 132, 2.42, 'bottom', 2], [360, 662, 100, 2.56, 'left', 3], [1570, 662, 108, 2.7, 'right', 0],
-  [62, 672, 92, 2.84, 'left', 0], [1862, 672, 92, 2.98, 'right', 1], [635, 676, 78, 3.12, 'bottom', 2], [1290, 676, 84, 3.24, 'bottom', 3],
+const TITLE = { text: 'CADA VEZ MÁS INCENDIOS', y: 520, size: 150 };
+const titleC = document.createElement('canvas'); titleC.width = W; titleC.height = H; const ttx = titleC.getContext('2d');
+let TITLE_W = 1600;
+function drawTitle(ctx, reveal, alpha) { // textured chalk letters: warm gradient, hatch texture, chalk outline
+  if (reveal <= 0 || alpha <= 0) return;
+  const { text, y, size } = TITLE;
+  ttx.clearRect(0, 0, W, H);
+  ttx.font = `700 ${size}px "Cabin Sketch"`; ttx.textAlign = 'center'; ttx.textBaseline = 'middle';
+  TITLE_W = ttx.measureText(text).width;
+  ttx.fillStyle = '#fff'; ttx.fillText(text, CX, y);
+  ttx.globalCompositeOperation = 'source-in';
+  const g = ttx.createLinearGradient(0, y - size * 0.45, 0, y + size * 0.45);
+  g.addColorStop(0, CH.yellow); g.addColorStop(0.5, CH.orange); g.addColorStop(1, CH.red);
+  ttx.fillStyle = g; ttx.fillRect(0, y - size, W, size * 2);
+  ttx.globalCompositeOperation = 'destination-out';
+  ttx.strokeStyle = 'rgba(0,0,0,0.42)'; ttx.lineWidth = 2.2; ttx.beginPath();
+  for (let k = -200, i = 0; k < W; k += 7, i++) { const o = jit(i, 4) * 1.4; ttx.moveTo(k + o, y + size * 0.6); ttx.lineTo(k + o + size * 1.2, y - size * 0.6); }
+  ttx.stroke();
+  ttx.fillStyle = 'rgba(0,0,0,0.5)';
+  for (let i = 0; i < 450; i++) { ttx.fillRect(CX - TITLE_W / 2 + hash(i * 3.1 + BOIL) * TITLE_W, y - size * 0.5 + hash(i * 7.7 + BOIL) * size, 2, 2); }
+  ttx.globalCompositeOperation = 'source-over';
+  ttx.lineJoin = 'round'; ttx.strokeStyle = CH.white;
+  ttx.globalCompositeOperation = 'destination-over'; ttx.fillStyle = 'rgba(40,10,0,0.55)'; ttx.fillText(text, CX + 5, y + 6);
+  ttx.globalCompositeOperation = 'source-over';
+  ttx.lineWidth = 1.1; ttx.globalAlpha = 0.55; ttx.strokeText(text, CX + jit(1, 1) * 1.2, y + jit(1, 2) * 1.2);
+  ttx.globalAlpha = 1;
+  const L = CX - TITLE_W / 2 - 20, Wd = (TITLE_W + 40) * clamp(reveal);
+  ctx.save(); ctx.globalAlpha *= alpha; ctx.drawImage(titleC, L, 0, Wd, H, L, 0, Wd, H); ctx.restore();
+}
+const FL = [ // flames standing on the letters: x, size, tEnter, palette
+  [270, 120, 0.15, 0], [640, 150, 0.35, 1], [1045, 185, 0.55, 0], [1290, 150, 0.75, 3], [1650, 125, 0.95, 2],
+  [455, 85, 2.25, 2], [770, 95, 2.4, 3], [1120, 100, 2.55, 1], [1470, 90, 2.7, 0], [150, 70, 2.85, 1], [1780, 70, 3.0, 3],
 ];
+const FLAME_BASE = TITLE.y - TITLE.size * 0.36;
 const WORDS = [ // text, t, x, color, icon
-  ['PREVENIR', 4.0, 400, CH.green, 'shield'], ['CONTROLAR', 6.0, 960, CH.blue, 'target'], ['ANALIZAR', 8.0, 1520, CH.yellow, 'lens'],
+  ['PREDECIR', 4.0, 420, CH.blue, 'chart'], ['PREVENIR', 6.0, 960, CH.green, 'shield'], ['ACTUAR', 8.0, 1500, CH.orange, 'bolt'],
 ];
-function scene1(ctx, t, alpha) {
-  if (alpha <= 0) return;
-  // flames
-  FL.forEach(([x, y, s, te, from, pal], i) => {
-    const p = prog(t, te, te + 0.65); if (p <= 0) return;
-    const e = E.outBack(p);
-    let dx = 0, dy = 0;
-    if (from === 'bottom') dy = (1 - e) * 560; else if (from === 'left') dx = -(1 - e) * (x + 260); else dx = (1 - e) * (W - x + 260);
-    const breathe = 1 + Math.sin(t * 2.3 + i) * 0.035;
-    const sc = s * lerp(0.35, 1, clamp(p * 1.6)) * breathe;
-    drawFlame(ctx, x + dx, y + dy, sc, t + i * 0.7, i + 1, alpha, pal);
-    drawSparks(ctx, x + dx, y + dy, sc, t, i + 1, alpha * clamp(p * 2 - 1));
+function scene1(ctx, t, alpha, titleXf) {
+  if (alpha > 0) FL.forEach(([x, s, te, pal], i) => {
+    const p = prog(t, te, te + 0.55); if (p <= 0) return;
+    const e = E.outBack(p), breathe = 1 + Math.sin(t * 2.3 + i) * 0.04;
+    const sc = s * lerp(0.1, 1, e) * breathe;
+    drawFlame(ctx, x, FLAME_BASE + 6, sc, t + i * 0.7, i + 1, alpha, pal);
+    drawSparks(ctx, x, FLAME_BASE + 6, sc, t, i + 1, alpha * clamp(p * 2 - 1));
   });
-  // ground line under the fire row
-  drawPoly(ctx, resample([[40, 690], [1880, 690]], 24), { w: 3, color: CH.white, amp: 1.6, alpha: alpha * 0.55, upto: E.outCubic(prog(t, 0.2, 1.3)), seed: 70 });
-  // title
-  chalkText(ctx, 'CADA VEZ MÁS INCENDIOS', CX - 40, 200, { size: 116, reveal: E.inOutSine(prog(t, 0.7, 2.0)), seed: 1, alpha });
-  drawPoly(ctx, resample([[380, 280], [960, 286], [1460, 278]], 20), { w: 5, color: CH.orange, amp: 2, alpha, upto: E.outCubic(prog(t, 1.95, 2.45)), seed: 90 });
-  // up-arrow next to the title ("more and more")
-  const ap = E.outCubic(prog(t, 2.2, 2.8));
-  drawPoly(ctx, resample([[1690, 250], [1745, 195], [1780, 218], [1850, 135]], 10), { w: 6, color: CH.red, amp: 1.5, alpha, upto: ap, seed: 95 });
-  drawPoly(ctx, resample([[1810, 133], [1852, 133], [1852, 177]], 8), { w: 6, color: CH.red, amp: 1.5, alpha: alpha * clamp(ap * 3 - 2), seed: 99 });
-  // three keywords with icons
+  ctx.save(); if (titleXf) titleXf(ctx);
+  drawTitle(ctx, E.inOutSine(prog(t, 0.6, 2.0)), titleXf ? 1 : alpha);
+  ctx.restore();
+  if (alpha <= 0) return;
   WORDS.forEach(([word, tw, x, color, icon], i) => {
-    const pIcon = E.outCubic(prog(t, tw, tw + 0.6));
-    const pop = E.outBack(prog(t, tw, tw + 0.35));
-    drawIcon(ctx, icon, x, 790, 120 * lerp(0.6, 1, pop), pIcon, color, 300 + i * 100);
-    chalkText(ctx, word, x, 918, { size: 76, reveal: E.inOutSine(prog(t, tw + 0.25, tw + 0.9)), seed: 20 + i, color, alpha });
+    const pop = E.outBack(prog(t, tw, tw + 0.25));
+    if (pop <= 0) return;
+    drawIcon(ctx, icon, x, 790, 130 * lerp(0.4, 1, pop), E.outCubic(prog(t, tw, tw + 0.28)), color, 300 + i * 100);
+    chalkText(ctx, word, x, 915, { size: 74, reveal: E.outCubic(prog(t, tw + 0.08, tw + 0.38)), seed: 20 + i, color, alpha });
   });
 }
 
 // ------------------------------------------------------------------ people cards
-function personPos(P, i, t) {
-  const pin = E.outBack(prog(t, P.t, P.t + 0.75));
-  const pout = E.inCubic(prog(t, 14.0 + i * 0.06, 14.55 + i * 0.06));
-  let x0 = P.x, y0 = P.y;
-  if (P.from === 'right') x0 = W + P.w; else if (P.from === 'left') x0 = -P.w; else y0 = H + P.h;
+function personPos(P, i, t, img) {
+  const pin = E.outBack(prog(t, P.t, P.t + 0.7));
+  const pout = E.inCubic(prog(t, 14.0 + i * 0.06, 14.5 + i * 0.06));
+  const w = (P.h * img.width) / img.height;
+  const y = H + 24 - P.h / 2;
+  let x0 = P.x, y0 = y;
+  if (P.from === 'right') x0 = W + w; else if (P.from === 'left') x0 = -w; else y0 = H + P.h;
   const k = pin * (1 - pout);
-  return { x: lerp(x0, P.x, k), y: lerp(y0, P.y, k), rot: P.rot + (1 - k) * (P.from === 'left' ? -0.35 : P.from === 'right' ? 0.35 : 0.1), vis: pin > 0 && k > 0.001 };
+  return { x: lerp(x0, P.x, k), y: lerp(y0, y, k), w, rot: P.rot + (1 - k) * (P.from === 'left' ? -0.25 : P.from === 'right' ? 0.25 : 0.05), vis: pin > 0 && k > 0.001 };
+}
+const PAPER = new Map();
+function paperPts(i, w, h) { // torn edges, fixed per person (real paper does not boil)
+  const key = `${i}:${Math.round(w)}:${Math.round(h)}`; if (PAPER.has(key)) return PAPER.get(key);
+  const r = mulberry32(40 + i), pts = [], step = 13;
+  const edge = (x0, y0, x1, y1, nx, ny) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / step)); for (let k = 0; k < n; k++) { const d = r() * 7; pts.push([lerp(x0, x1, k / n) + nx * d, lerp(y0, y1, k / n) + ny * d]); } };
+  edge(-w / 2, -h / 2, w / 2, -h / 2, 0, 1); edge(w / 2, -h / 2, w / 2, h / 2, -1, 0); edge(w / 2, h / 2, -w / 2, h / 2, 0, -1); edge(-w / 2, h / 2, -w / 2, -h / 2, 1, 0);
+  PAPER.set(key, pts); return pts;
 }
 function drawPeople(cx, t, imgs) {
   PEOPLE.forEach((P, i) => {
-    const { x, y, rot, vis } = personPos(P, i, t);
+    const img = imgs[P.img - 1]; if (!img) return;
+    const { x, y, w, rot, vis } = personPos(P, i, t, img);
     if (!vis) return;
-    const a = P.back ? 0.88 : 1, w = P.w, h = P.h, pad = 14, lab = 54;
-    const corners = [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2], [-w / 2, -h / 2]];
-    const inner = [[-w / 2 + pad, -h / 2 + pad], [w / 2 - pad, -h / 2 + pad], [w / 2 - pad, h / 2 - lab], [-w / 2 + pad, h / 2 - lab], [-w / 2 + pad, -h / 2 + pad]];
-    // photo layer
-    phx.save(); phx.translate(x, y); phx.rotate(rot);
-    phx.fillStyle = 'rgba(14,22,19,0.92)'; phx.fillRect(-w / 2, -h / 2, w, h);
-    const iw = w - pad * 2, ih = h - pad - lab;
-    if (imgs[i]) {
-      const im = imgs[i], sc = Math.max(iw / im.width, ih / im.height);
-      phx.save(); phx.beginPath(); phx.rect(-w / 2 + pad, -h / 2 + pad, iw, ih); phx.clip();
-      phx.drawImage(im, -w / 2 + pad + (iw - im.width * sc) / 2, -h / 2 + pad + (ih - im.height * sc) / 2, im.width * sc, im.height * sc);
-      phx.restore();
-    }
+    const h = P.h;
+    const pw = w * 0.92, ph = h * 0.78, py = -h * 0.08;
+    phx.save(); phx.translate(x, y); phx.rotate(rot * 2.2); phx.translate(0, py);
+    const pp = paperPts(i, pw, ph);
+    phx.shadowColor = 'rgba(0,0,0,0.45)'; phx.shadowBlur = 26; phx.shadowOffsetX = 8; phx.shadowOffsetY = 14;
+    phx.fillStyle = P.paper; phx.beginPath(); pathOf(phx, pp); phx.fill();
+    phx.shadowColor = 'transparent';
+    phx.globalAlpha = 0.08; phx.strokeStyle = '#6b5a3a'; phx.lineWidth = 1;
+    phx.beginPath(); for (let k = -ph / 2 + 22; k < ph / 2; k += 22) { phx.moveTo(-pw / 2 + 10, k); phx.lineTo(pw / 2 - 10, k); } phx.stroke();
+    phx.globalAlpha = 1;
+    phx.fillStyle = 'rgba(255,240,190,0.75)'; phx.save(); phx.translate(0, -ph / 2); phx.rotate(-0.08); phx.fillRect(-46, -14, 92, 28); phx.restore();
     phx.restore();
-    // chalk layer
-    cx.save(); cx.translate(x, y); cx.rotate(rot);
-    drawPoly(cx, resample(corners, 14), { w: 4, color: CH.white, amp: 1.5, alpha: a, seed: 700 + i * 60 });
-    drawPoly(cx, resample(inner, 14), { w: 2, color: CH.white, amp: 1.2, alpha: a * 0.6, seed: 760 + i * 60, passes: 1 });
-    if (!imgs[i]) { // placeholder silhouette
-      const top = -h / 2 + pad, cxp = 0, hr = iw * 0.17;
-      drawPoly(cx, circlePts(cxp, top + ih * 0.38, hr, 36), { w: 3.5, color: CH.white, amp: 1.2, alpha: a * 0.85, closed: true, seed: 800 + i * 50 });
-      const sh = []; for (let k = 0; k <= 24; k++) { const an = Math.PI + (k / 24) * Math.PI; sh.push([cxp + Math.cos(an) * iw * 0.36, top + ih + Math.sin(an) * ih * 0.32]); }
-      drawPoly(cx, sh, { w: 3.5, color: CH.white, amp: 1.2, alpha: a * 0.85, seed: 840 + i * 50 });
-      hatch(cx, c => c.arc(cxp, top + ih * 0.38, hr, 0, 7), [-hr, top + ih * 0.38 - hr, hr, top + ih * 0.38 + hr], { spacing: 6, color: CH.white, alpha: 0.22 * a, w: 1.5, seed: 860 + i });
-    }
-    chalkText(cx, P.name, 0, h / 2 - lab / 2 + 2, { font: '"Gochi Hand"', weight: 400, size: Math.round(w * 0.13), seed: 40 + i, alpha: a });
+    phx.save(); phx.translate(x, y); phx.rotate(rot);
+    phx.shadowColor = 'rgba(0,0,0,0.35)'; phx.shadowBlur = 18; phx.shadowOffsetX = 6; phx.shadowOffsetY = 8;
+    phx.drawImage(img, -w / 2, -h / 2, w, h);
+    phx.restore();
+    cx.save(); cx.translate(x, y); cx.rotate(rot * 2.2); cx.translate(0, py);
+    drawPoly(cx, resample([[-pw / 2 - 12, -ph / 2 - 12], [pw / 2 + 12, -ph / 2 - 12], [pw / 2 + 12, ph / 2 + 12], [-pw / 2 - 12, ph / 2 + 12], [-pw / 2 - 12, -ph / 2 - 12]], 16), { w: 2.5, color: CH.white, amp: 1.6, alpha: 0.5, seed: 700 + i * 60, passes: 1 });
     cx.restore();
   });
 }
@@ -483,7 +510,7 @@ async function buildGlobe(A) {
     const pts = []; for (let k = 0; k <= 256; k++) pts.push(ringPoint(R.b, R.r, (k / 256) * Math.PI * 2));
     R.line = makeLine(pts, R.color, R.w, 0.55); scene.add(R.line);
     R.sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: satTex, color: 0xffffff, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, sizeAttenuation: false }));
-    R.sprite.scale.set(0.045, 0.045, 1); scene.add(R.sprite);
+    R.sprite.scale.set(0.02, 0.02, 1); scene.add(R.sprite);
     const tp = []; const cols = [];
     for (let k = 0; k <= 60; k++) { tp.push(new THREE.Vector3()); const c = new THREE.Color(R.color).multiplyScalar(Math.pow(1 - k / 60, 1.5)); cols.push(c.r, c.g, c.b); }
     R.trail = makeLine(tp, 0xffffff, R.w * 2.2, 1, cols); R.trail.material.blending = THREE.AdditiveBlending; R.trail.frustumCulled = false; R.trail.renderOrder = 8; R.line.renderOrder = 7; scene.add(R.trail);
@@ -515,6 +542,7 @@ async function buildSats() {
   const load = src => new Promise((res, rej) => loader.load(src, res, undefined, rej));
   const [terra, aqua, npp] = await Promise.all([load('assets/terra.glb'), load('assets/aqua.glb'), load('assets/suomi-npp.glb')]);
   const cl = g => ({ scene: g.scene.clone(true) });
+  G.orbitModels = [cl(npp), cl(terra), cl(aqua)].map(g => { const m = normalizeModel(g); m.scale.setScalar(0.18); m.visible = false; scene.add(m); return m; });
   S.hero = normalizeModel(cl(npp));
   S.terra = normalizeModel(terra); S.aqua = normalizeModel(aqua); S.npp = normalizeModel(cl(npp)); S.n20 = normalizeModel(cl(npp));
   for (const k of ['hero', 'terra', 'aqua', 'npp', 'n20']) { topScene.add(S[k]); S[k].visible = false; }
@@ -525,15 +553,18 @@ async function buildSats() {
 function screenToWorld2(sx, sy, z = 0) { const d = 10 - z, k = d / F; return new THREE.Vector3((sx - CX) * k, -(sy - CY) * k, z); }
 
 // ------------------------------------------------------------------ camera path (globe + map share one zoom)
-const ZG0 = Math.log2((R0 * Math.cos(THREE.MathUtils.degToRad(GLOBE_LAT)) * 2 * Math.PI) / 256);
+const RG1 = 205; // globe radius after it shrinks for the satellite
+const globeR = t => lerp(R0, RG1, E.inOutCubic(prog(t, 14.2, 15.9)));
+const ZofR = R => Math.log2((R * Math.cos(THREE.MathUtils.degToRad(GLOBE_LAT)) * 2 * Math.PI) / 256);
+const ZG0 = ZofR(R0);
 const TARGET = { lon: -122.99, lat: 39.92 };
 const merc = (lon, lat) => { const lr = (lat * Math.PI) / 180; return [(lon + 180) / 360, (1 - Math.log(Math.tan(lr) + 1 / Math.cos(lr)) / Math.PI) / 2]; };
 const unmerc = (x, y) => [x * 360 - 180, (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI];
 function camPath(t) {
-  if (t <= 17.4) return { lon: globeLon(t), lat: GLOBE_LAT, Z: ZG0 };
+  if (t <= 17.4) return { lon: globeLon(t), lat: GLOBE_LAT, Z: ZofR(globeR(t)) };
   if (t <= 19.6) {
     const e = E.inOutSine(prog(t, 17.4, 19.6));
-    return { lon: lerp(globeLon(17.4), -112, e), lat: lerp(GLOBE_LAT, 37, e), Z: lerp(ZG0, 3.7, e) };
+    return { lon: lerp(globeLon(17.4), -112, e), lat: lerp(GLOBE_LAT, 37, e), Z: lerp(ZofR(RG1), 3.7, e) };
   }
   const p = prog(t, 19.6, 23.6), e = E.inOutCubic(p);
   const Z1 = 3.7, Z2 = 10.55, Z = lerp(Z1, Z2, e);
@@ -680,40 +711,46 @@ function seek(t) {
   // ---------- chalk layer
   stx.clearRect(0, 0, W, H); phx.clearRect(0, 0, W, H);
   if (chalkScene) {
-    // zoom-out camera between scene 1 and the globe
-    const zp = E.inOutCubic(prog(t, 9.6, 10.75));
-    const Zc = lerp(5.5, 1, zp);
-    const lonNow = globeLon(t);
-    const projW = geoOrthographic().scale(R0).translate([CX, CY]).rotate([-lonNow, -GLOBE_LAT]);
-    const P1 = projW([-121.5, 39.5]);
-    const Fx = lerp(P1[0], CX, zp), Fy = lerp(P1[1], CY, zp);
-    // scene 1 (drawn into a box around California that fills the screen at Zc = 5.5)
-    if (t < 10.8) {
-      stx.save();
-      const punch = WORDS.reduce((s, w) => s + 0.025 * Math.exp(-(((t - w[1]) / 0.13) ** 2)), 0) + 0.02 * Math.exp(-(((t - 2.3) / 0.15) ** 2));
-      const drift = 1 + 0.045 * prog(t, 0, 9.6) + punch;
-      stx.translate(CX, CY); stx.scale(Zc, Zc); stx.translate(-Fx, -Fy);
-      stx.translate(P1[0], P1[1]); stx.scale(1 / 5.5, 1 / 5.5);
-      stx.translate(0, 0); stx.scale(drift, drift); stx.rotate(Math.sin(t * 0.5) * 0.006);
-      stx.translate(-CX, -CY);
-      scene1(stx, t, 1 - E.inQuad(prog(t, 9.75, 10.5)));
+    const Rg = globeR(t);
+    const fade = 1 - E.inQuad(prog(t, 9.55, 10.0));
+    if (t < 10.3) {
+      const punch = WORDS.reduce((s, w) => s + 0.02 * Math.exp(-(((t - w[1]) / 0.12) ** 2)), 0);
+      const drift = 1 + 0.04 * prog(t, 0, 9.6) + punch - 0.04 * E.inOutCubic(prog(t, 9.5, 10.2));
+      stx.save(); stx.translate(CX, CY); stx.scale(drift, drift); stx.translate(-CX, -CY);
+      // the title flattens into one line, as long as the globe's circumference, at the globe's top
+      const fp = E.inOutCubic(prog(t, 9.6, 10.25));
+      const titleXf = fp > 0 ? c => {
+        const L = 2 * Math.PI * R0, sx = lerp(1, L / TITLE_W, fp), sy = lerp(1, 0.02, fp);
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.translate(CX, lerp(TITLE.y, CY - R0, fp)); c.scale(lerp(drift, 1, fp) * sx, lerp(drift, 1, fp) * sy); c.translate(-CX, -TITLE.y);
+      } : null;
+      scene1(stx, t, fade, titleXf);
       stx.restore();
     }
-    // chalk globe
-    if (t >= 9.6) {
-      const gx = CX + (CX - Fx) * Zc, gy = CY + (CY - Fy) * Zc;
-      const ga = prog(t, 9.6, 9.95) * (1 - prog(t, 15.85, 16.6));
-      chalkGlobe(stx, t, gx, gy, R0 * Zc, ga);
+    // line -> both ends curl down -> circle (the globe outline)
+    const lineA = prog(t, 10.05, 10.25) * (1 - prog(t, 11.2, 11.5));
+    if (lineA > 0) {
+      const k = E.inOutCubic(prog(t, 10.25, 11.0)), L = 2 * Math.PI * R0, top = CY - R0, pts = [];
+      for (let i = 0; i <= 160; i++) {
+        const sN = i / 160 - 0.5;
+        if (k < 1e-3) pts.push([CX + sN * L, top]);
+        else { const th = k * 2 * Math.PI, r = L / th, ph = sN * th; pts.push([CX + r * Math.sin(ph), top + r * (1 - Math.cos(ph))]); }
+      }
+      drawPoly(stx, pts, { w: 6, color: CH.white, amp: 1.6, alpha: lineA, seed: 1500 });
+      drawPoly(stx, pts, { w: 3, color: CH.orange, amp: 2.4, alpha: lineA * 0.6, seed: 1600, passes: 1 });
     }
-    // team title + people
-    if (t >= 10 && t < 14.8) {
+    if (t >= 10.85) {
+      const ga = prog(t, 10.85, 11.4) * (1 - prog(t, 15.85, 16.6));
+      chalkGlobe(stx, t, CX, CY, Rg, ga);
+    }
+    if (t >= 11 && t < 14.8) {
       const out = 1 - prog(t, 14.0, 14.45);
-      chalkText(stx, 'A HEAD FULL OF DREAMS', CX, 112, { size: 104, reveal: E.inOutSine(prog(t, 11.0, 12.2)), seed: 3, alpha: out });
-      chalkText(stx, 'esta es nuestra propuesta', CX, 198, { font: '"Gochi Hand"', weight: 400, size: 54, color: CH.orange, reveal: E.inOutSine(prog(t, 12.9, 13.6)), seed: 4, alpha: out });
-      [[330, 92, 16, 11.9], [1590, 86, 20, 12.05], [420, 168, 10, 12.2], [1500, 170, 12, 12.3], [250, 150, 9, 12.4], [1680, 150, 9, 12.5]].forEach(([x, y, r, ts], i) => {
+      rainbowTitle(stx, 'A HEAD FULL OF DREAMS', CX, 112, 104, E.inOutSine(prog(t, 11.6, 12.6)), t, out);
+      chalkText(stx, 'esta es nuestra propuesta', CX, 198, { font: '"Gochi Hand"', weight: 400, size: 54, color: CH.orange, reveal: E.inOutSine(prog(t, 13.0, 13.6)), seed: 4, alpha: out });
+      [[330, 92, 16, 12.3], [1590, 86, 20, 12.4], [420, 168, 10, 12.5], [1500, 170, 12, 12.6], [250, 150, 9, 12.7], [1680, 150, 9, 12.8]].forEach(([x, y, r, ts], i) => {
         const p = E.outBack(prog(t, ts, ts + 0.4)); if (p <= 0) return;
         const tw = 1 + Math.sin(t * 6 + i) * 0.12;
-        drawPoly(stx, starPts(x, y, r * p * tw), { w: 2.5, color: i % 2 ? CH.yellow : CH.white, amp: 0.8, closed: true, alpha: out, seed: 600 + i * 20 });
+        drawPoly(stx, starPts(x, y, r * p * tw), { w: 2.5, color: `hsl(${(i * 60 + t * 160) % 360} 90% 72%)`, amp: 0.8, closed: true, alpha: out, seed: 600 + i * 20 });
       });
       drawPeopleOn(stx, t);
     }
@@ -750,8 +787,11 @@ function seek(t) {
       R.line.material.opacity = 0.5 * orbA; R.line.visible = draw > 0 && orbA > 0;
       const th = R.th0 + R.speed * (t - 17.4);
       const sp = ringPoint(R.b, R.r, th);
-      const vis = (R.hero ? prog(t, 17.3, 17.45) : prog(t, 17.2 + i * 0.2, 17.6 + i * 0.2)) * orbA;
-      R.sprite.position.copy(sp); R.sprite.material.opacity = vis; R.sprite.visible = vis > 0;
+      const vis = (R.hero ? (t >= 17.4 ? 1 : 0) : prog(t, 17.2 + i * 0.2, 17.6 + i * 0.2)) * orbA;
+      R.sprite.position.copy(sp); R.sprite.material.opacity = vis * 0.6; R.sprite.visible = vis > 0;
+      const om = G.orbitModels[i]; om.visible = vis > 0.02; om.position.copy(sp);
+      om.lookAt(ringPoint(R.b, R.r, th + Math.sign(R.speed) * 0.05)); om.rotateY(Math.PI / 2); om.rotateX(t * 0.4 + i);
+      om.scale.setScalar(0.18 * Math.min(1, vis * 1.5));
       const tp = []; for (let k = 0; k <= 60; k++) tp.push(ringPoint(R.b, R.r, th - Math.sign(R.speed) * k * 0.012 * Math.min(1, Math.max(0, t - 17.2) * 2)));
       R.trail.geometry.setPositions(tp.flatMap(p => [p.x, p.y, p.z])); R.trail.material.opacity = vis; R.trail.visible = vis > 0;
       const len = sp.length() - 1; R.beam.position.copy(sp); R.beam.lookAt(0, 0, 0); R.beam.scale.set(1, 1, len);
@@ -789,12 +829,26 @@ function seek(t) {
 }
 
 function drawPeopleOn(ctx, t) { drawPeople(ctx, t, A.people); }
+function rainbowTitle(ctx, text, x, y, size, reveal, t, alpha) {
+  ctx.save(); ctx.font = `700 ${size}px "Cabin Sketch"`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  const total = ctx.measureText(text).width; let cx = x - total / 2;
+  const n = Math.ceil(text.length * clamp(reveal));
+  for (let i = 0; i < n; i++) {
+    const ch = text[i], w = ctx.measureText(ch).width;
+    const hue = (i * 26 + t * 160) % 360, bob = Math.sin(t * 5 + i * 0.6) * 4;
+    ctx.fillStyle = `hsl(${hue} 92% 72%)`; ctx.globalAlpha = alpha;
+    ctx.fillText(ch, cx + jit(i, 1) * 1.2, y + bob + jit(i, 2) * 1.2);
+    ctx.globalAlpha = alpha * 0.35; ctx.fillText(ch, cx + 2, y + bob + 1.5);
+    cx += w;
+  }
+  ctx.restore();
+}
 
 // hero satellite: rises from the bottom, then flies into orbit (shares the globe camera)
 function heroOffsetY(t) { const e = E.outCubic(prog(t, 14.3, 16.3)); return lerp(-1.25, 0, e) + Math.sin(t * 1.7) * 0.015; }
 function heroScreenY(t) { return CY - (heroOffsetY(t) / (2.2 * Math.tan(THREE.MathUtils.degToRad(15)))) * CY; }
 function heroSat(t) {
-  const on = t >= 14.3 && t < 17.45;
+  const on = t >= 14.3 && t < 17.4;
   S.hero.visible = on;
   if (!on) return;
   const c = camPath(t), d = globeDistance(c.Z, c.lat);
@@ -803,7 +857,7 @@ function heroSat(t) {
   const R = G.rings[0], th = R.th0 + R.speed * (t - 17.4), orbitP = ringPoint(R.b, R.r, th);
   const pB = E.inOutCubic(prog(t, 16.3, 17.4));
   S.hero.position.copy(near.lerp(orbitP, pB));
-  S.hero.scale.setScalar(lerp(0.62, 0.014, E.inOutSine(pB)));
+  S.hero.scale.setScalar(lerp(0.62, 0.18, E.inOutSine(pB)));
   S.hero.quaternion.copy(cam.quaternion);
   S.hero.rotateY(0.6 + t * 0.55); S.hero.rotateX(-0.35 + Math.sin(t * 0.8) * 0.1); S.hero.rotateZ(0.25);
   topRender(cam);

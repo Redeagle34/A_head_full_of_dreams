@@ -6,20 +6,20 @@ Los tiempos marcan cuándo empieza cada frase; la animación ya está sincroniza
 
 | Tiempo | Voz en off | Lo que se ve |
 |---|---|---|
-| 0:00 – 0:03.5 | «En un mundo con cada vez más incendios…» | Pizarrón verde. Entran fuegos dibujados con gis desde los bordes, se mueven y tiemblan como animación a mano. Se escribe con gis **CADA VEZ MÁS INCENDIOS**. Aparecen más fueguitos. |
-| 0:03.5 – 0:05.6 | «…hoy más que nunca es importante prevenirlos,» | Se dibuja un escudo y la palabra **PREVENIR**. |
-| 0:05.6 – 0:07.6 | «…poder controlarlos cuando están activos…» | Mira de control y **CONTROLAR**. |
-| 0:07.6 – 0:09.6 | «…y analizar sus causas y sus consecuencias.» | Lupa con gráfica y **ANALIZAR**. |
-| 0:09.6 – 0:10.6 | *(sin voz, golpe de música)* | Zoom out: todo el pizarrón se encoge y aparece la Tierra dibujada con gis, girando, con fueguitos sobre ella. |
-| 0:10.2 – 0:14.0 | «Somos el equipo A Head Full of Dreams, y esta es nuestra propuesta.» | Entran las 5 personas: una por la derecha abajo, otra detrás y más arriba, otra por la izquierda abajo, otra detrás y más arriba a la izquierda, y la quinta sube desde abajo al centro. Título **A HEAD FULL OF DREAMS** y debajo «esta es nuestra propuesta». |
-| 0:14.0 – 0:17.4 | *(sin voz, música sube)* | Las personas salen. Un satélite 3D (Suomi NPP) sube desde abajo hasta el centro, se aleja y se hace chiquito hasta quedar en órbita. El pizarrón se abre al espacio y la Tierra de gis se vuelve la Tierra real. Aparecen las órbitas y los haces de los satélites. |
+| 0:00 – 0:03.5 | «En un mundo con cada vez más incendios…» | Pizarrón verde. Al centro se escribe **CADA VEZ MÁS INCENDIOS** con letras de gis texturizadas en tonos de fuego, y encima de las letras brotan fuegos dibujados que se mueven como animación a mano. |
+| 0:03.5 – 0:05.6 | «…hoy más que nunca es importante predecirlos,» | Aparece rápido una gráfica de pronóstico y debajo **PREDECIR**. |
+| 0:05.6 – 0:07.6 | «…prevenirlos…» | Escudo y debajo **PREVENIR**. |
+| 0:07.6 – 0:09.6 | «…y actuar a tiempo cuando ya están activos.» | Rayo y debajo **ACTUAR**. |
+| 0:09.6 – 0:11.4 | *(sin voz, golpe de música)* | Zoom out sobre las letras: se aplastan hasta volverse una línea; los dos extremos de la línea se curvan hacia abajo y forman un círculo, que se convierte en la Tierra dibujada con gis. |
+| 0:11.0 – 0:14.0 | «Somos el equipo A Head Full of Dreams, y esta es nuestra propuesta.» | Entran empujados los 4 integrantes, recortados sin fondo y sobre hojas de papel rasgado, todos señalando la Tierra: dos por la izquierda, una por la derecha y uno sube al centro. Título **A HEAD FULL OF DREAMS** en colores que cambian, y debajo «esta es nuestra propuesta». |
+| 0:14.0 – 0:17.4 | *(sin voz, música sube)* | Las personas salen. Un satélite 3D (Suomi NPP) sube desde abajo mientras la Tierra se hace un poco más chica; el satélite entra en órbita. El pizarrón se abre al espacio y la Tierra de gis se vuelve la Tierra real. En las órbitas giran los modelos 3D de Suomi NPP, Terra y Aqua. |
 | 0:17.4 – 0:22.6 | «Nuestra solución es una aplicación interactiva donde puedes ver los incendios activos en el mapa…» | La Tierra gira a Norteamérica, se encienden miles de puntos de fuego (datos reales, septiembre 2020) y la cámara entra a California hasta el mapa satelital en alta definición, con la interfaz de la app. |
 | 0:22.6 – 0:25.0 | «…y distinguir los que detecta MODIS…» | Una línea de barrido cruza el mapa y aparecen los cuadritos de detección sobre el August Complex. |
 | 0:25.0 – 0:30.0 | «…en Terra y Aqua, y los que detecta VIIRS, en Suomi NPP y NOAA-20.» | Pantalla dividida: izquierda solo MODIS (píxel ≈ 1 km) con Terra y Aqua en 3D; derecha solo VIIRS (píxel ≈ 375 m) con Suomi NPP y NOAA-20. Mismo lugar, distinta resolución. |
 
 ## Texto corrido para grabar
 
-> En un mundo con cada vez más incendios, hoy más que nunca es importante prevenirlos, poder controlarlos cuando están activos y analizar sus causas y sus consecuencias.
+> En un mundo con cada vez más incendios, hoy más que nunca es importante predecirlos, prevenirlos y actuar a tiempo cuando ya están activos.
 >
 > Somos el equipo A Head Full of Dreams, y esta es nuestra propuesta.
 >
