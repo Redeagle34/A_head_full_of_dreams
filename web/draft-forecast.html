@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Burning Calendar: Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;display=swap">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="draft-base.css">
+<link rel="stylesheet" href="draft-forecast.css">
+</head>
+<body class="forecast" data-level="none">
+<header class="bar">
+  <a class="brand" href="#top">Burning Calendar</a>
+  <div class="field search">
+    <label for="place">Where are you?</label>
+    <input id="place" type="search" placeholder="Search a town, a county or an address" autocomplete="off">
+    <ul id="results" class="results" hidden></ul>
+  </div>
+  <div class="field dates">
+    <label for="preset">Dates</label>
+    <select id="preset"></select>
+  </div>
+  <nav class="actions" aria-label="Sections">
+    <button id="locate" type="button">My location</button>
+    <button id="fireBtn" type="button" aria-expanded="false" aria-controls="firePanel">Fires</button>
+    <button id="satBtn" type="button" aria-expanded="false" aria-controls="satPanel">Satellites</button>
+    <button id="filtersBtn" type="button" aria-expanded="false" aria-controls="filters">Map layers</button>
+    <button id="panelBtn" type="button" aria-expanded="false" aria-controls="panel">Area numbers</button>
+    <button id="reportBtn" type="button" title="Scientific report for the area and dates on screen">Report</button>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="now" aria-label="Fire near this place">
+    <div class="answer">
+      <p id="whereLine" class="where">Around the centre of the map</p>
+      <h1 id="nearHeadline">Looking for fire near you.</h1>
+      <p id="seasonLine" class="sub"></p>
+      <div class="dial-row">
+        <svg id="dial" class="dial" viewBox="0 0 240 140" role="img" aria-label="Danger dial"></svg>
+        <p id="dialNote" class="hint"></p>
+      </div>
+    </div>
+    <div class="mapcard">
+      <div class="mapframe">
+        <div id="map" aria-label="Map of fire activity"></div>
+        <div class="cross" aria-hidden="true"></div>
+      </div>
+<aside id="legend" class="legend" aria-live="polite">
+  <div id="legendTitle" class="legend-title"></div>
+  <div id="legendBar" class="legend-bar"></div>
+  <div class="legend-ends"><span id="legendLow"></span><span id="legendHigh"></span></div>
+  <div id="legendNote" class="legend-note"></div>
+  <div id="status" class="status"></div>
+</aside>
+    </div>
+  </section>
+
+  <section class="when" aria-label="Time">
+    <h2>Move through time</h2>
+    <p class="hint">The map and everything on this page follow these dates. Press Play to watch the fires come and go.</p>
+<section id="timeline" class="timeline" aria-label="Period shown on the map">
+  <div class="tl-row">
+    <button id="tlPlay" type="button" aria-pressed="false" title="Slide the period forward through time">Play</button>
+    <label class="tl-date">From <input id="start" type="date"></label>
+    <label class="tl-date">To <input id="end" type="date"></label>
+    <b id="tlLength" class="tl-length"></b>
+    <button id="tlMore" class="tl-more" type="button" aria-expanded="false">More</button>
+    <span class="tl-group tl-extra"><span>Period</span>
+      <button id="tlShorter" type="button" title="Halve the period">Shorter</button>
+      <button id="tlLonger" type="button" title="Double the period">Longer</button></span>
+    <span class="tl-group tl-extra"><span>Bar</span>
+      <button id="tlZoomIn" type="button" title="Stretch the bar around the period">Zoom in</button>
+      <button id="tlZoomOut" type="button" title="Squeeze the bar to show more years">Zoom out</button>
+      <button id="tlAll" type="button" title="Show the whole record on the bar">Whole record</button></span>
+    <label class="tl-date tl-extra">Speed <select id="tlSpeed">
+      <option value="1600">Slow</option><option value="900" selected>Normal</option><option value="450">Fast</option></select></label>
+  </div>
+  <div id="tlTrack" class="tl-track">
+    <div id="tlWindow" class="tl-window" tabindex="0" role="slider" aria-label="Period shown; arrow keys move it">
+      <i data-edge="left"></i><i data-edge="right"></i></div>
+    <div id="tlTicks" class="tl-ticks"></div>
+  </div>
+</section>
+  </section>
+
+  <section class="weeks" aria-label="The last twelve months here">
+    <h2 id="weeksTitle">The twelve months before these dates, week by week</h2>
+    <p class="hint">Each bar is one week. The line across each bar is what is usual for that week. Pick a bar to see that week.</p>
+    <div id="weekStrip" class="weekstrip"></div>
+  </section>
+
+  <section class="year" aria-label="A usual year here">
+    <h2>A usual year here</h2>
+    <p class="hint">The band is the normal range, week by week, across the whole record. The dark line is the year of the dates above.</p>
+    <div id="yearCurve" class="curve"></div>
+  </section>
+
+  <section class="near" aria-label="Fires nearby">
+    <h2>Fires within 50 km</h2>
+    <div id="nearFires" class="fires"></div>
+  </section>
+
+  <section class="sky" aria-label="Satellites overhead">
+    <h2>Who is looking down on this place</h2>
+    <p class="hint">Fire is only seen when a satellite passes over. These are the next passes over the centre of the map, in your clock.</p>
+    <div id="passList" class="passes"></div>
+    <button id="skyOpen" type="button">See the satellites in orbit</button>
+  </section>
+
+  <footer class="fine">
+    <p>What this page cannot tell you: fire under cloud or between passes is not seen, and no detection is not proof of no fire.
+      The record ends on 31 December 2025. The danger level is an experiment, not an evacuation order. In an emergency follow
+      your local fire agency.</p>
+  </footer>
+</main>
+
+<section id="filters" class="filters sheet" hidden>
+  <div class="panel-head">
+    <h2>Map layers</h2>
+    <button id="filtersClose" type="button" aria-label="Close map layers">Close</button>
+  </div>
+  <h3>Satellite data</h3>
+  <div class="choices" id="layerChoices">
+    <label><input type="radio" name="layer" value="both" checked>
+      <span><b>MODIS + VIIRS combined</b><small>One comparable record since 2002. Squares of 1.5 km.</small></span></label>
+    <label><input type="radio" name="layer" value="viirs">
+      <span><b>VIIRS only</b><small>Sharpest view, squares of 375 m. Since 2012.</small></span></label>
+    <label><input type="radio" name="layer" value="modis">
+      <span><b>MODIS only</b><small>Longest record, squares of 1 km. Since 2000.</small></span></label>
+    <label><input type="radio" name="layer" value="none">
+      <span><b>None</b><small>Map only.</small></span></label>
+  </div>
+  <h3>Color shows</h3>
+  <div class="choices" id="metricChoices">
+    <label><input type="radio" name="metric" value="intensity" checked>
+      <span><b>Fire intensity</b><small>How much heat the fires gave off.</small></span></label>
+    <label><input type="radio" name="metric" value="days">
+      <span><b>Days with fire</b><small>On how many days fire was seen.</small></span></label>
+    <label><input type="radio" name="metric" value="unusual">
+      <span><b>Unusual versus normal</b><small>More or fewer fire days than the same dates in other years.</small></span></label>
+  </div>
+  <h3>Fire markers</h3>
+  <label class="slider">One marker for each fire, colored by danger level
+    <select id="markers"><option value="on" selected>On</option><option value="off">Off</option></select></label>
+  <h3>Display</h3>
+  <label class="slider">Layer strength <input id="opacity" type="range" min="0.2" max="1" step="0.05" value="0.8"></label>
+  <div class="choices row" id="baseChoices">
+    <label><input type="radio" name="base" value="satellite" checked><span><b>Satellite</b></span></label>
+    <label><input type="radio" name="base" value="dark"><span><b>Dark map</b></span></label>
+  </div>
+</section>
+<aside id="panel" class="panel sheet" hidden>
+  <div class="panel-head">
+    <h2 id="areaName">United States</h2>
+    <button id="panelClose" type="button" aria-label="Close area numbers">Close</button>
+  </div>
+  <div class="tiles">
+    <div><b id="tileCells">–</b><span>squares with fire</span></div>
+    <div><b id="tileDays">–</b><span>fire days, all squares</span></div>
+    <div><b id="tileFrp">–</b><span>intensity, MW</span></div>
+  </div>
+  <h3>History of this area</h3>
+  <p class="hint">Each small square is one week. White outline: unusual for that time of year. Thick outline: a record. Blue bar: the usual fire season.</p>
+  <div id="heat" class="chart"></div>
+  <h3>Unusual periods</h3>
+  <p class="hint">Pick one to show it on the map.</p>
+  <div id="periods" class="periods"></div>
+  <div class="panel-foot">
+    <a id="download" class="button" href="#">Download these fires (CSV)</a>
+    <a class="quiet" href="states.html">State overview</a>
+  </div>
+</aside>
+<script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/dist/plot.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/DRACOLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
+<script src="satellites.js"></script>
+<script src="fires.js"></script>
+<script src="timeline.js"></script>
+<script src="app.js"></script>
+<script src="draft-common.js"></script>
+<script src="draft-forecast.js"></script>
+</body>
+</html>

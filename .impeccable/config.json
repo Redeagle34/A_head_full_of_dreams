@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(.34, 1.56, .64, 1)",
+        "createdAt": "2026-11-15T21:31:33.217Z",
+        "reason": "design decision: the Guide map draft's lobes swell with an overshoot as their signature motion; the owner chose this draft (rated it 10/10) on 2026-11-15"
+      }
+    ]
+  }
+}

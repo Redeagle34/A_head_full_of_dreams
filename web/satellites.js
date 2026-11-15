@@ -130,6 +130,10 @@ function passesOver(place, from, only) {
 // ---------- 3. 3D layer ----------
 
 let map, sats = [], selected = null, enabled = true, panelOpen = false;
+// A page may change these before or after attach (draft-guide.js does):
+//   keepOthers  a picked satellite no longer hides the others
+//   onSelect    called with the picked satellite (or null) after every pick
+const options = { keepOthers: false, onSelect: null };
 let scene, camera, renderer, scanLines, scanFan, lastSwath = 0, lastOrbit = 0;
 // Every model is shown from the same three-quarter angle, whatever the globe is doing.
 const POSE = new THREE.Matrix4().makeRotationX(0.5).multiply(new THREE.Matrix4().makeRotationY(-0.65));
@@ -232,7 +236,7 @@ const layer = {
     if (refreshOrbit) lastOrbit = +now;
     for (const sat of sats) {
       const here = positionAt(sat.satrec, now);
-      const alone = selected && sat !== selected;              // a picked satellite is shown alone
+      const alone = selected && sat !== selected && !options.keepOthers;   // a picked satellite is shown alone
       if (!here || alone) { sat.group.visible = sat.track.visible = false; continue; }
       sat.here = here;
       const P = world(here, here.altKm * 1000), q = clip(P);
@@ -403,6 +407,7 @@ function updateHint() {
 
 function select(sat) {
   selected = sat;
+  setTimeout(() => options.onSelect?.(sat));
   el("satHome").hidden = !!sat; el("satCard").hidden = !sat;
   el("satPanel").scrollTop = 0;
   map.getSource("sat-strip")?.setData({ type: "FeatureCollection", features: [] });
@@ -611,5 +616,5 @@ async function attach(theMap) {
   return { sats, select, toggle, passesOver, get picture() { return picture; } };
 }
 
-return { attach, CATALOG };
+return { attach, CATALOG, options };
 })();
