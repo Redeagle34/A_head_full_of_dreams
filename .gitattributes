@@ -1,0 +1,3 @@
+# LightGBM model files must keep Unix line endings on every system: with Windows endings they fail to load.
+proofs/us-experiments/models/*.txt -text
+data/danger/*.txt -text
