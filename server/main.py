@@ -13,6 +13,7 @@ Routes
   GET /api/events/{id}      one fire with its ground cells and nearby reported fires
   GET /api/danger/levels    what each danger level meant on years the model never saw
   GET /api/critical         cells to treat with prescribed burns so wildfires spread least (CriticalNode.md)
+  GET /api/critical/size    the cell size that search would use for a view
   GET /api/tle              orbit data of the fire-watching satellites
   GET /api/events/{id}/sharp  Landsat pictures before and after, and burn severity
   GET /api/reported         reported wildfires, optionally only those missed
@@ -160,10 +161,21 @@ def reported_fires(bbox: str, start: datetime.date, end: datetime.date, missed: 
         raise HTTPException(503, str(e))
 
 
+@app.get("/api/critical/size")
+def critical_size(bbox: str):
+    try:
+        return critical.size_info(parse_bbox(bbox))
+    except critical.BadRequest as e:
+        raise HTTPException(400, str(e))
+    except critical.Missing as e:
+        raise HTTPException(503, str(e))
+
+
 @app.get("/api/critical")
-def critical_nodes(bbox: str, budget_km2: float = Query(1000, gt=0, le=critical.MAX_BUDGET_KM2),
-                   wind_ms: float | None = Query(None, ge=0, le=40), wind_from: float = Query(270, ge=0, lt=360),
+def critical_nodes(bbox: str, budget_km2: float = Query(gt=0),
+                   wind_ms: float | None = Query(None, ge=0, le=40), wind_from: float | None = Query(None, ge=0, lt=360),
                    runs: int = Query(10_000, ge=100, le=critical.MAX_RUNS), seed: int = 1):
+    """wind_ms, wind_from: one wind for the whole area; left out, each cell keeps its usual wind."""
     try:
         return critical.run(parse_bbox(bbox), budget_km2, wind_ms, wind_from, runs, seed)
     except critical.BadRequest as e:

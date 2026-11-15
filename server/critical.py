@@ -2,8 +2,10 @@
 
 Plan and sources: CriticalNode.md. In short:
 
-1. Landscape: the 0.1 degree cells of the area on screen (pipeline/critical_landscape.py). Each cell is
-   a node; fire can pass between the 8 neighbours of a cell.
+1. Landscape: the cells of the area on screen (pipeline/critical_landscape.py), at the finest of four
+   sizes (about 1, 2, 4 or 10 km) that keeps the area under MAX_NODES cells that can burn. Each cell
+   is a node; fire can pass between the 8 neighbours of a cell. Each cell has its own usual wind on
+   high fire-danger days (gridMET), unless the request sets one wind for the whole area.
 2. Monte Carlo (section 3 of the plan): thousands of fires, each ignited in a cell drawn by its
    historical ignition density, spread cell by cell with the jump probability of Alexandridis et al.
    (2008):  p_burn = p_h * (1 + p_veg) * (1 + p_den) * p_wind * p_slope
@@ -22,7 +24,8 @@ Pure Python on purpose: no numpy or networkx, so it runs inside the Vercel funct
 
 Change here:
   P_VEG, forest P_DEN, C1, C2, A_S   the Alexandridis factors
-  MAX_NODES, MAX_RUNS, MAX_BUDGET_KM2   the largest search one request may ask for
+  SIZES                              the cell sizes, finest first
+  MAX_NODES, MAX_RUNS, MAX_TREATED   the largest search one request may ask for
 """
 import math
 import os
@@ -34,14 +37,16 @@ import duckdb
 from .config import ROOT
 from .events import LAND_COVER
 
-LANDSCAPE = pathlib.Path(os.environ.get("FIRE_EVENTS_DIR", ROOT / "data" / "events")) / "landscape.parquet"
-CELL = 0.1                      # degrees
+EVENTS = pathlib.Path(os.environ.get("FIRE_EVENTS_DIR", ROOT / "data" / "events"))
+# name -> (height, width) of a cell in degrees; file data/events/landscape_<name>.parquet. Finest first.
+SIZES = {1: (0.01, 0.0125), 2: (0.02, 0.025), 4: (0.04, 0.05), 10: (0.1, 0.1)}
 KM_PER_DEGREE = 111.32
-MAX_NODES = 2500                # about 5 x 5 degrees
+MAX_NODES = 2500                # cells that can burn in one search
 MAX_RUNS = 20_000
-MAX_BUDGET_KM2 = 5000           # about 50 cells: the greedy re-checks the area once per treated cell
+MAX_TREATED = 60                # cells one search may treat: the greedy re-checks the area once per cell
+FALLBACK_WIND = (3.0, 270)      # m/s, from: where gridMET has no wind (Hawaii) and the request sets none
 CALIBRATION_RUNS = 2000
-CALIBRATION_STEPS = 14
+CALIBRATION_STEPS = 20
 
 # Alexandridis et al. (2008): wind c1, c2 (per m/s) and slope a (per degree).
 C1, C2, A_S = 0.045, 0.131, 0.078
@@ -58,7 +63,7 @@ class BadRequest(ValueError):
 
 
 class Missing(RuntimeError):
-    """landscape.parquet is not built yet."""
+    """The landscape files are not built yet."""
 
 
 def p_den(lc, treecover):
@@ -72,40 +77,80 @@ def vegetation(lc):
     return LAND_COVER.get(lc, "No land cover record") + ("" if lc in P_VEG else " (does not burn here)")
 
 
-def cell_km(row):
+def cell_km(row, size):
     """(north-south, east-west) size of a cell in km."""
-    return CELL * KM_PER_DEGREE, CELL * KM_PER_DEGREE * math.cos(math.radians((row + 0.5) * CELL))
+    dlat, dlon = size
+    return dlat * KM_PER_DEGREE, dlon * KM_PER_DEGREE * math.cos(math.radians((row + 0.5) * dlat))
+
+
+def compass(degrees):
+    return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][round(degrees / 45) % 8]
 
 
 # ---------- Landscape ----------
 
-def load(bbox):
-    """The cells of a view: {(row, col): {...}}."""
-    if not LANDSCAPE.exists():
-        raise Missing("landscape.parquet is missing. Run: python pipeline/critical_landscape.py")
+def _file(name):
+    return EVENTS / f"landscape_{name}.parquet"
+
+
+def _window(bbox, size):
     west, south, east, north = bbox
-    r0, r1 = math.floor(south / CELL), math.floor(north / CELL)
-    c0, c1 = math.floor(west / CELL), math.floor(east / CELL)
-    if (r1 - r0 + 1) * (c1 - c0 + 1) > MAX_NODES * 2:
-        raise BadRequest(f"The area is too large for the search: zoom in to at most about {MAX_NODES:,} cells of 0.1 degree.")
+    dlat, dlon = size
+    return [math.floor(south / dlat), math.floor(north / dlat), math.floor(west / dlon), math.floor(east / dlon)]
+
+
+def choose_size(bbox):
+    """The finest cell size that keeps the area under MAX_NODES cells that can burn: (name, burnable cells)."""
+    built = [name for name in SIZES if _file(name).exists()]
+    if not built:
+        raise Missing("The landscape files are missing. Run: python pipeline/critical_landscape.py")
+    for name in built:
+        r0, r1, c0, c1 = _window(bbox, SIZES[name])
+        if (r1 - r0 + 1) * (c1 - c0 + 1) > MAX_NODES * 20:      # far too many, skip the count
+            continue
+        n = duckdb.connect().execute(
+            f"SELECT count(*) FROM '{_file(name).as_posix()}' WHERE row BETWEEN ? AND ? AND col BETWEEN ? AND ? "
+            f"AND lc IN ({', '.join(map(str, P_VEG))})", [r0, r1, c0, c1]).fetchall()[0][0]
+        if n <= MAX_NODES:
+            return name, n
+    raise BadRequest(f"The area is too large for the search, even with cells of about {max(built)} km: zoom in.")
+
+
+def size_info(bbox):
+    """What the search would use for this view, so the panel can offer budgets in whole cells."""
+    name, burnable = choose_size(bbox)
+    west, south, east, north = bbox
+    ns, ew = cell_km(math.floor((south + north) / 2 / SIZES[name][0]), SIZES[name])
+    return {"size": name, "cell_km2": round(ns * ew, 2), "burnable": burnable, "max_treated": MAX_TREATED,
+            "sizes": [n for n in SIZES if _file(n).exists()]}
+
+
+def load(bbox, name):
+    """The cells of a view at one size: {(row, col): {...}}."""
+    r0, r1, c0, c1 = _window(bbox, SIZES[name])
     cur = duckdb.connect().execute(
-        f"SELECT * FROM '{LANDSCAPE.as_posix()}' WHERE row BETWEEN ? AND ? AND col BETWEEN ? AND ?", [r0, r1, c0, c1])
+        f"SELECT * FROM '{_file(name).as_posix()}' WHERE row BETWEEN ? AND ? AND col BETWEEN ? AND ?", [r0, r1, c0, c1])
     names = [d[0] for d in cur.description]
-    cells = {(r["row"], r["col"]): r for r in (dict(zip(names, v)) for v in cur.fetchall())}
-    burnable = sum(1 for c in cells.values() if c["lc"] in P_VEG)
-    if burnable > MAX_NODES:
-        raise BadRequest(f"The area holds {burnable:,} cells that can burn; zoom in to at most {MAX_NODES:,}.")
-    return cells
+    return {(r["row"], r["col"]): r for r in (dict(zip(names, v)) for v in cur.fetchall())}
 
 
-def factors(cells, wind_ms, wind_from):
-    """Static part of p_burn for every jump: {cell: [(neighbour, factor)]}, so p_burn = min(1, p_h * factor)."""
-    toward = math.radians(wind_from + 180)                  # wind from the west blows toward the east
+def cell_wind(a, wind_ms, wind_from):
+    """(speed m/s, from degrees) in a cell: the request's wind where set, else the cell's usual wind."""
+    ms = wind_ms if wind_ms is not None else a.get("wind_ms")
+    frm = wind_from if wind_from is not None else a.get("wind_from")
+    return (FALLBACK_WIND[0] if ms is None else ms), (FALLBACK_WIND[1] if frm is None else frm)
+
+
+def factors(cells, size, wind_ms, wind_from):
+    """Static part of p_burn for every jump: {cell: [(neighbour, factor)]}, so p_burn = min(1, p_h * factor).
+    The wind is the wind of the burning cell."""
     out = {}
     for (r, c), a in cells.items():
         if a["lc"] not in P_VEG:
             continue
-        ns, ew = cell_km(r)
+        ns, ew = cell_km(r, size)
+        speed, frm = cell_wind(a, wind_ms, wind_from)
+        toward = math.radians(frm + 180)                    # wind from the west blows toward the east
         jumps = []
         for dr, dc in NEIGHBOURS:
             nb = cells.get((r + dr, c + dc))
@@ -114,7 +159,7 @@ def factors(cells, wind_ms, wind_from):
             north_km, east_km = dr * ns, dc * ew
             dist_m = math.hypot(north_km, east_km) * 1000
             theta = math.atan2(east_km, north_km) - toward      # spread direction against the wind
-            p_wind = math.exp(wind_ms * (C1 + C2 * (math.cos(theta) - 1)))
+            p_wind = math.exp(speed * (C1 + C2 * (math.cos(theta) - 1)))
             rise = (nb["elevation"] or 0) - (a["elevation"] or 0)
             p_slope = math.exp(A_S * math.degrees(math.atan(rise / dist_m)))
             jumps.append(((r + dr, c + dc), (1 + P_VEG[nb["lc"]]) * (1 + p_den(nb["lc"], nb["treecover"])) * p_wind * p_slope))
@@ -153,18 +198,28 @@ def simulate(jumps, ignitions, weights, p_h, runs, seed):
 
 
 def calibrate(jumps, ignitions, weights, target, seed):
-    """p_h so the simulated fires have the mean size `target` (in cells). Bisection, same random numbers each step."""
-    max_f = max((f for js in jumps.values() for _, f in js), default=1.0)
-    lo, hi = 0.0, 1.0 / max_f
-    if simulate(jumps, ignitions, weights, hi, CALIBRATION_RUNS, seed)[2] <= target:
+    """p_h so the simulated fires have the mean size `target` (in cells). Bisection on a log scale, from
+    no spread to every jump certain, with the same random numbers each step."""
+    def too_big(p_h):           # stops as soon as the fires burned more than the target allows
+        rng = random.Random(seed)
+        limit, total = target * CALIBRATION_RUNS, 0
+        for i in rng.choices(ignitions, cum_weights=weights, k=CALIBRATION_RUNS):
+            total += len(spread_once(i, jumps, p_h, rng))
+            if total > limit:
+                return True
+        return False
+
+    min_f = min((f for js in jumps.values() for _, f in js if f > 0), default=1.0)
+    lo, hi = 1e-6, 1.0 / min_f
+    if not too_big(hi):
         return hi
     for _ in range(CALIBRATION_STEPS):
-        mid = (lo + hi) / 2
-        if simulate(jumps, ignitions, weights, mid, CALIBRATION_RUNS, seed)[2] < target:
-            lo = mid
-        else:
+        mid = math.sqrt(lo * hi)
+        if too_big(mid):
             hi = mid
-    return (lo + hi) / 2
+        else:
+            lo = mid
+    return math.sqrt(lo * hi)
 
 
 # ---------- Network and greedy ----------
@@ -284,16 +339,19 @@ def spearman(a, b):
 
 # ---------- The request ----------
 
-def bounds(r, c):
-    return [round(c * CELL, 4), round(r * CELL, 4), round((c + 1) * CELL, 4), round((r + 1) * CELL, 4)]
+def bounds(r, c, size):
+    dlat, dlon = size
+    return [round(c * dlon, 5), round(r * dlat, 5), round((c + 1) * dlon, 5), round((r + 1) * dlat, 5)]
 
 
-def run(bbox, budget_km2, wind_ms=None, wind_from=270.0, runs=10_000, seed=1):
-    cells = load(bbox)
-    return search(cells, budget_km2, wind_ms, wind_from, runs, seed)
+def run(bbox, budget_km2, wind_ms=None, wind_from=None, runs=10_000, seed=1):
+    name, _ = choose_size(bbox)
+    out = search(load(bbox, name), SIZES[name], budget_km2, wind_ms, wind_from, runs, seed)
+    out["summary"]["size"] = name
+    return out
 
 
-def search(cells, budget_km2, wind_ms, wind_from, runs, seed):
+def search(cells, size, budget_km2, wind_ms, wind_from, runs, seed):
     if not 1 <= runs <= MAX_RUNS:
         raise BadRequest(f"runs must be between 1 and {MAX_RUNS:,}")
     nodes = {k for k, a in cells.items() if a["lc"] in P_VEG}
@@ -304,10 +362,7 @@ def search(cells, budget_km2, wind_ms, wind_from, runs, seed):
     for k in ignitions:
         acc += cells[k]["ignitions"]
         weights.append(acc)
-    if wind_ms is None:                         # the usual wind on the first day of the fires here
-        winds = sorted(cells[k]["wind"] for k in ignitions if cells[k]["wind"] is not None)
-        wind_ms = winds[len(winds) // 2] if winds else 3.0
-    jumps = factors(cells, wind_ms, wind_from)
+    jumps = factors(cells, size, wind_ms, wind_from)
     target = sum(cells[k]["size_sum"] for k in ignitions) / acc
     p_h = calibrate(jumps, ignitions, weights, target, seed)
     burn, reach, mean_size = simulate(jumps, ignitions, weights, p_h, runs, seed)
@@ -318,25 +373,37 @@ def search(cells, budget_km2, wind_ms, wind_from, runs, seed):
         for j, v in row.items():
             p_in.setdefault(j, {})[i] = v
     adjacent = {k: [nb for nb, _ in jumps[k]] for k in nodes}
-    cost = {k: cell_km(k[0])[0] * cell_km(k[0])[1] for k in nodes}
+    cost = {k: cell_km(k[0], size)[0] * cell_km(k[0], size)[1] for k in nodes}
+    if budget_km2 > MAX_TREATED * max(cost.values()) * 1.01:
+        raise BadRequest(f"At this cell size one search treats at most {MAX_TREATED} cells "
+                         f"(about {round(MAX_TREATED * max(cost.values())):,} km2): choose a smaller area to treat or zoom out.")
     chosen = greedy(nodes, adjacent, p, p_in, cost, budget_km2)
 
     before = objective(nodes, components(nodes, adjacent), p)
     kept = nodes - {k for k, _ in chosen}
     after = objective(kept, components(kept, adjacent), p)
     order = sorted(nodes)
+    winds = [cell_wind(cells[k], wind_ms, wind_from) for k in ignitions]
+    east = sum(w[0] * math.sin(math.radians(w[1])) for w in winds)
+    north = sum(w[0] * math.cos(math.radians(w[1])) for w in winds)
+    fallback = sum(1 for k in nodes if (wind_ms is None and cells[k].get("wind_ms") is None)
+                   or (wind_from is None and cells[k].get("wind_from") is None))
     check = spearman([burn.get(k, 0) for k in order], [cells[k]["burned"] for k in order]) if len(order) > 2 else None
     return {
-        "cells": [{"bounds": bounds(*k), "burn_probability": round(burn.get(k, 0) / runs, 5),
-                   "ignitions": cells[k]["ignitions"], "fires_seen": cells[k]["burned"], "vegetation": vegetation(cells[k]["lc"])}
+        "cells": [{"bounds": bounds(*k, size), "burn_probability": round(burn.get(k, 0) / runs, 5),
+                   "ignitions": cells[k]["ignitions"], "fires_seen": cells[k]["burned"], "vegetation": vegetation(cells[k]["lc"]),
+                   "wind_ms": round(cell_wind(cells[k], wind_ms, wind_from)[0], 1),
+                   "wind_from": compass(cell_wind(cells[k], wind_ms, wind_from)[1])}
                   for k in order],
-        "critical": [{"rank": n + 1, "bounds": bounds(*k), "drop": round(d, 6),
+        "critical": [{"rank": n + 1, "bounds": bounds(*k, size), "drop": round(d, 6),
                       "share": round(d / before, 4) if before else 0, "km2": round(cost[k], 1),
                       "burn_probability": round(burn.get(k, 0) / runs, 5), "vegetation": vegetation(cells[k]["lc"])}
                      for n, (k, d) in enumerate(chosen)],
         "summary": {
             "cells": len(cells), "burnable": len(nodes), "runs": runs, "seed": seed,
-            "wind_ms": round(wind_ms, 1), "wind_from": wind_from, "p_h": round(p_h, 5),
+            "wind_per_cell": wind_ms is None or wind_from is None, "wind_fallback_cells": fallback,
+            "wind_ms": round(sum(w[0] for w in winds) / len(winds), 1),
+            "wind_from": compass(math.degrees(math.atan2(east, north)) % 360), "p_h": round(p_h, 5),
             "mean_size_target": round(target, 3), "mean_size_simulated": round(mean_size, 3),
             "objective_before": round(before, 6), "objective_after": round(after, 6),
             "reduction": round(1 - after / before, 4) if before else 0,
@@ -352,7 +419,7 @@ def self_check():
     def landscape(size):
         def cell(lc=1, ign=0):
             return {"lc": lc, "treecover": 50, "elevation": 0, "ignitions": ign, "size_sum": size * ign,
-                    "burned": ign, "wind": 2.0}
+                    "burned": ign, "wind_ms": 2.0, "wind_from": 270}
         cells = {}
         for r in range(400, 403):
             for c in range(-1000, -997):
@@ -361,14 +428,24 @@ def self_check():
             cells[(r, -997)] = cell(lc=17)      # water between the blocks
         cells[(401, -997)] = cell()             # the bridge
         return cells
-    one_cell = cell_km(401)[0] * cell_km(401)[1] + 1
-    out = search(landscape(30), budget_km2=one_cell, wind_ms=0.0, wind_from=270, runs=500, seed=3)
-    assert [c["bounds"] for c in out["critical"]] == [bounds(401, -997)], out["critical"]
+    size = SIZES[10]
+    one_cell = cell_km(401, size)[0] * cell_km(401, size)[1] + 1
+    out = search(landscape(30), size, budget_km2=one_cell, wind_ms=0.0, wind_from=270, runs=500, seed=3)
+    assert [c["bounds"] for c in out["critical"]] == [bounds(401, -997, size)], out["critical"]
     s = out["summary"]
     assert 0 < s["objective_after"] < s["objective_before"], s
     # Small fires: the calibrated p_h gives the real mean size.
-    s = search(landscape(3), budget_km2=one_cell, wind_ms=0.0, wind_from=270, runs=3000, seed=3)["summary"]
+    s = search(landscape(3), size, budget_km2=one_cell, wind_ms=0.0, wind_from=270, runs=3000, seed=3)["summary"]
     assert abs(s["mean_size_simulated"] - s["mean_size_target"]) < 0.5, s
+    # Per-cell wind: a cell's own wind where the request sets none; downwind jumps are likelier than upwind ones.
+    assert cell_wind({"wind_ms": 5.0, "wind_from": 90}, None, None) == (5.0, 90)
+    assert cell_wind({"wind_ms": None, "wind_from": None}, None, None) == FALLBACK_WIND
+    assert cell_wind({"wind_ms": 5.0, "wind_from": 90}, None, 270) == (5.0, 270)
+    land = landscape(3)
+    two = {(400, -1000): land[(400, -1000)] | {"wind_ms": 8.0, "wind_from": 270},
+           (400, -999): land[(400, -999)] | {"wind_ms": 8.0, "wind_from": 270}}
+    jumps = factors(two, size, None, None)
+    assert dict(jumps[(400, -1000)])[(400, -999)] > dict(jumps[(400, -999)])[(400, -1000)]
     # Cut points of a path a-b-c: only b.
     adj = {"a": ["b"], "b": ["a", "c"], "c": ["b"]}
     assert cut_points({"a", "b", "c"}, adj) == {"b"}
