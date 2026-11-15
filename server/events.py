@@ -14,11 +14,12 @@ Change here:
 import datetime
 import decimal
 import json
+import os
 
 import duckdb
 
 from . import fires
-from .config import EE_PROJECT, ROOT
+from .config import EE_PROJECT, EE_SERVICE_ACCOUNT_JSON, EE_SERVICE_ACCOUNT_KEY, ROOT
 
 EVENTS = ROOT / "data" / "events"
 DLAT, DLON = 0.01, 0.0125       # the grid of pipeline/fire_events.py
@@ -201,10 +202,25 @@ _ee = None
 
 
 def _earth_engine():
+    """Sign in once. With a service-account key (JSON text or a file path) when one is set,
+    otherwise with the token that `earthengine authenticate` stored on this computer."""
     global _ee
     if _ee is None:
-        import ee
-        ee.Initialize(project=EE_PROJECT or None)
+        try:
+            import ee
+        except ImportError:
+            raise Missing("Landsat pictures are switched off on this server: the earthengine-api package is not "
+                          "installed (see README.md).")
+        if not EE_PROJECT:
+            raise Missing("Landsat pictures need Earth Engine. Set EE_PROJECT (see .env.example).")
+        if EE_SERVICE_ACCOUNT_JSON:
+            ee.Initialize(ee.ServiceAccountCredentials(None, key_data=EE_SERVICE_ACCOUNT_JSON), project=EE_PROJECT)
+        elif EE_SERVICE_ACCOUNT_KEY:
+            ee.Initialize(ee.ServiceAccountCredentials(None, EE_SERVICE_ACCOUNT_KEY), project=EE_PROJECT)
+        elif os.environ.get("VERCEL"):          # no browser sign-in there
+            raise Missing("Landsat pictures need Earth Engine. Set EE_SERVICE_ACCOUNT_JSON in the Vercel project.")
+        else:
+            ee.Initialize(project=EE_PROJECT)
         _ee = ee
     return _ee
 

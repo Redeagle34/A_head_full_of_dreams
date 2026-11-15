@@ -21,16 +21,21 @@ import datetime
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from . import events, fires, queries, satellites
+from . import db, events, fires, queries, satellites
 from .config import WEB_DIR
 
 Layer = Literal["viirs", "modis", "both"]
 Metric = Literal["intensity", "days", "unusual"]
 
 app = FastAPI(title="Burning Calendar")
+
+
+@app.exception_handler(db.Missing)
+def database_missing(request, e):
+    return JSONResponse({"detail": str(e)}, status_code=503)
 
 
 def parse_bbox(bbox: str):
@@ -135,6 +140,8 @@ def fire_event_sharp(event_id: int):
         raise HTTPException(404, "no such fire")
     try:
         return events.sharp_pictures(info)
+    except events.Missing as e:                 # Earth Engine is not set up on this server
+        raise HTTPException(503, str(e))
     except Exception as e:                      # not signed in to Earth Engine, quota, network
         raise HTTPException(503, f"Earth Engine is not available: {str(e)[:200]}")
 
