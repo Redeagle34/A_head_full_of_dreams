@@ -102,7 +102,7 @@ pipeline/               builds the data, in this order
   harmonize.py          VIIRS -> MODIS-equivalent, scored on withheld years
   export_web.py         data files for the state overview page
   build_db.py           data/fire.duckdb, the database the server reads
-  fire_events.py        group VIIRS detections into fires
+  danger_fires.py        group VIIRS detections into fires
   danger_inputs.py      weather and place inputs per fire, from Google Earth Engine
   danger_model.py       train the danger model, rate every fire, store it in the database
   check_keys.py         test the keys in .env (FIRMS, Earth Engine)
@@ -118,7 +118,7 @@ web/
   index.html            map page: layout
   style.css             map page: appearance
   app.js                map page: behaviour (sections are listed at the top)
-  fires.js              map page: fire markers and the "Fires nearby" search
+  danger.js              map page: fire markers and the "Fires nearby" search
   states.html           state overview page
   data/                 calendar.json, states.geojson (generated, committed)
 data/                   raw CSV, Parquet, fire.duckdb (generated, not in git)
@@ -176,7 +176,7 @@ Google Earth Engine ──danger_inputs──> data/danger/inputs_place.parquet,
 | `harmonize.py` | state-tagged detections | weekly MODIS-equivalent values with standard deviation | seconds |
 | `export_web.py` | calendar and harmonized tables | state overview data with flags and typical ranges | seconds |
 | `build_db.py` | state-tagged detections | `fire.duckdb` with the three map layers (156 MB) | seconds |
-| `fire_events.py` | state-tagged detections | fires and their daily growth | seconds |
+| `danger_fires.py` | state-tagged detections | fires and their daily growth | seconds |
 | `danger_inputs.py` | fires, Earth Engine | weather and place inputs per fire | about 17 minutes |
 | `danger_model.py` | fires, inputs | danger model, level of every fire, written into `fire.duckdb` (344 MB) | about 4 minutes |
 
@@ -288,7 +288,7 @@ python pipeline/check_keys.py
 ```
 
 ```bash
-python pipeline/fire_events.py
+python pipeline/danger_fires.py
 ```
 
 ```bash

@@ -1,6 +1,6 @@
 """Train the fire danger model, rate every fire and store the result in data/fire.duckdb.
 
-Run:  python pipeline/danger_model.py     (after fire_events.py, danger_inputs.py and build_db.py;
+Run:  python pipeline/danger_model.py     (after danger_fires.py, danger_inputs.py and build_db.py;
                                            stop the web server first, the database is rewritten)
 Output: tables `fires`, `danger_levels` in data/fire.duckdb
         data/danger/model_large100.txt, model_large1000.txt, metrics.json

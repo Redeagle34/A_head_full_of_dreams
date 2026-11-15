@@ -1,6 +1,6 @@
 """Fires and their danger rating: list them for a map view or around a point.
 
-A fire is a group of VIIRS detections that touch in space and time (pipeline/fire_events.py).
+A fire is a group of VIIRS detections that touch in space and time (pipeline/danger_fires.py).
 Its rating (pipeline/danger_model.py) has three parts, always shown apart:
   level       chance that the fire reaches 1,000 acres, as one of five words
   exposure    built-up surface within 5 km of where it started
@@ -88,7 +88,7 @@ def _run(sql, params=None):
         return db.cursor().execute(sql, params or {}).fetchall()
     except Exception as e:
         if "does not exist" in str(e):
-            raise NotBuilt("Fire ratings are not built yet. Run pipeline/fire_events.py, danger_inputs.py, "
+            raise NotBuilt("Fire ratings are not built yet. Run pipeline/danger_fires.py, danger_inputs.py, "
                            "danger_model.py.") from e
         raise
 

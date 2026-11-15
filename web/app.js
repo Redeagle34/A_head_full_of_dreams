@@ -8,7 +8,7 @@
  *   5. Top bar: place search, dates, buttons
  *   6. Start
  *
- * Rated fires and the "Fires nearby" search are in fires.js.
+ * Rated fires and the "Fires nearby" search are in danger.js.
  */
 
 // ---------- 1. State and helpers ----------
@@ -68,7 +68,7 @@ function createMap() {
     map.addSource("fire", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
     map.addLayer({ id: "fire", type: "fill", source: "fire", paint: { "fill-antialias": false } }, firstLabel);
     setBasemap();
-    setupFires();                                   // fires.js
+    setupFires();                                   // danger.js
     map.on("click", "fire", showPopup);
     map.on("mousemove", "fire", () => map.getCanvas().style.cursor = "pointer");
     map.on("mouseleave", "fire", () => map.getCanvas().style.cursor = "");
@@ -100,7 +100,7 @@ function setStatus(text) { $("status").textContent = text || ""; }
 async function refresh() {
   if (!map?.getSource("fire")) return;
   cellsRequest?.abort();
-  refreshFires();                                   // fires.js
+  refreshFires();                                   // danger.js
   updateDownload();
   if (state.layer === "none") { drawCells(null); if (!$("panel").hidden) loadCalendar(); return; }
   const m = META[state.layer];

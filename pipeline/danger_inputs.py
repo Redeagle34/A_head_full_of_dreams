@@ -1,6 +1,6 @@
 """Pull the inputs of the danger model from Google Earth Engine, for every fire.
 
-Run:  python pipeline/danger_inputs.py            (after pipeline/fire_events.py; needs EE_PROJECT in .env)
+Run:  python pipeline/danger_inputs.py            (after pipeline/danger_fires.py; needs EE_PROJECT in .env)
       python pipeline/danger_inputs.py --check    compare 200 rows with the reference training table
 Output: data/danger/inputs_place.parquet     one row per 0.04 degree cell (about 4 km)
         data/danger/inputs_weather.parquet   one row per cell and first day of a fire

@@ -232,7 +232,7 @@ Review of the reference models (re-run by us):
   and from 0.810 to 0.883. This is why the danger model below combines both.
 
 Built:
-- `pipeline/fire_events.py`: VIIRS detections grouped into 1,517,969 fires
+- `pipeline/danger_fires.py`: VIIRS detections grouped into 1,517,969 fires
   (touching cells of about 1.6 km, gaps of up to 2 days). Size = satellite
   footprint on cells of about 440 m.
 - `pipeline/danger_inputs.py`: weather (gridMET), terrain, vegetation, fire
@@ -242,7 +242,7 @@ Built:
   judged at the end of the fire's second day. Train 2012-2020, validation 2021,
   test 2022-2025. Calibrated on 2021 and cut into five levels.
 - `server/fires.py`, routes `/api/fires`, `/api/fires/near`, `/api/danger/levels`.
-- `web/fires.js`: fire markers colored by level, the three factors of a fire in
+- `web/danger.js`: fire markers colored by level, the three factors of a fire in
   a popup, and the "Fires nearby" panel.
 
 Results on 2022-2025 (never used for training):

@@ -1,6 +1,6 @@
 """Group VIIRS detections into fires.
 
-Run:  python pipeline/fire_events.py     (after pipeline/calendar_table.py)
+Run:  python pipeline/danger_fires.py     (after pipeline/calendar_table.py)
 Output: data/danger/fires.parquet       one row per fire
         data/danger/fire_days.parquet   one row per fire and day
 
