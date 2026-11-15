@@ -61,7 +61,7 @@ function drawWeeks() {
     b.type = "button";
     b.className = (r.flag ? "flag " : "") + (addDays(r.date, 6) >= state.start && r.date <= state.end ? "in" : "");
     b.setAttribute("aria-label", `Week of ${pretty(r.date)}: ${r.value > 0 ? num(r.value) + " burning squares" : "nothing burning"}, usual ${num(usual)}`);
-    b.innerHTML = `<i style="height:${Math.sqrt(r.value) / top * 100}%"></i><u style="bottom:${Math.sqrt(usual) / top * 100}%"></u>` +
+    b.innerHTML = `<i style="transform:scaleY(${Math.max(0.015, Math.sqrt(r.value) / top).toFixed(3)})"></i><u style="bottom:${Math.sqrt(usual) / top * 100}%"></u>` +
       (month.getUTCDate() <= 7 ? `<span>${month.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" })}</span>` : "") +
       `<span class="tip"><b>Week of ${pretty(r.date)}</b><br>${r.value > 0 ? num(r.value) + " burning squares" : "nothing burning"} · usual ${num(usual)}` +
       (r.flag === 2 ? "<br>A record for this time of year" : r.flag === 1 ? "<br>Unusual for this time of year" : "") + `</span>`;

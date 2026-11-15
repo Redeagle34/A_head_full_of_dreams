@@ -73,8 +73,8 @@ body[data-level="2"] .tl-date input, body[data-level="3"] .tl-date input { color
 .weekstrip { display: grid; grid-template-columns: repeat(53, minmax(0, 1fr)); gap: 3px; align-items: end; height: 190px; position: relative; padding-bottom: 26px; }
 .weekstrip button { all: unset; cursor: pointer; position: relative; height: 100%; display: flex; align-items: flex-end; border-radius: 6px; }
 .weekstrip button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.weekstrip i { display: block; width: 100%; min-height: 3px; border-radius: 6px 6px 2px 2px; background: var(--ink); opacity: .55;
-               transition: height .5s cubic-bezier(.2, .8, .2, 1), opacity .2s; }
+.weekstrip i { display: block; width: 100%; height: 100%; border-radius: 6px 6px 2px 2px; background: var(--ink); opacity: .55;
+               transform-origin: bottom; transition: transform .5s cubic-bezier(.2, .8, .2, 1), opacity .2s; }
 .weekstrip button:hover i, .weekstrip button.in i { opacity: 1; }
 .weekstrip button.flag i { background: var(--accent); opacity: 1; }
 .weekstrip u { position: absolute; left: -1px; right: -1px; height: 2px; background: var(--ink); text-decoration: none; }   /* what is usual */
