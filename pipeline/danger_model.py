@@ -1,9 +1,12 @@
-"""Train the fire danger model, rate every fire and store the result in data/fire.duckdb.
+"""Train the fire danger model and rate every fire.
 
 Run:  python pipeline/danger_model.py     (after danger_fires.py, danger_inputs.py and build_db.py;
-                                           stop the web server first, the database is rewritten)
-Output: tables `fires`, `danger_levels` in data/fire.duckdb
+                                           stop the web server first, the database is written to)
+Output: data/events/event_danger.parquet   the rating of every fire event that has VIIRS detections
+        table `danger_levels` in data/fire.duckdb   what each level meant on the test years
         data/danger/model_large100.txt, model_large1000.txt, metrics.json
+
+A fire is a fire event of pipeline/fire_events.py; the model is trained on those same fires.
 
 Question the model answers, for a fire the satellites have watched for two days:
   will its footprint reach 100 acres? 1,000 acres?
@@ -19,7 +22,7 @@ The five danger levels are cut on the calibrated chance of reaching 1,000 acres.
 means is measured on 2022-2025 and stored in `danger_levels`.
 
 The size is the satellite footprint, not a surveyed perimeter. The check against agency
-reports (reference table of branch us-findings) is printed at the end.
+reports (reference table in proofs/us-experiments/models) is printed at the end.
 """
 import json
 import pathlib
@@ -35,7 +38,7 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from server.fires import LEVELS, LEVEL_STARTS      # noqa: E402
+from server.fires import COLUMNS as RATING_COLUMNS, LEVELS, LEVEL_STARTS      # noqa: E402
 
 DANGER = ROOT / "data" / "danger"
 REFERENCE = ROOT / "proofs" / "us-experiments" / "models"
@@ -178,7 +181,8 @@ def compare_with_reports(table, metrics):
         rows[column] = rows[column].astype("category")
     rows = rows.set_index("id").loc[test.id]
     for size in SIZES:
-        booster = lgb.Booster(model_file=str(REFERENCE / f"model_B_large{size}.txt"))
+        # as text: a Windows checkout stores these files with CRLF line ends, which LightGBM cannot parse
+        booster = lgb.Booster(model_str=(REFERENCE / f"model_B_large{size}.txt").read_text())
         p = booster.predict(rows[meta[f"B_large{size}"]["features"]])
         result[f"reference_model_ranks_reported_{size}"] = score((test.reported.values >= size).astype(int), p)
     metrics["against_agency_reports"] = result
@@ -186,17 +190,18 @@ def compare_with_reports(table, metrics):
 
 
 def store(table, meaning):
-    keep = ["fire_id", "state", "first_day", "last_day", "days_seen", "lat", "lon", "west", "south", "east", "north",
-            "acres", "acres_day2", "growth", "detections", "frp_sum", "frp_max", "d1_night_share",
-            "level", "p100", "p1000", "built_5km", "pop_density", "vs", "rmin", "fm1000", "pr30", "erc", "tmmx",
-            "lc", "treecover", "slope"]
-    fires = table[keep].copy()                              # noqa: F841  (read by DuckDB below)
-    fires["lc"] = fires.lc.astype("float")
+    """The rating of each fire, in the columns server/fires.py reads, and the meaning of the levels."""
+    rated = table.rename(columns={"fire_id": "event_id", "first_day": "rated_first_day", "last_day": "rated_last_day"})
+    rated = rated.assign(fire_id=rated.event_id, parts=1, share=1.0, fire_share=1.0, lc=rated.lc.astype("float"))
+    rated = rated[["event_id"] + RATING_COLUMNS]            # noqa: F841  (read by DuckDB below)
     con = duckdb.connect(str(DB))
-    con.execute("CREATE OR REPLACE TABLE fires AS SELECT * REPLACE (level::TINYINT AS level, lc::SMALLINT AS lc, first_day::DATE AS first_day, last_day::DATE AS last_day) "
-                "FROM fires ORDER BY first_day")
+    out = (ROOT / "data" / "events" / "event_danger.parquet").as_posix()
+    con.execute(f"""COPY (SELECT * REPLACE (level::TINYINT AS level, lc::SMALLINT AS lc,
+                                           rated_first_day::DATE AS rated_first_day, rated_last_day::DATE AS rated_last_day)
+                         FROM rated ORDER BY event_id) TO '{out}' (FORMAT parquet, COMPRESSION zstd)""")
+    con.execute("DROP TABLE IF EXISTS fires")               # older runs kept the ratings in the database
     con.execute("CREATE OR REPLACE TABLE danger_levels AS SELECT * FROM meaning")
-    print("stored:", con.execute("SELECT count(*), count(level) FROM fires").fetchone(), "fires, rated")
+    print("stored:", con.execute(f"SELECT count(*), count(level) FROM '{out}'").fetchone(), "fires, rated")
     con.close()
 
 

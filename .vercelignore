@@ -10,3 +10,6 @@ requirements-pipeline.txt
 data/*
 !data/deploy
 !data/events
+# not read by the server
+data/events/event_cell_days.parquet
+data/events/*.log

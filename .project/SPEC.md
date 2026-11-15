@@ -324,3 +324,69 @@ Open after the merge:
 - The Terra 3D model asks for two texture files that are not in the repository
   (404); the model still shows.
 - Six buttons and the time bar crowd narrow screens; phone layout not reworked.
+
+## One fire definition (decided 2026-11-15, src: user)
+
+Decision: one definition of a fire everywhere, the fire event of
+`pipeline/fire_events.py` (MODIS and VIIRS detections that touch on squares of
+about 1 km and follow within 5 days), and the danger model trained again on
+those fires. Done on branch `integration`, which also holds the Terra textures,
+the layout for narrow screens, the Vercel setup and the AWS scripts.
+
+Why not the earlier plan of carrying ratings over from the old VIIRS grouping:
+`pipeline/event_danger.py` failed its own check on real data (254 VIIRS
+detections fell into two events), because a cell can burn again inside the date
+range another event has for that cell. It was removed.
+
+Changes:
+- `fire_events.py` also writes `event_cell_days.parquet`: the fire of every
+  burning cell and day. This is the exact link from a detection to its fire.
+- `danger_fires.py` no longer groups detections. It reads that link and counts,
+  per fire, what VIIRS saw day by day. `fire_id` is the `event_id`.
+- `danger_inputs.py` re-pulled for the new first days (16 minutes).
+- `danger_model.py` trains on the events and writes one rating per event to
+  `data/events/event_danger.parquet`. The ratings are no longer stored in
+  `fire.duckdb`, which is back to 156 MB.
+- Reference models are loaded as text: a Windows checkout stores them with CRLF
+  line ends, which LightGBM cannot parse.
+
+Results on 2022-2025 (never used for training), 1,435,928 fires with VIIRS:
+
+| Check | Events (now) | Old VIIRS grouping |
+|---|---|---|
+| Rank fires not yet 1,000 acres on day 2 (AUC) | 0.936 | 0.944 |
+| Same, satellite inputs only | 0.895 | 0.928 |
+| Same, weather and place only | 0.865 | 0.859 |
+| Rating ranks agency-reported size >= 1,000 acres | 0.904 | 0.912 |
+| Reference model B-1000 on the same reports | 0.750 | 0.748 |
+| Footprint / reported size, median, 100 acres up | 0.93 | 0.91 |
+
+| Level | Fires 2022-2025 | Reached 1,000 acres | Share of all large fires |
+|---|---|---|---|
+| Low | 474,721 | 0.11% | 10% |
+| Moderate | 28,147 | 2.6% | 14% |
+| High | 4,417 | 8.5% | 7% |
+| Very High | 1,699 | 21% | 7% |
+| Extreme | 3,430 | 97% | 63% |
+
+Checked in the browser on the local server: one Fires button; list on screen
+(10 fires of 2 km2 or more around the Park Fire) and around a point (5 within
+50 km, the Park Fire first); a fire's page shows its level, exposure and what
+VIIRS saw; markers colored by level; satellites panel, time bar; no console
+errors (the Terra texture errors are gone); Landsat pictures for the Park Fire
+answer in 22 s. At 375 x 812 the top bar, the panel
+and the time bar do not overlap and nothing scrolls sideways. Every route
+answers in under 0.5 s.
+
+Not done or not verified:
+- Scores are slightly lower than on the old grouping: with gaps of up to 5 days
+  more fires restart after day 2, which the first two days cannot show.
+- 10% of the fires that later got large were rated Low.
+- Fires seen by MODIS only (all before 2012, some after) and fires in Hawaii
+  have no level.
+- The Vercel setup and the AWS scripts were not run for real. `prepare_deploy.py`
+  ran: upload 319 MB (database 149, events 161, web 9), above the 100 MB that
+  Vercel allows without the Pro plan; the function fits (about 390 of 500 MB)
+  only without `earthengine-api`, so Landsat pictures would be off there.
+- 3D satellites were not looked at on a wide screen; "My location" needs a real
+  device.

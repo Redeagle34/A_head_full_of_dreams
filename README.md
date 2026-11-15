@@ -67,52 +67,47 @@ What the levels meant in 2022-2025, years the model never saw:
 
 | Level | Fires | Reached 1,000 acres |
 |---|---|---|
-| Low | 513,427 | 0.07% |
-| Moderate | 19,635 | 2.2% |
-| High | 5,606 | 7.7% |
-| Very High | 1,098 | 24% |
-| Extreme | 4,021 | 96% |
+| Low | 474,721 | 0.11% |
+| Moderate | 28,147 | 2.6% |
+| High | 4,417 | 8.5% |
+| Very High | 1,699 | 21% |
+| Extreme | 3,430 | 97% |
 
 The rating is a suggestion to help decide where to look first. It is not a
 dispatch order.
 
 How it is made:
 
-- **Fires**: VIIRS detections that touch in space (cells of about 1.6 km) and
-  time (gaps of up to 2 days) are one fire: 1,517,969 fires, 2012-2025.
+- **Fires**: MODIS and VIIRS detections that touch on squares of about 1 km and
+  follow within 5 days are one fire (`pipeline/fire_events.py`): 2,035,833 fires,
+  2000-2025. The 1,435,928 that have VIIRS detections (2012-2025) are rated.
 - **Size**: the satellite footprint, on cells of about 440 m. Against agency
-  reports of 100 acres or more it is 0.91 of the reported size (median).
+  reports of 100 acres or more it is 0.93 of the reported size (median).
 - **Model**: gradient-boosted trees (LightGBM). Inputs: what the satellites saw
   on day 1 and day 2, weather and fuel dryness (gridMET), terrain, vegetation,
   fire regime and population. Trained on 2012-2020, tuned on 2021.
 - **Score on 2022-2025**: ranks fires that are still under 1,000 acres on day 2
-  by whether they get there with an AUC of 0.944 (satellite inputs alone 0.928,
-  weather and place alone 0.859). Against agency-reported final size it scores
-  0.912, where a weather-and-place model trained on reports scores 0.748.
+  by whether they get there with an AUC of 0.936 (satellite inputs alone 0.895,
+  weather and place alone 0.865). Against agency-reported final size it scores
+  0.904, where a weather-and-place model trained on reports scores 0.750.
 
 The weather-and-place inputs and the comparison model come from the team's
-experiments in branch `us-findings` (`proofs/us-experiments`).
+experiments in `proofs/us-experiments`.
 
-### One definition of a fire on the page
+### One definition of a fire
 
-The page lists one kind of fire: MODIS and VIIRS detections that touch on squares of
-about 1 km and follow within 5 days (`pipeline/fire_events.py`). The danger model was
-trained on a stricter grouping (VIIRS only, gaps of up to 2 days, above), and its inputs
-and scores belong to that grouping. `pipeline/event_danger.py` carries each rating over:
-every VIIRS detection lies in exactly one fire of each kind, so the two are matched by the
-detections they share, and a fire takes the level of the rated group that holds most of
-its VIIRS detections.
+The page, the danger model and the fire tables all use the same fire: MODIS and VIIRS
+detections that touch on squares of about 1 km and follow within 5 days
+(`pipeline/fire_events.py`). The danger model is trained on those fires, so a fire and its
+rating are the same thing.
 
-What still differs, and is said on the page:
+What the rating does not cover:
 
-- A fire can hold several rated groups (a pause of 3 to 5 days splits the groups but not
-  the fire). Its page says when the rated group is only part of it.
-- The rating's size is the footprint on squares of 440 m; the fire's area counts squares
-  of 1 km from both sensors.
 - Fires seen by MODIS only (all fires before 2012) and fires in Hawaii have no level.
-- The table of what each level meant counts rated groups, not fires.
-
-Training the model again on the fires of the page would remove these differences.
+- The rating counts VIIRS detections only, so its numbers mean the same in every year.
+  Its size is the VIIRS footprint on squares of 440 m; the fire's area counts squares of
+  1 km from both sensors, and is the larger of the two.
+- Day 1 of the rating is the first day with a VIIRS detection.
 ## Fires one by one, missed fires, satellites and the time bar
 
 Added on the branch `fire-events-satellite-globe`. Method, sources and measured results:
@@ -135,7 +130,6 @@ Added on the branch `fire-events-satellite-globe`. Method, sources and measured 
 | `pipeline/fire_events.py` | `data/events/events.parquet`, `event_cells.parquet` | `calendar_table.py` |
 | `pipeline/event_enrich.py [project] [min_km2]` | `data/events/enrichment.parquet` (burned area, vegetation) | Earth Engine sign-in |
 | `pipeline/missed_fires.py` | `data/events/reported_fires.parquet`, `missed_summary.json` | `lightgbm`, the models in `proofs/us-experiments/models/` |
-| `pipeline/event_danger.py` | `data/events/event_danger.parquet` (danger level of each fire) | `fire_events.py`, `danger_model.py` |
 
 | Route | Answers |
 |---|---|
@@ -155,11 +149,10 @@ pipeline/               builds the data, in this order
   harmonize.py          VIIRS -> MODIS-equivalent, scored on withheld years
   export_web.py         data files for the state overview page
   build_db.py           data/fire.duckdb, the database the server reads
-  danger_fires.py       group VIIRS detections into the fires the danger model rates
+  danger_fires.py       what VIIRS saw of each fire, day by day: satellite inputs of the danger model
   danger_inputs.py      weather and place inputs per fire, from Google Earth Engine
   danger_model.py       train the danger model, rate every fire, store it in the database
   fire_events.py        group MODIS and VIIRS detections into the fires the page lists
-  event_danger.py       give each listed fire its danger rating
   check_keys.py         test the keys in .env (FIRMS, Earth Engine)
 server/                 FastAPI application
   main.py               routes and input checks only
@@ -217,11 +210,14 @@ Census state borders ──calendar_table──> data/calendar/calendar.parquet
 
 data/calendar/detections.parquet ──build_db──> data/fire.duckdb ──server──> web/index.html
 
-data/calendar/detections.parquet ──danger_fires──> data/danger/fires.parquet
+data/calendar/detections.parquet ──fire_events──> data/events/events.parquet, event_cells, event_cell_days
+                                                        │
+                                    danger_fires ──> data/danger/fires.parquet
                                                         │
 Google Earth Engine ──danger_inputs──> data/danger/inputs_place.parquet, inputs_weather.parquet
                                                         │
-                                    danger_model ──> tables `fires`, `danger_levels` in data/fire.duckdb
+                                    danger_model ──> data/events/event_danger.parquet,
+                                                     table `danger_levels` in data/fire.duckdb
 ```
 
 | Script | Input | Output | Run time |
@@ -231,9 +227,10 @@ Google Earth Engine ──danger_inputs──> data/danger/inputs_place.parquet,
 | `harmonize.py` | state-tagged detections | weekly MODIS-equivalent values with standard deviation | seconds |
 | `export_web.py` | calendar and harmonized tables | state overview data with flags and typical ranges | seconds |
 | `build_db.py` | state-tagged detections | `fire.duckdb` with the three map layers (156 MB) | seconds |
-| `danger_fires.py` | state-tagged detections | fires and their daily growth | seconds |
+| `fire_events.py` | state-tagged detections | the fires: one row each, their cells, their cell-days | seconds |
+| `danger_fires.py` | fires, state-tagged detections | what VIIRS saw of each fire, day by day | seconds |
 | `danger_inputs.py` | fires, Earth Engine | weather and place inputs per fire | about 17 minutes |
-| `danger_model.py` | fires, inputs | danger model, level of every fire, written into `fire.duckdb` (344 MB) | about 4 minutes |
+| `danger_model.py` | fires, inputs | danger model, level of every fire (`data/events/event_danger.parquet`) | about 4 minutes |
 
 Every script can be run again safely: it rebuilds its output from its input and
 prints its own checks.
@@ -343,6 +340,10 @@ python pipeline/check_keys.py
 ```
 
 ```bash
+python pipeline/fire_events.py
+```
+
+```bash
 python pipeline/danger_fires.py
 ```
 
@@ -354,16 +355,7 @@ python pipeline/danger_inputs.py
 python pipeline/danger_model.py
 ```
 
-```bash
-python pipeline/fire_events.py
-```
-
-```bash
-python pipeline/event_danger.py
-```
-
-Run `danger_model.py` again after every `build_db.py`, with the server stopped, and
-`event_danger.py` after it.
+Run `danger_model.py` again after every `build_db.py`, with the server stopped.
 
 ```bash
 python -m uvicorn server.main:app --port 8780

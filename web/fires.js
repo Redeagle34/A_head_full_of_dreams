@@ -3,7 +3,7 @@
 
    A fire here is always the same thing: MODIS and VIIRS detections that touch on squares
    of about 1 km and follow within 5 days (pipeline/fire_events.py). Its danger level
-   comes from pipeline/event_danger.py.
+   comes from pipeline/danger_model.py, trained on those same fires.
 
    Uses the helpers of app.js ($, state, map, api, viewParams, pretty, addDays, num, clamp).
    app.js calls Fires.attach() when the map is ready, and refresh() of the object it
@@ -89,7 +89,7 @@ function build() {
         <summary>What the danger levels mean</summary>
         <p class="hint">The level is the chance that a fire reaches 1,000 acres, judged after VIIRS has watched it for two days. The table shows what happened at each level in 2022–2025, years the model never saw.</p>
         <table id="levelTable"></table>
-        <p class="hint">What still differs: the model was trained on VIIRS detections grouped with gaps of up to 2 days, and it measures size on squares of 440 m. A fire in this list allows gaps of up to 5 days and its area counts squares of 1 km from both sensors. Each fire takes the level of the VIIRS group that holds most of its detections; its page says when that group is only part of it. The counts in the table are of those groups. Fires seen by MODIS only (all fires before 2012) and fires in Hawaii are not rated.</p>
+        <p class="hint">The level uses VIIRS only: its size is the VIIRS footprint on squares of 440 m, while a fire's area counts squares of 1 km from MODIS and VIIRS. Fires seen by MODIS only (all fires before 2012) and fires in Hawaii are not rated.</p>
         <p class="hint">This is a suggestion to help decide where to look first. It is not a dispatch order.</p>
       </details>
       <h3>Reported fires that were missed</h3>

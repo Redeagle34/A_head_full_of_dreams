@@ -5,9 +5,8 @@ The rating (pipeline/danger_model.py) has three parts, always shown apart:
   exposure    built-up surface within 5 km of where it started
   behaviour   what VIIRS saw in the first two days: footprint, growth, night burning, weather
 
-The model was trained on VIIRS detections grouped with gaps of up to 2 days
-(pipeline/danger_fires.py). pipeline/event_danger.py carries each rating over to the
-fire event that holds those detections; rating() below turns that row into words.
+The model is trained on the fire events themselves (pipeline/danger_model.py writes one
+rating per event to data/events/event_danger.parquet); rating() below turns that row into words.
 
 Change here:
   LEVELS, LEVEL_STARTS   names of the levels and the chance at which each starts
@@ -54,7 +53,7 @@ def _run(sql, params=None):
     except Exception as e:
         if "does not exist" in str(e):
             raise NotBuilt("Fire ratings are not built yet. Run pipeline/danger_fires.py, danger_inputs.py, "
-                           "danger_model.py, event_danger.py.") from e
+                           "danger_model.py.") from e
         raise
 
 

@@ -3,6 +3,7 @@
 Run:  python pipeline/fire_events.py     (after pipeline/calendar_table.py)
 Output: data/events/events.parquet       one row per fire
         data/events/event_cells.parquet  the ground cells of each fire, with first and last day
+        data/events/event_cell_days.parquet  the fire of every burning cell and day
 
 Method (the idea of FIRED, Balch et al. 2020, applied to active-fire detections):
 detections are placed on a grid of about 1 km. Two burning cells belong to the
@@ -137,6 +138,9 @@ def main():
     con.execute(f"COPY (SELECT * FROM event ORDER BY area_km2 DESC) TO '{(OUT / 'events.parquet').as_posix()}' (FORMAT parquet)")
     con.execute(f"COPY (SELECT event_id, gy, gx, first_day, last_day, days FROM cell ORDER BY event_id) "
                 f"TO '{(OUT / 'event_cells.parquet').as_posix()}' (FORMAT parquet)")
+    # Which fire each burning cell belongs to on each day (a cell can burn again later in another fire).
+    con.execute(f"COPY (SELECT event_id, gy, gx, DATE '2000-01-01' + day::INT AS day FROM node_df ORDER BY event_id) "
+                f"TO '{(OUT / 'event_cell_days.parquet').as_posix()}' (FORMAT parquet, COMPRESSION zstd)")
     print("fires:", con.execute("SELECT count(*) FROM event").fetchone()[0])
     print("by size (km2): fires, share of all burned cells")
     for r in con.execute("""SELECT CASE WHEN area_km2 < 2 THEN 'a <2' WHEN area_km2 < 10 THEN 'b 2-10'

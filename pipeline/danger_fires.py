@@ -1,33 +1,32 @@
-"""Group VIIRS detections into fires.
+"""What the VIIRS satellites saw of each fire, day by day: the satellite inputs of the danger model.
 
-Run:  python pipeline/danger_fires.py     (after pipeline/calendar_table.py)
-Output: data/danger/fires.parquet       one row per fire
+Run:  python pipeline/danger_fires.py     (after pipeline/fire_events.py)
+Output: data/danger/fires.parquet       one row per fire that has VIIRS detections
         data/danger/fire_days.parquet   one row per fire and day
 
-A fire = detections that touch in space and time: same or neighbouring cell of
-about 1.6 km, on the same day or up to 2 days later (one missed day, for
-example under cloud, does not split a fire).
+A fire is a fire event of pipeline/fire_events.py (MODIS and VIIRS detections that touch on
+squares of about 1 km and follow within 5 days). `fire_id` here is its `event_id`. Fires seen
+by MODIS only (all fires before 2012) have no row: the danger model needs VIIRS.
 
-Size is estimated from the satellite: number of distinct cells of about 440 m
-that ever held a detection, times the cell area. It is a rough footprint, not a
-surveyed perimeter.
+Only VIIRS detections are counted here, so the numbers mean the same in every year: MODIS
+would add detections before 2012 and fewer and fewer of them as its two satellites age.
+
+Size is the VIIRS footprint: number of distinct cells of about 440 m that ever held a
+detection, times the cell area. It is a rough footprint, not a surveyed perimeter. Day 1 is
+the first day with a VIIRS detection.
 """
 import math
 import pathlib
 
 import duckdb
-import numpy as np
-from scipy.sparse import coo_matrix
-from scipy.sparse.csgraph import connected_components
+
+from fire_events import DLAT, DLON
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DET = f"'{(ROOT / 'data' / 'calendar' / 'detections.parquet').as_posix()}'"
+EVENT_DAYS = ROOT / "data" / "events" / "event_cell_days.parquet"
 OUT = ROOT / "data" / "danger"
 
-# ponytail: fixed-degree cells (not equal-area); fine for linking neighbours in the
-# contiguous U.S., use a projected grid if Alaska is added.
-LINK_LAT, LINK_LON = 0.015, 0.02        # linking cell, about 1.7 x 1.6 km
-MAX_GAP_DAYS = 2
 FINE_LAT, FINE_LON = 0.004, 0.005       # footprint cell, about 445 x 430 m
 ACRES_PER_KM2 = 247.105
 FINE_ACRES_AT_EQUATOR = FINE_LAT * 111.32 * FINE_LON * 111.32 * ACRES_PER_KM2
@@ -37,37 +36,14 @@ def fine_cell_acres(lat):
     return FINE_ACRES_AT_EQUATOR * math.cos(math.radians(lat))
 
 
-def label_nodes(con):
-    """Table node_fire(gy, gx, day, fire_id): every linking cell and day with a detection."""
-    con.execute(f"""
-        CREATE TABLE node AS
-        SELECT gy, gx, day, row_number() OVER () - 1 AS id FROM (
-            SELECT DISTINCT floor(latitude / {LINK_LAT})::INT AS gy, floor(longitude / {LINK_LON})::INT AS gx,
-                   acq_date AS day
-            FROM {DET} WHERE sensor LIKE 'viirs%')""")
-    n = con.execute("SELECT count(*) FROM node").fetchone()[0]
-    # One plain equality join per neighbour offset (a single join over all offsets is planned badly).
-    offsets = [(dy, dx, dd) for dd in range(MAX_GAP_DAYS + 1) for dy in (-1, 0, 1) for dx in (-1, 0, 1)
-               if dd > 0 or (dy, dx) > (0, 0)]
-    edges = con.execute(" UNION ALL ".join(
-        f"SELECT a.id AS a, b.id AS b FROM node a JOIN node b "
-        f"ON b.gy = a.gy + {dy} AND b.gx = a.gx + {dx} AND b.day = a.day + {dd}"
-        for dy, dx, dd in offsets)).fetchnumpy()
-    graph = coo_matrix((np.ones(len(edges["a"]), dtype=np.int8), (edges["a"], edges["b"])), shape=(n, n))
-    count, label = connected_components(graph, directed=False)
-    label_table = {"id": np.arange(n), "fire_id": label}      # noqa: F841  (read by DuckDB below)
-    con.execute("CREATE TABLE node_fire AS SELECT gy, gx, day, fire_id FROM node JOIN label_table USING (id)")
-    return n, count
-
-
 def build(con):
     con.execute(f"""
         CREATE TABLE det AS
-        SELECT n.fire_id, d.acq_date AS day, d.latitude AS lat, d.longitude AS lon, coalesce(d.frp, 0) AS frp,
-               d.daynight = 'N' AS night, d.state,
+        SELECT n.event_id AS fire_id, d.acq_date AS day, d.latitude AS lat, d.longitude AS lon,
+               coalesce(d.frp, 0) AS frp, d.daynight = 'N' AS night, d.state,
                floor(d.latitude / {FINE_LAT})::INT AS fy, floor(d.longitude / {FINE_LON})::INT AS fx
-        FROM {DET} d JOIN node_fire n
-          ON n.gy = floor(d.latitude / {LINK_LAT})::INT AND n.gx = floor(d.longitude / {LINK_LON})::INT
+        FROM {DET} d JOIN '{EVENT_DAYS.as_posix()}' n
+          ON n.gy = floor(d.latitude / {DLAT})::INT AND n.gx = floor(d.longitude / {DLON})::INT
          AND n.day = d.acq_date
         WHERE d.sensor LIKE 'viirs%'""")
     # Per fire and day: detections, power, and the footprint cells first seen that day.
@@ -112,6 +88,11 @@ def check(con):
     got, per_day = con.execute(
         "SELECT (SELECT sum(detections) FROM fires), (SELECT sum(detections) FROM fire_days)").fetchone()
     assert src == got == per_day, (src, got, per_day)
+    # The fires are the fire events that have VIIRS detections, each once.
+    events = (ROOT / "data" / "events" / "events.parquet").as_posix()
+    want, have = con.execute(f"""SELECT (SELECT count(*) FROM '{events}' WHERE detections_viirs > 0),
+                                        (SELECT count(*) FROM fires)""").fetchone()
+    assert want == have, (want, have)
     assert abs(fine_cell_acres(40) - 46.9) < 1, fine_cell_acres(40)
     # Known fires come out as one fire each. The footprint counts only cells where a satellite
     # saw flames, so it is below the surveyed size (Park Fire: 429,603 acres official).
@@ -126,16 +107,17 @@ def check(con):
 
 
 def main():
+    if not EVENT_DAYS.exists():
+        raise SystemExit(f"{EVENT_DAYS} is missing. Run: python pipeline/fire_events.py")
     OUT.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect()
-    nodes, count = label_nodes(con)
     build(con)
-    print(f"{nodes:,} cell-days -> {count:,} fires")
+    print(f"{con.execute('SELECT count(*) FROM fires').fetchone()[0]:,} fires with VIIRS detections")
     check(con)
     for table in ("fires", "fire_days"):
         path = (OUT / f"{table}.parquet").as_posix()
         con.execute(f"COPY {table} TO '{path}' (FORMAT parquet, COMPRESSION zstd)")
-    print("fires by estimated size, acres (<100, 100-1,000, 1,000-10,000, >10,000):", con.execute("""
+    print("fires by footprint, acres (<100, 100-1,000, 1,000-10,000, >10,000):", con.execute("""
         SELECT count(*) FILTER (acres < 100), count(*) FILTER (acres >= 100 AND acres < 1000),
                count(*) FILTER (acres >= 1000 AND acres < 10000), count(*) FILTER (acres >= 10000) FROM fires""").fetchone())
     print("share of fires seen on one day only:",

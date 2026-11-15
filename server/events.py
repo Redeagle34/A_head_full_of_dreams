@@ -4,7 +4,7 @@ A fire is detections of MODIS and VIIRS that touch on a grid of about 1 km and f
 within 5 days (pipeline/fire_events.py). This is the only kind of fire the page lists.
 
 Reads the Parquet files written by pipeline/fire_events.py, pipeline/event_enrich.py,
-pipeline/event_danger.py and pipeline/missed_fires.py. Each is optional: a missing file
+pipeline/danger_model.py and pipeline/missed_fires.py. Each is optional: a missing file
 gives an empty answer or an empty field, and a note saying which script to run.
 
 Change here:
@@ -74,7 +74,7 @@ def _source():
         else:
             columns += [f"NULL AS {c}" for c in added]
             if alias == "r":
-                note = "Danger levels are not linked to the fires yet. Run: python pipeline/event_danger.py"
+                note = "Danger levels are not built yet. Run: python pipeline/danger_fires.py, danger_inputs.py, danger_model.py"
     return " ".join(tables), ", ".join(columns), note
 
 

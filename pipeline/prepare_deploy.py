@@ -32,7 +32,7 @@ UPLOAD_HOBBY = 100 * MB
 PACKAGES = {"requirements.txt": 78 * MB, "requirements.txt and earthengine-api": 216 * MB}
 # script that writes each file server/events.py reads; None: optional
 EVENT_FILES = {"events.parquet": "fire_events.py", "event_cells.parquet": "fire_events.py",
-               "enrichment.parquet": "event_enrich.py", "event_danger.parquet": "event_danger.py",
+               "enrichment.parquet": "event_enrich.py", "event_danger.parquet": "danger_model.py",
                "reported_fires.parquet": "missed_fires.py",
                "missed_summary.json": "missed_fires.py"}
 
