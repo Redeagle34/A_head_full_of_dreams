@@ -162,7 +162,7 @@ Census state borders ──calendar_table──> data/calendar/calendar.parquet
 
 data/calendar/detections.parquet ──build_db──> data/fire.duckdb ──server──> web/index.html
 
-data/calendar/detections.parquet ──fire_events──> data/danger/fires.parquet
+data/calendar/detections.parquet ──danger_fires──> data/danger/fires.parquet
                                                         │
 Google Earth Engine ──danger_inputs──> data/danger/inputs_place.parquet, inputs_weather.parquet
                                                         │
