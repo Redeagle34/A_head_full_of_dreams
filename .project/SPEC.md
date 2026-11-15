@@ -460,3 +460,33 @@ holds places, dates and the eleven sections.
 
 Not verified: printing from the browser's own print dialog (margins and paper
 size chosen there), and opening the CSV in Excel itself.
+
+## Public copy on Vercel updated (2026-11-15, src: user)
+
+The public copy now runs the current main: one Fires panel with danger levels,
+satellites, time bar, phone layout, scientific report.
+
+First try failed: Vercel reported a function of 342 MB against a limit of
+225 MB (the 500 MB assumed before was wrong, and the upload limit of 100 MB
+did not apply). `pipeline/prepare_deploy.py` was rewritten to write a smaller
+copy of the same data in `data/deploy/` (180 MB instead of 303 MB):
+observations as compressed Parquet, Aqua rows of the harmonized layer stored
+once, coordinates to 4 decimals, ratings to the digits shown. `api/index.py`
+makes the table `obs` a view over those files at start-up.
+
+Checked:
+- The script's own checks: every table and file keeps all its rows; the
+  harmonized layer adds up to the same total (within rounding).
+- The same start-up on this computer, against the normal local server, on 12
+  routes: same status, same answer sizes, same speed; report totals differ by
+  0.02% (7,677.7 against 7,679.2 active cell-days).
+- On Vercel, preview and public address: page, report page, scripts, 3D models
+  and every data route answer 200; the report for California, Oregon and a
+  Flint Hills box answers in under 1 s. First request after a pause: 4.3 s.
+
+Not done or not verified:
+- Landsat pictures are off on Vercel (503 with the reason).
+- The public page was checked by its routes, not looked at in a browser or on
+  a phone.
+- The estimate in `prepare_deploy.py` says 222 of 225 MB: little room for more
+  data on Vercel.

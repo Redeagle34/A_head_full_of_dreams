@@ -400,17 +400,17 @@ is needed.
 
 ## Deploy to Vercel
 
-The copy on Vercel is the same application, started by `api/index.py`.
+The copy on Vercel is the same application, started by `api/index.py`, on a smaller copy
+of the data.
 
-1. Build the data (see Run), then stop the local server and cut the database in pieces:
+1. Build the data (see Run), then make the small copy:
 
 ```bash
 python pipeline/prepare_deploy.py
 ```
 
-It writes `data/deploy/fire.duckdb.part*` and prints the size of the upload and of the
-function against Vercel's limits. Run it again after every `build_db.py` or
-`danger_model.py`.
+It writes `data/deploy/` and prints its size against Vercel's limit. Run it again after
+every `build_db.py`, `fire_events.py` or `danger_model.py`.
 
 2. Publish:
 
@@ -419,23 +419,27 @@ vercel deploy --prod
 ```
 
 What goes up (`.vercelignore`): `server/`, `api/`, `web/`, `data/deploy/` and
-`data/events/`. Not the raw data, the pipeline or `.env`.
+`pipeline/prepare_deploy.py`. Not the raw data, the rest of the pipeline or `.env`.
 
 How it differs from the local server:
 
-- **Database:** Vercel refuses files above 100 MB, so the function joins the pieces
-  into `/tmp/fire.duckdb` at its first start. The first request after a pause is slow.
-- **Upload size:** the upload is above 100 MB. The Vercel documentation allows that on
-  the Pro plan only (1 GB); on Hobby the deploy may be refused.
+- **Data:** a Vercel function may hold 225 MB of code, packages and data; the data as
+  built is about 300 MB. `prepare_deploy.py` stores the same rows smaller (180 MB):
+  observations as compressed Parquet instead of inside the database, the Aqua
+  observations of the harmonized layer stored once, coordinates to 4 decimals (about
+  10 m), radiative power to 0.1 MW. Numbers differ from the local server by up to 0.1%.
+  When the function starts, `api/index.py` copies the small database to the temporary
+  folder and adds the observations to it as a view over the Parquet files.
+- **First request after a pause** takes a few seconds.
 - **3D models:** `web/` is served by Vercel as static files and `web/models/` is left
   out of the function to keep it small.
 - **Answers** are compressed, because a function may not answer with more than 4.5 MB.
-- **Landsat pictures** (`/api/events/{id}/sharp`) are off unless Earth Engine is set
-  up: add `earthengine-api` to `requirements.txt`, and set `EE_PROJECT` and
-  `EE_SERVICE_ACCOUNT_JSON` (the whole text of a service-account key) in the Vercel
-  project. Without them the route answers 503 with the reason and the rest works.
+- **Landsat pictures** (`/api/events/{id}/sharp`) are off: Earth Engine does not fit in
+  the function next to the data. The route answers 503 with the reason and the rest works.
 - **Missing data:** a part of the page whose file was not built says which script to
   run; nothing else fails.
+
+To try the Vercel start-up on your computer: `python -m uvicorn api.index:app --port 8791`.
 
 ## Known limits
 

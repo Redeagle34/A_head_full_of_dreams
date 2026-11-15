@@ -1,15 +1,14 @@
-# Upload only what the server needs: code, web/ and the data listed below.
+# Upload only what the server needs: code, web/ and the small copy of the data.
 # every hidden file and folder (.env, .git, .project, ...)
 .*
 *.env
 proofs
-pipeline
 __pycache__
 requirements-pipeline.txt
-# data/: only the pieces of fire.duckdb and the files server/events.py reads
+/deploy
+# pipeline/: only the script api/index.py reads the view of the observations from
+pipeline/*
+!pipeline/prepare_deploy.py
+# data/: only data/deploy/, written by pipeline/prepare_deploy.py
 data/*
 !data/deploy
-!data/events
-# not read by the server
-data/events/event_cell_days.parquet
-data/events/*.log

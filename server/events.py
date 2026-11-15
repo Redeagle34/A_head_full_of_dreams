@@ -15,13 +15,14 @@ import datetime
 import decimal
 import json
 import os
+import pathlib
 
 import duckdb
 
 from . import fires
 from .config import EE_PROJECT, EE_SERVICE_ACCOUNT_JSON, EE_SERVICE_ACCOUNT_KEY, ROOT
 
-EVENTS = ROOT / "data" / "events"
+EVENTS = pathlib.Path(os.environ.get("FIRE_EVENTS_DIR", ROOT / "data" / "events"))     # api/index.py points it at the small copy
 DLAT, DLON = 0.01, 0.0125       # the grid of pipeline/fire_events.py
 MAX_EVENTS = 300
 MAX_RADIUS_KM = 500
