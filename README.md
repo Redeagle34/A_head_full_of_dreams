@@ -361,7 +361,8 @@ python pipeline/fire_events.py
 python pipeline/event_danger.py
 ```
 
-Run `danger_model.py` again after every `build_db.py`, with the server stopped.
+Run `danger_model.py` again after every `build_db.py`, with the server stopped, and
+`event_danger.py` after it.
 
 ```bash
 python -m uvicorn server.main:app --port 8780
