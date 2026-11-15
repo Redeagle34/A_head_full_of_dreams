@@ -26,3 +26,7 @@ _load_dotenv()
 
 # Not used yet: reserved for loading detections newer than the yearly archive.
 FIRMS_MAP_KEY = os.environ.get("FIRMS_MAP_KEY", "")
+
+# Google Cloud project used for Earth Engine (sharper before/after pictures of a fire).
+# Empty means the default project of the signed-in account.
+EE_PROJECT = os.environ.get("EE_PROJECT", "")

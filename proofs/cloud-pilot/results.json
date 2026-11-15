@@ -1,0 +1,181 @@
+{
+ "year": 2020,
+ "states": [
+  "CA",
+  "GA"
+ ],
+ "scores": [
+  {
+   "state": "CA",
+   "pixels": "mean",
+   "treatment": "none",
+   "error": 0.284,
+   "total_over_aqua": 1.187,
+   "aqua_cell_days": 4584
+  },
+  {
+   "state": "CA",
+   "pixels": "mean",
+   "treatment": "cov",
+   "error": 0.244,
+   "total_over_aqua": 1.138,
+   "aqua_cell_days": 4584
+  },
+  {
+   "state": "CA",
+   "pixels": "mean",
+   "treatment": "ratio",
+   "error": 0.245,
+   "total_over_aqua": 1.142,
+   "aqua_cell_days": 4584
+  },
+  {
+   "state": "CA",
+   "pixels": "swath",
+   "treatment": "none",
+   "error": 0.375,
+   "total_over_aqua": 1.36,
+   "aqua_cell_days": 4584
+  },
+  {
+   "state": "CA",
+   "pixels": "swath",
+   "treatment": "cov",
+   "error": 0.325,
+   "total_over_aqua": 1.305,
+   "aqua_cell_days": 4584
+  },
+  {
+   "state": "CA",
+   "pixels": "swath",
+   "treatment": "ratio",
+   "error": 0.329,
+   "total_over_aqua": 1.311,
+   "aqua_cell_days": 4584
+  },
+  {
+   "state": "GA",
+   "pixels": "mean",
+   "treatment": "none",
+   "error": 0.252,
+   "total_over_aqua": 0.84,
+   "aqua_cell_days": 2395
+  },
+  {
+   "state": "GA",
+   "pixels": "mean",
+   "treatment": "cov",
+   "error": 0.263,
+   "total_over_aqua": 0.825,
+   "aqua_cell_days": 2395
+  },
+  {
+   "state": "GA",
+   "pixels": "mean",
+   "treatment": "ratio",
+   "error": 0.26,
+   "total_over_aqua": 0.831,
+   "aqua_cell_days": 2395
+  },
+  {
+   "state": "GA",
+   "pixels": "swath",
+   "treatment": "none",
+   "error": 0.241,
+   "total_over_aqua": 1.155,
+   "aqua_cell_days": 2395
+  },
+  {
+   "state": "GA",
+   "pixels": "swath",
+   "treatment": "cov",
+   "error": 0.24,
+   "total_over_aqua": 1.135,
+   "aqua_cell_days": 2395
+  },
+  {
+   "state": "GA",
+   "pixels": "swath",
+   "treatment": "ratio",
+   "error": 0.242,
+   "total_over_aqua": 1.142,
+   "aqua_cell_days": 2395
+  },
+  {
+   "state": "both",
+   "pixels": "mean",
+   "treatment": "none",
+   "error": 0.273,
+   "total_over_aqua": 1.067,
+   "aqua_cell_days": 6979
+  },
+  {
+   "state": "both",
+   "pixels": "mean",
+   "treatment": "cov",
+   "error": 0.251,
+   "total_over_aqua": 1.03,
+   "aqua_cell_days": 6979
+  },
+  {
+   "state": "both",
+   "pixels": "mean",
+   "treatment": "ratio",
+   "error": 0.25,
+   "total_over_aqua": 1.035,
+   "aqua_cell_days": 6979
+  },
+  {
+   "state": "both",
+   "pixels": "swath",
+   "treatment": "none",
+   "error": 0.329,
+   "total_over_aqua": 1.29,
+   "aqua_cell_days": 6979
+  },
+  {
+   "state": "both",
+   "pixels": "swath",
+   "treatment": "cov",
+   "error": 0.296,
+   "total_over_aqua": 1.247,
+   "aqua_cell_days": 6979
+  },
+  {
+   "state": "both",
+   "pixels": "swath",
+   "treatment": "ratio",
+   "error": 0.3,
+   "total_over_aqua": 1.253,
+   "aqua_cell_days": 6979
+  }
+ ],
+ "coverage": [
+  {
+   "sat": "aqua",
+   "state": "CA",
+   "mean_burnable_cells": 0.888,
+   "mean_at_viirs_fires": 0.957
+  },
+  {
+   "sat": "aqua",
+   "state": "GA",
+   "mean_burnable_cells": 0.829,
+   "mean_at_viirs_fires": 0.977
+  },
+  {
+   "sat": "viirs-snpp",
+   "state": "CA",
+   "mean_burnable_cells": 0.924,
+   "mean_at_viirs_fires": 0.991
+  },
+  {
+   "sat": "viirs-snpp",
+   "state": "GA",
+   "mean_burnable_cells": 0.859,
+   "mean_at_viirs_fires": 0.987
+  }
+ ],
+ "aqua_days_seen": 366,
+ "viirs-snpp_days_seen": 366
+}

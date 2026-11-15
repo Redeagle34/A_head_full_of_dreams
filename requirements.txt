@@ -1,3 +1,9 @@
 duckdb
 fastapi
 uvicorn
+numpy
+pandas
+pyarrow
+scipy
+lightgbm
+earthengine-api

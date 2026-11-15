@@ -56,7 +56,12 @@ function createMap() {
   });
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
   map.on("style.load", () => { try { map.setProjection({ type: "globe" }); } catch (e) { /* flat map is fine */ } });
-  map.on("load", () => {
+  // Start when the map has loaded, or 4 s after its style has: a slow background tile
+  // service must not keep the whole page waiting.
+  let started = false;
+  const begin = () => {
+    if (started) return;
+    started = true;
     baseLayers = map.getStyle().layers.map(l => ({ id: l.id, type: l.type }));
     const firstLabel = baseLayers.find(l => l.type === "symbol")?.id;
     map.addSource("satellite", { type: "raster", tileSize: 256, maxzoom: 18,
@@ -74,7 +79,11 @@ function createMap() {
       refresh();
     });
     refresh();
-  });
+    Satellites.attach(map).then(api => { window.satelliteView = api; });   // see satellites.js
+    window.fireView = Fires.attach();                                       // see fires.js
+  };
+  map.on("load", begin);
+  map.on("style.load", () => setTimeout(begin, 4000));
 }
 
 function setBasemap() {
@@ -360,5 +369,6 @@ function wireControls() {
   $("start").max = $("end").max = META.both.last_day;
   buildPresets();
   wireControls();
+  window.timeline = Timeline.attach();          // see timeline.js
   createMap();
 })();
