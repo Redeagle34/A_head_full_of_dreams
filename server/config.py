@@ -24,7 +24,8 @@ def _load_dotenv():
 
 _load_dotenv()
 
-# Not used by the server yet. pipeline/check_keys.py tests them.
+# pipeline/check_keys.py tests them. The server uses EE_PROJECT for the Landsat pictures of a fire;
+# FIRMS_MAP_KEY is not used yet.
 FIRMS_MAP_KEY = os.environ.get("FIRMS_MAP_KEY", "")                    # detections after the yearly archive
 EE_PROJECT = os.environ.get("EE_PROJECT", "")                          # Google Earth Engine project id
 EE_SERVICE_ACCOUNT_KEY = os.environ.get("EE_SERVICE_ACCOUNT_KEY", "")  # optional path to a key file

@@ -21,14 +21,6 @@
   </div>
 
   <div class="field">
-    <label for="start">From</label>
-    <input id="start" type="date">
-  </div>
-  <div class="field">
-    <label for="end">To</label>
-    <input id="end" type="date">
-  </div>
-  <div class="field">
     <label for="preset">Quick dates</label>
     <select id="preset"></select>
   </div>
@@ -36,10 +28,36 @@
   <div class="actions">
     <button id="locate" type="button" title="Go to my location">My location</button>
     <button id="nearBtn" type="button" aria-expanded="false" aria-controls="near">Fires nearby</button>
+    <button id="fireBtn" type="button" aria-expanded="false" aria-controls="firePanel">Fires</button>
+    <button id="satBtn" type="button" aria-expanded="false" aria-controls="satPanel">Satellites</button>
     <button id="filtersBtn" type="button" aria-expanded="false" aria-controls="filters">Filters</button>
     <button id="panelBtn" type="button" aria-expanded="false" aria-controls="panel">Area history</button>
   </div>
 </header>
+
+<!-- Time bar: the period the map shows; type it, drag it, stretch it, play it -->
+<section id="timeline" class="timeline glass" aria-label="Period shown on the map">
+  <div class="tl-row">
+    <button id="tlPlay" type="button" aria-pressed="false" title="Slide the period forward through time">Play</button>
+    <label class="tl-date">From <input id="start" type="date"></label>
+    <label class="tl-date">To <input id="end" type="date"></label>
+    <b id="tlLength" class="tl-length"></b>
+    <span class="tl-group"><span>Period</span>
+      <button id="tlShorter" type="button" title="Halve the period">Shorter</button>
+      <button id="tlLonger" type="button" title="Double the period">Longer</button></span>
+    <span class="tl-group"><span>Bar</span>
+      <button id="tlZoomIn" type="button" title="Stretch the bar around the period">Zoom in</button>
+      <button id="tlZoomOut" type="button" title="Squeeze the bar to show more years">Zoom out</button>
+      <button id="tlAll" type="button" title="Show the whole record on the bar">Whole record</button></span>
+    <label class="tl-date">Speed <select id="tlSpeed">
+      <option value="1600">Slow</option><option value="900" selected>Normal</option><option value="450">Fast</option></select></label>
+  </div>
+  <div id="tlTrack" class="tl-track">
+    <div id="tlWindow" class="tl-window" tabindex="0" role="slider" aria-label="Period shown; arrow keys move it">
+      <i data-edge="left"></i><i data-edge="right"></i></div>
+    <div id="tlTicks" class="tl-ticks"></div>
+  </div>
+</section>
 
 <!-- Filters: which data and what the color means -->
 <section id="filters" class="filters glass" hidden>
@@ -169,6 +187,13 @@
 <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/dist/plot.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/DRACOLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
+<script src="satellites.js"></script>
+<script src="fires.js"></script>
+<script src="timeline.js"></script>
 <script src="app.js"></script>
 <script src="danger.js"></script>
 </body>

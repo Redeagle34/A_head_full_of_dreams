@@ -1,0 +1,410 @@
+{
+ "date_range_samples": [
+  "2014-01-01",
+  "2026-11-08"
+ ],
+ "years": {
+  "2014": 11335,
+  "2015": 16624,
+  "2016": 18326,
+  "2017": 21209,
+  "2018": 20927,
+  "2019": 20959,
+  "2020": 25460,
+  "2021": 26547,
+  "2022": 27897,
+  "2023": 27652,
+  "2024": 30336,
+  "2025": 30333,
+  "2026": 9044
+ },
+ "versions": {
+  "lightgbm": "4.7.0",
+  "sklearn": "1.9.1",
+  "pandas": "3.1.1",
+  "numpy": "2.5.4"
+ },
+ "A_ignition": {
+  "file": "model_A_ignition.txt",
+  "label": "y",
+  "features": [
+   "erc",
+   "bi",
+   "fm100",
+   "fm1000",
+   "vpd",
+   "vs",
+   "rmin",
+   "rmax",
+   "tmmx",
+   "pr",
+   "srad",
+   "erc_l1",
+   "fm100_l1",
+   "vpd_l1",
+   "vs_l1",
+   "erc7",
+   "pr30",
+   "erc_max30",
+   "doy",
+   "elevation",
+   "slope",
+   "log_pop",
+   "frg",
+   "mfri",
+   "lc",
+   "treecover",
+   "log_clim_m",
+   "log_clim_y"
+  ],
+  "categorical": [
+   "frg",
+   "lc"
+  ],
+  "params": {
+   "n_estimators": 600,
+   "learning_rate": 0.05,
+   "num_leaves": 63,
+   "min_child_samples": 50,
+   "subsample": 0.8,
+   "subsample_freq": 1,
+   "colsample_bytree": 0.8,
+   "verbose": -1
+  },
+  "trees_used": 428,
+  "train": {
+   "years": "2014-2020",
+   "n": 134840,
+   "positives": 60262
+  },
+  "validation_early_stopping": {
+   "years": "2021",
+   "n": 26547,
+   "positives": 15768
+  },
+  "test": {
+   "years": "2022-2026",
+   "n": 125262,
+   "positives": 73882,
+   "base_rate": 0.5898,
+   "AUC": 0.893,
+   "PR_AUC": 0.92,
+   "Brier": 0.1392,
+   "Brier_of_constant_base_rate": 0.2419,
+   "AUC_by_region": {
+    "Central": 0.869,
+    "East": 0.843,
+    "West": 0.873
+   },
+   "reliability_deciles": [
+    {
+     "mean_score": 0.0077,
+     "observed_rate": 0.0501,
+     "n": 12527
+    },
+    {
+     "mean_score": 0.0359,
+     "observed_rate": 0.1362,
+     "n": 12526
+    },
+    {
+     "mean_score": 0.1031,
+     "observed_rate": 0.2506,
+     "n": 12526
+    },
+    {
+     "mean_score": 0.2394,
+     "observed_rate": 0.417,
+     "n": 12526
+    },
+    {
+     "mean_score": 0.4446,
+     "observed_rate": 0.598,
+     "n": 12526
+    },
+    {
+     "mean_score": 0.6507,
+     "observed_rate": 0.7557,
+     "n": 12526
+    },
+    {
+     "mean_score": 0.7937,
+     "observed_rate": 0.8469,
+     "n": 12526
+    },
+    {
+     "mean_score": 0.8808,
+     "observed_rate": 0.9065,
+     "n": 12526
+    },
+    {
+     "mean_score": 0.9342,
+     "observed_rate": 0.9513,
+     "n": 12526
+    },
+    {
+     "mean_score": 0.9735,
+     "observed_rate": 0.986,
+     "n": 12527
+    }
+   ]
+  }
+ },
+ "B_large100": {
+  "file": "model_B_large100.txt",
+  "label": "big100",
+  "features": [
+   "erc",
+   "bi",
+   "fm100",
+   "fm1000",
+   "vpd",
+   "vs",
+   "rmin",
+   "rmax",
+   "tmmx",
+   "pr",
+   "srad",
+   "erc_l1",
+   "fm100_l1",
+   "vpd_l1",
+   "vs_l1",
+   "erc7",
+   "pr30",
+   "erc_max30",
+   "doy",
+   "elevation",
+   "slope",
+   "log_pop",
+   "frg",
+   "mfri",
+   "lc",
+   "treecover",
+   "log_clim_m",
+   "log_clim_y"
+  ],
+  "categorical": [
+   "frg",
+   "lc"
+  ],
+  "params": {
+   "n_estimators": 600,
+   "learning_rate": 0.05,
+   "num_leaves": 63,
+   "min_child_samples": 50,
+   "subsample": 0.8,
+   "subsample_freq": 1,
+   "colsample_bytree": 0.8,
+   "verbose": -1
+  },
+  "trees_used": 128,
+  "train": {
+   "years": "2014-2020",
+   "n": 50716,
+   "positives": 5964
+  },
+  "validation_early_stopping": {
+   "years": "2021",
+   "n": 10387,
+   "positives": 1083
+  },
+  "test": {
+   "years": "2022-2025",
+   "n": 62199,
+   "positives": 4934,
+   "base_rate": 0.0793,
+   "AUC": 0.788,
+   "PR_AUC": 0.303,
+   "Brier": 0.0668,
+   "Brier_of_constant_base_rate": 0.073,
+   "AUC_by_region": {
+    "Central": 0.845,
+    "East": 0.769,
+    "West": 0.758
+   },
+   "reliability_deciles": [
+    {
+     "mean_score": 0.0114,
+     "observed_rate": 0.0072,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0208,
+     "observed_rate": 0.0132,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0304,
+     "observed_rate": 0.0238,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0416,
+     "observed_rate": 0.0336,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0559,
+     "observed_rate": 0.0391,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.075,
+     "observed_rate": 0.0584,
+     "n": 6219
+    },
+    {
+     "mean_score": 0.101,
+     "observed_rate": 0.0709,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.1405,
+     "observed_rate": 0.0984,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.2138,
+     "observed_rate": 0.1408,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.4493,
+     "observed_rate": 0.3079,
+     "n": 6220
+    }
+   ]
+  }
+ },
+ "B_large1000": {
+  "file": "model_B_large1000.txt",
+  "label": "big1000",
+  "features": [
+   "erc",
+   "bi",
+   "fm100",
+   "fm1000",
+   "vpd",
+   "vs",
+   "rmin",
+   "rmax",
+   "tmmx",
+   "pr",
+   "srad",
+   "erc_l1",
+   "fm100_l1",
+   "vpd_l1",
+   "vs_l1",
+   "erc7",
+   "pr30",
+   "erc_max30",
+   "doy",
+   "elevation",
+   "slope",
+   "log_pop",
+   "frg",
+   "mfri",
+   "lc",
+   "treecover",
+   "log_clim_m",
+   "log_clim_y"
+  ],
+  "categorical": [
+   "frg",
+   "lc"
+  ],
+  "params": {
+   "n_estimators": 600,
+   "learning_rate": 0.05,
+   "num_leaves": 63,
+   "min_child_samples": 50,
+   "subsample": 0.8,
+   "subsample_freq": 1,
+   "colsample_bytree": 0.8,
+   "verbose": -1
+  },
+  "trees_used": 92,
+  "train": {
+   "years": "2014-2020",
+   "n": 50716,
+   "positives": 2079
+  },
+  "validation_early_stopping": {
+   "years": "2021",
+   "n": 10387,
+   "positives": 354
+  },
+  "test": {
+   "years": "2022-2025",
+   "n": 62199,
+   "positives": 1404,
+   "base_rate": 0.0226,
+   "AUC": 0.81,
+   "PR_AUC": 0.123,
+   "Brier": 0.0214,
+   "Brier_of_constant_base_rate": 0.0221,
+   "AUC_by_region": {
+    "Central": 0.887,
+    "East": 0.738,
+    "West": 0.8
+   },
+   "reliability_deciles": [
+    {
+     "mean_score": 0.0028,
+     "observed_rate": 0.0019,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0041,
+     "observed_rate": 0.004,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0057,
+     "observed_rate": 0.0066,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0078,
+     "observed_rate": 0.0043,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0109,
+     "observed_rate": 0.0095,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0153,
+     "observed_rate": 0.0103,
+     "n": 6219
+    },
+    {
+     "mean_score": 0.0223,
+     "observed_rate": 0.0174,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.034,
+     "observed_rate": 0.0228,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.0568,
+     "observed_rate": 0.0408,
+     "n": 6220
+    },
+    {
+     "mean_score": 0.1618,
+     "observed_rate": 0.108,
+     "n": 6220
+    }
+   ]
+  }
+ },
+ "B_sampling": {
+  "positives_with_size_in_table": 123302,
+  "share_ge100_in_table": 0.0972,
+  "share_ge1000_in_table": 0.0311
+ }
+}

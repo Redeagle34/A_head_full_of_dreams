@@ -92,6 +92,36 @@ How it is made:
 
 The weather-and-place inputs and the comparison model come from the team's
 experiments in branch `us-findings` (`proofs/us-experiments`).
+## Fires one by one, missed fires, satellites and the time bar
+
+Added on the branch `fire-events-satellite-globe`. Method, sources and measured results:
+[.project/research/notebooks/modis-viirs-burning-calendar/fire-events-validation-satellites.md](.project/research/notebooks/modis-viirs-burning-calendar/fire-events-validation-satellites.md).
+
+- **Fires** button: every fire in view as one event, with first and last day, duration,
+  area (from hotspots, from the MODIS burned-area map, and burn severity from Landsat),
+  the vegetation that burned, pictures before and after, and the agency reports it matches.
+  A switch shows reported wildfires that the satellites missed or that the prediction
+  model did not expect.
+- **Satellites** button, or zoom out: Terra, Aqua, Suomi NPP, NOAA-20, NOAA-21 and
+  Landsat 8 in orbit as NASA 3D models. Pick one to see the strip it is scanning, the
+  picture it takes of that ground (click to enlarge), its position, height, speed and
+  viewing angle, and its next passes over the centre of the screen.
+- **Time bar** at the bottom: type the dates, drag the period or its edges, make it
+  shorter or longer, zoom the bar, and press Play to watch the map change through time.
+
+| Script | Output | Needs |
+|---|---|---|
+| `pipeline/fire_events.py` | `data/events/events.parquet`, `event_cells.parquet` | `calendar_table.py` |
+| `pipeline/event_enrich.py [project] [min_km2]` | `data/events/enrichment.parquet` (burned area, vegetation) | Earth Engine sign-in |
+| `pipeline/missed_fires.py` | `data/events/reported_fires.parquet`, `missed_summary.json` | `lightgbm`, the models in `proofs/us-experiments/models/` |
+
+| Route | Answers |
+|---|---|
+| `GET /api/events?bbox&start&end&min_km2` | fires in the box and dates, largest first |
+| `GET /api/events/{id}` | one fire, its ground cells and nearby agency reports |
+| `GET /api/events/{id}/sharp` | Landsat pictures before and after, burn severity (Earth Engine; set `EE_PROJECT` in `.env`) |
+| `GET /api/reported?bbox&start&end&missed` | reported wildfires; `missed` is `satellite`, `model`, `both` or `all` |
+| `GET /api/tle` | orbit data of the satellites (CelesTrak, cached 6 hours) |
 
 ## Repository structure
 

@@ -1,0 +1,42 @@
+{
+ "T1_DL_MW": {
+  "MODIS_nadir(1x1)_day": 4.96,
+  "MODIS_nadir(1x1)_night": 5.44,
+  "MODIS_edge(4.8x2.0)_day": 43.14,
+  "MODIS_edge(4.8x2.0)_night": 43.54,
+  "VIIRS_nadir(.375^2)_day": 2.3,
+  "VIIRS_nadir(.375^2)_night": 0.54,
+  "VIIRS_edge(.8x.8)_day": 5.39,
+  "VIIRS_edge(.8x.8)_night": 1.23
+ },
+ "T2_pred_over_actual_aqua_by_region": {
+  "Alaska": 1.143,
+  "Central": 0.953,
+  "East": 0.841,
+  "West": 1.177
+ },
+ "T2_corr_log_pred_vs_actual_regionmonth": 0.952,
+ "T2_corr_log_k_obs_vs_k_phys": 0.827,
+ "T3_raw_aqua": {
+  "region_month_median_abs_log_err": 0.14,
+  "year_err": {
+   "2021": 0.004,
+   "2022": -0.078,
+   "2023": -0.073,
+   "2024": -0.06,
+   "2025": -0.129
+  },
+  "cv_of_ratio_across_years": 0.072
+ },
+ "T3_HT_weighted_aqua": {
+  "region_month_median_abs_log_err": 0.14,
+  "year_err": {
+   "2021": 0.007,
+   "2022": -0.099,
+   "2023": -0.087,
+   "2024": -0.068,
+   "2025": -0.142
+  },
+  "cv_of_ratio_across_years": 0.075
+ }
+}

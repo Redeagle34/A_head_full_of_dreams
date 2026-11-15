@@ -31,9 +31,8 @@ from server import config      # noqa: E402  (loads .env)
 FIRES = f"'{(ROOT / 'data' / 'danger' / 'fires.parquet').as_posix()}'"
 OUT = ROOT / "data" / "danger"
 CACHE = ROOT / "data" / "raw" / "ee"
-# Reference models and their training table (branch us-findings, proofs/us-experiments/models). Copy with:
-#   git show origin/us-findings:proofs/us-experiments/models/training_table.parquet > data/raw/reference/training_table.parquet
-REFERENCE = ROOT / "data" / "raw" / "reference"
+# Reference models and their training table.
+REFERENCE = ROOT / "proofs" / "us-experiments" / "models"
 CELL = 0.04                     # degrees; gridMET pixels are 1/24 degree
 PLACE_BATCH = 4000              # points per request, one image
 BUILT_BATCH = 500               # circles per request

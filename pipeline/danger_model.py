@@ -38,7 +38,7 @@ sys.path.insert(0, str(ROOT))
 from server.fires import LEVELS, LEVEL_STARTS      # noqa: E402
 
 DANGER = ROOT / "data" / "danger"
-REFERENCE = ROOT / "data" / "raw" / "reference"     # see pipeline/danger_inputs.py
+REFERENCE = ROOT / "proofs" / "us-experiments" / "models"
 DB = ROOT / "data" / "fire.duckdb"
 CELL = 0.04                                         # must equal danger_inputs.CELL
 

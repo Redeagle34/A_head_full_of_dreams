@@ -36,7 +36,10 @@ async function setupFires() {
   map.addSource("fires", { type: "geojson", data: empty });
   map.addLayer({ id: "fires", type: "circle", source: "fires", paint: {
     "circle-color": ["get", "color"], "circle-stroke-color": "#111", "circle-stroke-width": 1.5, "circle-opacity": 0.92,
-    "circle-radius": ["interpolate", ["linear"], ["sqrt", ["get", "acres"]], 0, 5, 30, 8, 300, 15, 700, 21],
+    // size by footprint, smaller when the whole country is on screen
+    "circle-radius": ["interpolate", ["linear"], ["zoom"],
+      3, ["interpolate", ["linear"], ["sqrt", ["get", "acres"]], 0, 2, 30, 3, 300, 6, 700, 9],
+      8, ["interpolate", ["linear"], ["sqrt", ["get", "acres"]], 0, 5, 30, 8, 300, 15, 700, 21]],
   } });
   map.on("click", "fires", e => showFire(JSON.parse(e.features[0].properties.fire)));
   map.on("mousemove", "fires", () => map.getCanvas().style.cursor = "pointer");

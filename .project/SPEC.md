@@ -296,3 +296,31 @@ Not done or not verified:
   from a local copy in `data/raw/reference/`.
 - Still open from the original plan: scientist report (last), Landsat layer,
   seven-day forecast, prevention layers, Hawaii volcano mask, Terra 2000-2002.
+
+## Merge of branch fire-events-satellite-globe (2026-11-14, src: user)
+
+Merged into main: fires as single events with Landsat before/after pictures and
+burn severity, reported fires that were missed, satellites in orbit as 3D
+models, and the time bar. The branch also carried the commits of `us-findings`
+(`proofs/us-experiments`), so the danger scripts now read the reference table
+from there.
+
+Resolved by keeping both sides. Two files of main were renamed first because
+the branch has files of the same name with other content:
+`pipeline/fire_events.py` -> `pipeline/danger_fires.py`, `web/fires.js` ->
+`web/danger.js`. `requirements.txt` stays server-only; pipeline packages are in
+`requirements-pipeline.txt` (the Landsat pictures route needs `earthengine-api`).
+
+Checked after the merge: every route answers (Landsat pictures for the Park
+Fire in 16 s); `pipeline/fire_events.py` (2,035,833 events), `missed_fires.py`
+and `event_enrich.py` (5,562 fires) run; in the browser the satellites panel,
+time bar, fire list, danger markers and radius search load together.
+
+Open after the merge:
+- Two definitions of "a fire" now exist: events (gaps up to 5 days, cells of
+  about 1 km, MODIS and VIIRS; 2,035,833) and rated fires (gaps up to 2 days,
+  cells of about 1.6 km, VIIRS; 1,517,969). Two panels list them: "Fires" and
+  "Fires nearby". They should become one.
+- The Terra 3D model asks for two texture files that are not in the repository
+  (404); the model still shows.
+- Six buttons and the time bar crowd narrow screens; phone layout not reworked.
