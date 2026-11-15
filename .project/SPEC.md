@@ -213,3 +213,86 @@ Not done or not verified:
 - Still open from the original plan: scientist report, radius search for
   firefighters, Landsat layer, seven-day forecast, prevention layers, Hawaii
   volcano mask, Terra years 2000-2002 in the combined layer.
+
+## Fire danger and radius search (decided 2026-11-14, src: user)
+
+Decision: before the radius search, rate how dangerous each fire is; then rank
+the fires near a point by that rating. Starting point: the experiments of branch
+`us-findings` (`proofs/us-experiments`), which trained models on agency fire
+reports with weather and place inputs. Keys for Earth Engine and FIRMS live in
+`.env`; `pipeline/check_keys.py` tests them.
+
+Review of the reference models (re-run by us):
+- Saved models reproduce their reported scores exactly (0.893, 0.788, 0.810).
+- "Fire reported here today" (model A) scores 0.737 inside the same 1-degree
+  area and month, against 0.893 overall: most of its skill is where fires get
+  reported. Not used.
+- "A start reaches 100 / 1,000 acres" (model B) ranks well but uses no satellite
+  data. Adding the VIIRS detections near the start lifted it from 0.788 to 0.876
+  and from 0.810 to 0.883. This is why the danger model below combines both.
+
+Built:
+- `pipeline/fire_events.py`: VIIRS detections grouped into 1,517,969 fires
+  (touching cells of about 1.6 km, gaps of up to 2 days). Size = satellite
+  footprint on cells of about 440 m.
+- `pipeline/danger_inputs.py`: weather (gridMET), terrain, vegetation, fire
+  regime, population and built-up surface within 5 km, from Earth Engine, for
+  257,146 cells and 1,514,518 cell-days. About 17 minutes.
+- `pipeline/danger_model.py`: LightGBM, "will the footprint reach 1,000 acres",
+  judged at the end of the fire's second day. Train 2012-2020, validation 2021,
+  test 2022-2025. Calibrated on 2021 and cut into five levels.
+- `server/fires.py`, routes `/api/fires`, `/api/fires/near`, `/api/danger/levels`.
+- `web/fires.js`: fire markers colored by level, the three factors of a fire in
+  a popup, and the "Fires nearby" panel.
+
+Results on 2022-2025 (never used for training):
+
+| Check | Result |
+|---|---|
+| Rank fires not yet 1,000 acres on day 2 by whether they get there (AUC) | 0.944 |
+| Same, satellite inputs only | 0.928 |
+| Same, weather and place only | 0.859 |
+| Same, day-1 footprint alone | 0.779 |
+| Against agency reports: rating ranks reported size >= 1,000 acres (6,196 reports) | 0.912 |
+| Reference model B-1000 on the same reports | 0.748 |
+| Footprint against reported size, log correlation | 0.69 |
+| Footprint / reported size, median, reports of 100 acres or more | 0.91 |
+
+| Level | Fires 2022-2025 | Reached 1,000 acres | Share of all large fires |
+|---|---|---|---|
+| Low | 513,427 | 0.07% | 7% |
+| Moderate | 19,635 | 2.2% | 8% |
+| High | 5,606 | 7.7% | 8% |
+| Very High | 1,098 | 24% | 5% |
+| Extreme | 4,021 | 96% | 72% |
+
+Checks that passed: every VIIRS detection belongs to exactly one fire; the Park
+Fire (24 July - 12 August 2024, footprint 266,307 acres against 429,603 official)
+and Lahaina each come out as one fire; Earth Engine values equal the reference
+training table on 200 rows (difference 0); built-up within 5 km equals an exact
+sum at test points (Chico 1,300 ha); levels are in order on the test years;
+routes answer in about 0.25 s; in the browser the radius search lists 24 fires
+within 50 km of Chico for the Park Fire dates, the Park Fire first.
+
+Not done or not verified:
+- Most fires rated Extreme are already over 1,000 acres on day 2. For fires
+  still small on day 2 the levels are Low to Very High, and 7% of the fires
+  that later got large were rated Low.
+- The 100-acre target is not shown: a footprint cell is 47 acres, so 100 acres
+  is three cells and 32% of Low fires reach it.
+- The rating describes a fire after two days of satellite passes. It is not a
+  forecast for a fire seen today for the first time; no day-1 model yet.
+- Weather is the observed weather of the first day, as in the reference models.
+- Training on agency-reported sizes instead of footprints was not tried; the
+  footprint-trained rating already ranks reported sizes at 0.912.
+- Hawaii is not rated (lava is recorded as fire): 1,663 fires without a level.
+- Model results move by about 0.005 between runs when inputs are re-pulled.
+- Data ends 31 December 2025; 2026 through the FIRMS key is not loaded.
+- `data/fire.duckdb` is now 344 MB: the hosted copy was not redeployed and a
+  redeploy would not fit the current 100 MB piece scheme without changes.
+- Phone layout: the top bar and the panel leave little map visible. "My
+  location" was not tested (needs a real device).
+- Branch `us-findings` is not merged; its training table and models are read
+  from a local copy in `data/raw/reference/`.
+- Still open from the original plan: scientist report (last), Landsat layer,
+  seven-day forecast, prevention layers, Hawaii volcano mask, Terra 2000-2002.

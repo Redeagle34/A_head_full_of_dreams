@@ -46,7 +46,52 @@ unit across the whole period.
 
 - **Area history:** weekly calendar of whatever is on screen, with unusual and
   record weeks, the usual fire season, and a CSV download.
+- **Fire markers:** every fire with a danger level, colored like U.S. fire danger
+  signs (green, blue, yellow, orange, red). Click one for its three factors.
+- **Fires nearby:** choose a point (my location, map centre or a click), a
+  distance and a minimum level; the list shows the most dangerous fires first,
+  then the nearest.
 - **State overview:** the earlier state-by-state calendar, at `/states.html`.
+
+## Fire danger rating
+
+Each fire gets three factors, always shown apart:
+
+1. **Chance of getting large**: one of five levels, from the chance that the
+   fire reaches 1,000 acres, judged after two days of satellite passes.
+2. **What is exposed**: built-up surface within 5 km of where it started.
+3. **What the satellites saw**: footprint, growth on day 2, peak radiative
+   power, night burning, and the weather of the first day in plain words.
+
+What the levels meant in 2022-2025, years the model never saw:
+
+| Level | Fires | Reached 1,000 acres |
+|---|---|---|
+| Low | 513,427 | 0.07% |
+| Moderate | 19,635 | 2.2% |
+| High | 5,606 | 7.7% |
+| Very High | 1,098 | 24% |
+| Extreme | 4,021 | 96% |
+
+The rating is a suggestion to help decide where to look first. It is not a
+dispatch order.
+
+How it is made:
+
+- **Fires**: VIIRS detections that touch in space (cells of about 1.6 km) and
+  time (gaps of up to 2 days) are one fire: 1,517,969 fires, 2012-2025.
+- **Size**: the satellite footprint, on cells of about 440 m. Against agency
+  reports of 100 acres or more it is 0.91 of the reported size (median).
+- **Model**: gradient-boosted trees (LightGBM). Inputs: what the satellites saw
+  on day 1 and day 2, weather and fuel dryness (gridMET), terrain, vegetation,
+  fire regime and population. Trained on 2012-2020, tuned on 2021.
+- **Score on 2022-2025**: ranks fires that are still under 1,000 acres on day 2
+  by whether they get there with an AUC of 0.944 (satellite inputs alone 0.928,
+  weather and place alone 0.859). Against agency-reported final size it scores
+  0.912, where a weather-and-place model trained on reports scores 0.748.
+
+The weather-and-place inputs and the comparison model come from the team's
+experiments in branch `us-findings` (`proofs/us-experiments`).
 
 ## Repository structure
 
@@ -57,17 +102,23 @@ pipeline/               builds the data, in this order
   harmonize.py          VIIRS -> MODIS-equivalent, scored on withheld years
   export_web.py         data files for the state overview page
   build_db.py           data/fire.duckdb, the database the server reads
+  fire_events.py        group VIIRS detections into fires
+  danger_inputs.py      weather and place inputs per fire, from Google Earth Engine
+  danger_model.py       train the danger model, rate every fire, store it in the database
+  check_keys.py         test the keys in .env (FIRMS, Earth Engine)
 server/                 FastAPI application
   main.py               routes and input checks only
   queries.py            the SQL behind each route
   grid.py               map grid: cell size, cell of a point, cell bounds
   stats.py              typical range, unusual and record weeks
+  fires.py              rated fires for a map view or around a point; level names and words
   db.py                 read-only DuckDB connection
   config.py             paths, limits, .env loading
 web/
   index.html            map page: layout
   style.css             map page: appearance
   app.js                map page: behaviour (sections are listed at the top)
+  fires.js              map page: fire markers and the "Fires nearby" search
   states.html           state overview page
   data/                 calendar.json, states.geojson (generated, committed)
 data/                   raw CSV, Parquet, fire.duckdb (generated, not in git)
@@ -75,8 +126,9 @@ proofs/                 early feasibility scripts and their saved results
 .project/
   SPEC.md               plan, decisions and measured results for every step
   research/             background research, sources and findings
-.env.example            template for .env (reserved place for FIRMS_MAP_KEY)
-requirements.txt        duckdb, fastapi, uvicorn
+.env.example            template for .env (FIRMS key, Earth Engine project)
+requirements.txt        web server: duckdb, fastapi, uvicorn
+requirements-pipeline.txt  extra packages for the danger pipeline
 ```
 
 ## Server API
@@ -87,6 +139,9 @@ requirements.txt        duckdb, fastapi, uvicorn
 | `GET /api/cells?layer&bbox&start&end&metric` | colored grid cells for the view |
 | `GET /api/calendar?layer&bbox` | weekly history of the area, with flags |
 | `GET /api/detections.csv?layer&bbox&start&end` | observations behind the layer |
+| `GET /api/fires?bbox&start&end&min_level` | rated fires in a map view |
+| `GET /api/fires/near?lat&lon&km&start&end&min_level` | rated fires around a point, most dangerous first, then nearest |
+| `GET /api/danger/levels` | what each level meant in 2022-2025 |
 
 `layer` is `viirs`, `modis` or `both`; `bbox` is `west,south,east,north`;
 `metric` is `intensity`, `days` or `unusual`. Interactive documentation is at
@@ -106,6 +161,12 @@ Census state borders ──calendar_table──> data/calendar/calendar.parquet
                                        web/data/states.geojson ──> web/states.html
 
 data/calendar/detections.parquet ──build_db──> data/fire.duckdb ──server──> web/index.html
+
+data/calendar/detections.parquet ──fire_events──> data/danger/fires.parquet
+                                                        │
+Google Earth Engine ──danger_inputs──> data/danger/inputs_place.parquet, inputs_weather.parquet
+                                                        │
+                                    danger_model ──> tables `fires`, `danger_levels` in data/fire.duckdb
 ```
 
 | Script | Input | Output | Run time |
@@ -115,6 +176,9 @@ data/calendar/detections.parquet ──build_db──> data/fire.duckdb ──se
 | `harmonize.py` | state-tagged detections | weekly MODIS-equivalent values with standard deviation | seconds |
 | `export_web.py` | calendar and harmonized tables | state overview data with flags and typical ranges | seconds |
 | `build_db.py` | state-tagged detections | `fire.duckdb` with the three map layers (156 MB) | seconds |
+| `fire_events.py` | state-tagged detections | fires and their daily growth | seconds |
+| `danger_inputs.py` | fires, Earth Engine | weather and place inputs per fire | about 17 minutes |
+| `danger_model.py` | fires, inputs | danger model, level of every fire, written into `fire.duckdb` (344 MB) | about 4 minutes |
 
 Every script can be run again safely: it rebuilds its output from its input and
 prints its own checks.
@@ -213,6 +277,30 @@ python pipeline/export_web.py
 python pipeline/build_db.py
 ```
 
+Fire danger (optional; needs `EE_PROJECT` in `.env` and `earthengine authenticate`):
+
+```bash
+pip install -r requirements-pipeline.txt
+```
+
+```bash
+python pipeline/check_keys.py
+```
+
+```bash
+python pipeline/fire_events.py
+```
+
+```bash
+python pipeline/danger_inputs.py
+```
+
+```bash
+python pipeline/danger_model.py
+```
+
+Run `danger_model.py` again after every `build_db.py`, with the server stopped.
+
 ```bash
 python -m uvicorn server.main:app --port 8780
 ```
@@ -238,6 +326,12 @@ is needed.
 - **Third-party services.** Satellite imagery comes from Esri World Imagery,
   map labels from OpenFreeMap, place search from OpenStreetMap Nominatim. Their
   terms and rate limits apply.
+- **The danger level describes a fire after two days.** It is not a forecast
+  for a fire seen today for the first time. Most fires rated Extreme are
+  already over 1,000 acres on day 2.
+- **Fire size is a satellite footprint**, not a surveyed perimeter (Park Fire:
+  266,307 acres seen, 429,603 official).
+- **Hawaii has no danger level.**
 - **2026 is missing.** FIRMS has no yearly file yet; recent months need the FIRMS
   API with a MAP_KEY (kept in `.env`, never in git).
 - **Clouds and partial outages are not modeled.** No detection under cloud looks
@@ -256,7 +350,7 @@ is needed.
 | 4. Harmonization | done |
 | 5. Calendar screen | done as the map page; Park Fire area flagged as a record week |
 | 6. Downloads: CSV and report | CSV done; report planned |
-| 7. Nearby map for firefighters | place search and "my location" done; radius search planned |
+| 7. Fire danger rating and nearby fires for firefighters | done; a day-1 rating for new fires is planned |
 | 8. Landsat 30 m cross-check layer | planned |
 | 9. Seven-day forecast | planned |
 | 10. Prevention and context layers (fuels, treatments, smoke, vegetation, aircraft) | planned |

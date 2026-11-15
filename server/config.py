@@ -3,7 +3,7 @@ import os
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DB_PATH = ROOT / "data" / "fire.duckdb"
+DB_PATH = pathlib.Path(os.environ.get("FIRE_DB_PATH", ROOT / "data" / "fire.duckdb"))
 WEB_DIR = ROOT / "web"
 
 MAX_CELLS = 40_000              # most cells sent to the map in one answer
@@ -24,5 +24,7 @@ def _load_dotenv():
 
 _load_dotenv()
 
-# Not used yet: reserved for loading detections newer than the yearly archive.
-FIRMS_MAP_KEY = os.environ.get("FIRMS_MAP_KEY", "")
+# Not used by the server yet. pipeline/check_keys.py tests them.
+FIRMS_MAP_KEY = os.environ.get("FIRMS_MAP_KEY", "")                    # detections after the yearly archive
+EE_PROJECT = os.environ.get("EE_PROJECT", "")                          # Google Earth Engine project id
+EE_SERVICE_ACCOUNT_KEY = os.environ.get("EE_SERVICE_ACCOUNT_KEY", "")  # optional path to a key file

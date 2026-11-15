@@ -1,0 +1,12 @@
+# Upload only what the server needs: code, web/ and data/fire.duckdb.
+# every hidden file and folder (.env, .git, .project, ...)
+.*
+*.env
+proofs
+pipeline
+__pycache__
+data/raw
+data/parquet
+data/calendar
+data/*.log
+data/fire.duckdb

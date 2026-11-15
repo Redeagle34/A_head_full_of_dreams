@@ -1,0 +1,10 @@
+# Extra packages for the fire danger pipeline (fire_events, danger_inputs, danger_model, check_keys).
+# The web server needs only requirements.txt.
+-r requirements.txt
+earthengine-api
+lightgbm
+numpy
+pandas
+pyarrow
+scikit-learn
+scipy

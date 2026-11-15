@@ -1,13 +1,16 @@
 """Web server: the map page and the data it asks for.
 
-Run:  python -m uvicorn server.main:app --port 8765
-Then open http://localhost:8765
+Run:  python -m uvicorn server.main:app --port 8780
+Then open http://localhost:8780
 
 Routes
   GET /api/meta             period covered by each layer
   GET /api/cells            colored grid cells for a view and date range
   GET /api/calendar         weekly history of an area, with unusual weeks
   GET /api/detections.csv   download of the observations behind the layer
+  GET /api/fires            fires with their danger rating, in a map view
+  GET /api/fires/near       the same within a distance of a point, most dangerous first
+  GET /api/danger/levels    what each danger level meant on years the model never saw
   GET /                     the website in web/
 """
 import datetime
@@ -17,7 +20,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
-from . import queries
+from . import fires, queries
 from .config import WEB_DIR
 
 Layer = Literal["viirs", "modis", "both"]
@@ -71,6 +74,35 @@ def detections(layer: Layer, bbox: str, start: datetime.date, end: datetime.date
     name = f"fire_{layer}_{start}_{end}.csv"
     return Response(text, media_type="text/csv",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+def rated_fires(**arguments):
+    try:
+        return fires.find(**arguments)
+    except fires.NotBuilt as e:
+        raise HTTPException(503, str(e))
+
+
+@app.get("/api/fires")
+def fires_in_view(bbox: str, start: datetime.date, end: datetime.date, min_level: int = Query(0, ge=0, le=4)):
+    check_dates(start, end)
+    return rated_fires(d0=start, d1=end, bbox=parse_bbox(bbox), min_level=min_level)
+
+
+@app.get("/api/fires/near")
+def fires_near(start: datetime.date, end: datetime.date,
+               lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=180),
+               km: float = Query(50, gt=0, le=fires.MAX_RADIUS_KM), min_level: int = Query(0, ge=0, le=4)):
+    check_dates(start, end)
+    return rated_fires(d0=start, d1=end, near=(lat, lon, km), min_level=min_level)
+
+
+@app.get("/api/danger/levels")
+def danger_levels():
+    try:
+        return fires.level_meanings()
+    except fires.NotBuilt as e:
+        raise HTTPException(503, str(e))
 
 
 # Last, so /api/... routes win.
