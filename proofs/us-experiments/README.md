@@ -318,7 +318,7 @@ each idea; numbers come from sections 2 to 5.
 | 5 | State the orbit-drift limit after 2021 | Every method drifts 5–13% after 2021; saying so is more honest than hiding it | scientists | – | measured as a symptom, cause not isolated | section 2 |
 | 6 | Check against reported fires (independent ground truth) | Scoring a MODIS-equivalent layer against MODIS is circular; agency reports depend on neither sensor | scientists, judges | NIFC WFIGS | measured | section 3 |
 | 7 | "What satellites miss": detection rate by fire size and region | 2% of fires under 1 acre are seen and 72% over 10,000: a blank map does not mean no fire | responders, scientists | WFIGS + FIRMS | measured | section 3 |
-| 8 | Reported-but-not-seen fire markers on the map | Reports appear a median of 9 minutes after discovery, before most satellite passes | responders | WFIGS live + FIRMS live | source checked | section 8 |
+| 8 | Reported-but-not-seen fire markers on the map | Reports appear a median of 9 minutes after discovery, before most satellite passes | responders | WFIGS live + FIRMS live | measured (one week), not on a map | section 14 |
 | 9 | Time from discovery to first detection, per region | Median 1.2 h, slowest tenth over 20.9 h: tells a responder how far to trust the map for new starts | responders | WFIGS + FIRMS | measured (national) | section 3 |
 | 10 | Fire-blind zones: cloud × time between passes × danger | Even fires over 10,000 acres go unmatched 28% of the time within 3 days; cloud and gaps between passes are a likely part of the reason. Not measured | early warning | cloud mask, orbit tracks, gridMET | idea | section 9 |
 | 11 | Fill blind zones with data satellites do not give: reports, lightning, model risk | Where the satellites are blind, other evidence is the only evidence | early warning | WFIGS, GOES GLM, models | source checked | sections 8, 9 |
@@ -341,8 +341,8 @@ each idea; numbers come from sections 2 to 5.
 | 28 | Nearest fire stations | Requested as critical for responders; the points exist as open data | firefighters | OpenStreetMap | source checked, completeness unknown | section 8 |
 | 29 | Suggested priority when several fires burn: chance of large × exposed, closest stations | When resources are short the question is which fire first; the two factors that answer it are ideas 21 and 22 | dispatch, responders | ideas 21, 22, 28 | idea | section 9 |
 | 30 | Ranked list "highest potential today" | Early-warning staff scan many areas; a ranked list is faster than panning a map | early warning | idea 15 | idea | – |
-| 31 | Smoke: plume outlines as context and as a hint of fire under cloud | Smoke is visible when the fire under it is not, and it affects crews and the public directly | responders | NOAA HMS polygons | source checked | section 8 |
-| 32 | Lightning as a cause of new starts | Natural causes are 30% of wildfire reports with a known cause in 2023–2024 (9,236 of 30,491) | early warning | GOES GLM | source checked | section 8 |
+| 31 | Smoke: plume outlines as context and as a hint of fire under cloud | Smoke is visible when the fire under it is not, and it affects crews and the public directly | responders | NOAA HMS polygons | measured (one week), not on a map | section 14 |
+| 32 | Lightning as a cause of new starts | Natural causes are 30% of wildfire reports with a known cause in 2023–2024 (9,236 of 30,491) | early warning | GOES GLM | measured (two days) | section 16 |
 | 33 | Landsat 30 m detections for close-up views | 30 m shows the fire edge that 375 m and 1 km cannot | responders, scientists | FIRMS `LANDSAT_NRT` | source checked | section 8 |
 | 34 | Landsat check of the pre-2012 MODIS-only years | Before 2012 there is no VIIRS to check MODIS against; Landsat is the only finer record | scientists | Landsat 5 / 7 Collection 2 | proof of concept (5 of 5 scenes) | `results/landsat5_fire_poc_2007.csv` |
 | 35 | Geostationary detections between polar passes | Polar satellites pass a few times a day; the slowest tenth of first detections takes over 20.9 h | responders | FIRMS `GOES_NRT`, GOES FDCF | source checked | section 8 |
@@ -445,3 +445,64 @@ What it says:
 Limits: one week, in November, with 20 wildfires of 10 acres or more. The
 match window is one day shorter than in section 3. Cloud is taken from MODIS
 passes and applied to VIIRS, which passes at a similar time of day.
+
+## 15. What the models lose without today's weather
+
+`scripts/42_lagged_weather_test.py`, `results/lagged_weather_test.json`. Same
+table and split as the saved models; only the inputs change. Scores are area
+under the ROC curve on 2022 onward.
+
+| Inputs | Fire starts | Reaches 100 acres | Reaches 1,000 acres |
+|---|---|---|---|
+| Today's and yesterday's weather, place, season (saved models) | 0.893 | 0.788 | 0.810 |
+| Only what is known the evening before | 0.885 | 0.775 | 0.798 |
+| Only 7- and 30-day summaries | 0.879 | 0.760 | 0.781 |
+| Place and season only, no weather | 0.860 | 0.750 | 0.771 |
+
+Two readings, both important:
+
+- A forecast for tomorrow can be made from data known today with a small
+  loss (0.893 → 0.885). The models do not need a weather forecast to be useful
+  one day ahead. gridMET itself is about 3 days behind; that lag was not
+  tested, but the 30-day-summary row (0.879) suggests the loss stays small.
+- Most of the fire-start score comes from place and season (0.860 with no
+  weather at all). The random non-fire rows are spread over the whole country,
+  so the model first learns where and when fires are reported at all. Weather
+  adds 0.03. The score therefore says less about "is today worse than usual
+  here" than 0.893 suggests. A fairer test of that question compares each
+  fire with other days at the same place; not done.
+
+## 16. Lightning as an early sign of fire
+
+`scripts/41_lightning_test.py`, `results/lightning_test.json`. Western U.S.
+(longitude −125 to −104), wildfires discovered on 31 July and 1 August 2025:
+328 with cause "Natural", 79 "Human", 192 "Undetermined". Lightning is every
+flash from the GOES-18 lightning mapper (GLM) over 72 hours, 545,100 flashes
+in the box, all 72 hours complete. The question: was there a flash near the
+fire's reported point in the hours before discovery?
+
+| Flash within 5 km in the 24 h before discovery | Share | Median hours from first flash to discovery |
+|---|---|---|
+| Natural-cause fires (328) | 83.5% | 9.5 |
+| Undetermined (192) | 38.0% | 10.9 |
+| Human-caused fires (79) | 8.9% | 18.1 |
+| Random points in the same box and hours (3,000) | 22.9% | 17.0 |
+
+Within 10 km the natural-cause share is 92.7% (random points 32.5%).
+
+What it says:
+
+- Lightning marks where lightning fires will be reported, hours ahead and
+  through cloud: a median of 9.5 hours before discovery.
+- It is not a fire detector. 23% of random points also had a flash nearby, so
+  most flashes start nothing. It is a "watch here" layer, strongest when
+  combined with dry fuels.
+- Undetermined fires sit between the two groups (38%), which suggests a part
+  of them are lightning fires.
+
+Limits: these two days were chosen because they had the most natural-cause
+reports of 2025, so lightning was widespread; a quiet day was not tested.
+Agencies may use lightning maps when they assign the cause, which would
+inflate the 83.5%. The lightning mapper locates flashes to several
+kilometres, and it misses some. Download size is about 5 GB for 72 hours, so
+only flash positions inside the box are kept.

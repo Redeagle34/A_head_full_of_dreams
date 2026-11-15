@@ -132,6 +132,9 @@ per map cell and day. Not done. Until then, show it as a rank or as a level
 - Past fire adds nothing: 0.893 with and without it.
 - Population is the second strongest input, so the model partly learns where
   fires get reported.
+- Place and season alone, with no weather, score 0.860; weather lifts this to
+  0.893. Most of the skill is where and when, not today's conditions. Inputs
+  known the evening before score 0.885 (`../README.md` section 15).
 
 ## Model B-100: a start reaches 100 acres or more
 

@@ -6,22 +6,25 @@ import requests, re, io, json, pathlib, sys, numpy as np, pandas as pd, netCDF4
 from concurrent.futures import ThreadPoolExecutor
 RAW = pathlib.Path("data/raw/glm"); RAW.mkdir(parents=True, exist_ok=True); B = "https://noaa-goes18.s3.amazonaws.com/"
 HOURS = pd.date_range("2025-07-30 07:00", "2025-08-02 06:00", freq="h"); BOX = (-125, -104, 31, 49.5)
-def one(key):
+def fetch(key):                                   # download only; HDF5 parsing is not thread-safe, so it happens in the main thread
     for a in range(4):
-        try:
-            b = requests.get(B + key, timeout=60).content
-            with netCDF4.Dataset("m", memory=b) as n:
-                la, lo = n["flash_lat"][:].filled(np.nan), n["flash_lon"][:].filled(np.nan)
-            t = pd.to_datetime(re.search(r"_s(\d{13})", key).group(1), format="%Y%j%H%M%S")
-            m = (lo >= BOX[0]) & (lo <= BOX[1]) & (la >= BOX[2]) & (la <= BOX[3])
-            return pd.DataFrame({"t": t, "lat": la[m].astype("float32"), "lon": lo[m].astype("float32")})
+        try: return key, requests.get(B + key, timeout=60).content
         except Exception as e: err = e
-    print("FAIL", key, str(err)[:80], flush=True); return None
+    print("FAIL", key, str(err)[:80], flush=True); return key, None
+def parse(key, b):
+    if b is None: return None
+    try:
+        with netCDF4.Dataset("m", memory=b) as n:
+            la, lo = n["flash_lat"][:].filled(np.nan), n["flash_lon"][:].filled(np.nan)
+    except Exception as e: print("BAD", key, str(e)[:80], flush=True); return None
+    t = pd.to_datetime(re.search(r"_s(\d{13})", key).group(1), format="%Y%j%H%M%S")
+    m = (lo >= BOX[0]) & (lo <= BOX[1]) & (la >= BOX[2]) & (la <= BOX[3])
+    return pd.DataFrame({"t": t, "lat": la[m].astype("float32"), "lon": lo[m].astype("float32")})
 for h in HOURS:
     p = RAW / f"g18_{h:%Y%m%d_%H}.parquet"
     if p.exists(): continue
     x = requests.get(B, params={"list-type": "2", "prefix": f"GLM-L2-LCFA/{h:%Y/%j/%H}/"}, timeout=60).text; keys = re.findall(r"<Key>(.*?)</Key>", x)
-    with ThreadPoolExecutor(24) as ex: parts = list(ex.map(one, keys))
+    with ThreadPoolExecutor(24) as ex: parts = [parse(k, b) for k, b in ex.map(fetch, keys)]
     ok = [d for d in parts if d is not None]
     if len(ok) < 0.95 * max(len(keys), 1): print("hour incomplete, not cached", h, len(ok), len(keys), flush=True); continue
     pd.concat(ok).to_parquet(p); print(h, "files", len(keys), "flashes in box", sum(len(d) for d in ok), flush=True)
