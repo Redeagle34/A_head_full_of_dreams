@@ -1,16 +1,18 @@
-"""Fires and their danger rating: list them for a map view or around a point.
+"""The danger rating of a fire, in words. The fires themselves are in events.py.
 
-A fire is a group of VIIRS detections that touch in space and time (pipeline/danger_fires.py).
-Its rating (pipeline/danger_model.py) has three parts, always shown apart:
+The rating (pipeline/danger_model.py) has three parts, always shown apart:
   level       chance that the fire reaches 1,000 acres, as one of five words
   exposure    built-up surface within 5 km of where it started
-  behaviour   what the satellites saw: size, growth, radiative power, night burning
+  behaviour   what VIIRS saw in the first two days: footprint, growth, night burning, weather
+
+The model was trained on VIIRS detections grouped with gaps of up to 2 days
+(pipeline/danger_fires.py). pipeline/event_danger.py carries each rating over to the
+fire event that holds those detections; rating() below turns that row into words.
 
 Change here:
   LEVELS, LEVEL_STARTS   names of the levels and the chance at which each starts
   EXPOSURE               words for how much is built nearby
-  conditions()           the plain-language facts listed with each fire
-  MAX_FIRES, MAX_RADIUS_KM
+  conditions()           the plain-language facts listed with each rating
 """
 import math
 
@@ -18,10 +20,6 @@ from . import db
 
 LEVELS = ["Low", "Moderate", "High", "Very High", "Extreme"]
 LEVEL_STARTS = [0.01, 0.05, 0.15, 0.40]     # calibrated chance of reaching 1,000 acres
-MAX_FIRES = 400                             # most fires in one answer
-MAX_RADIUS_KM = 500
-EARTH_KM = 6371.0
-CIRCLE_5KM_HA = 7854.0
 
 # (built-up hectares within 5 km, words). First row whose limit is above the value wins.
 EXPOSURE = [(1, "almost nothing built nearby"), (30, "scattered buildings"),
@@ -32,8 +30,9 @@ LAND_COVER = {1: "evergreen needleleaf forest", 2: "evergreen broadleaf forest",
               8: "woody savanna", 9: "savanna", 10: "grassland", 11: "wetland", 12: "cropland", 13: "built-up land",
               14: "cropland and natural vegetation", 15: "snow and ice", 16: "barren land", 17: "water"}
 
-COLUMNS = ("fire_id, state, first_day, last_day, days_seen, lat, lon, west, south, east, north, acres, acres_day2, "
-           "growth, frp_max, d1_night_share, level, p100, p1000, built_5km, vs, rmin, fm1000, pr30, tmmx, lc")
+# Columns of data/events/event_danger.parquet that rating() reads.
+COLUMNS = ("fire_id, parts, share, fire_share, rated_first_day, rated_last_day, days_seen, acres, acres_day2, growth, "
+           "d1_night_share, level, p100, p1000, built_5km, vs, rmin, fm1000, pr30, tmmx, lc").split(", ")
 COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 
 
@@ -49,47 +48,13 @@ def level_meanings():
             for level, name, fires, r100, r1000, median in rows]
 
 
-def find(d0, d1, bbox=None, near=None, min_level=0):
-    """Fires seen between d0 and d1, in a map view (bbox) or within `km` of a point (near = lat, lon, km).
-
-    Order: highest level first; then nearest first (around a point) or largest first (map view).
-    Distance is to the nearest edge of the fire's bounding box, 0 inside it.
-    """
-    where, params = ["first_day <= $d1 AND last_day >= $d0"], {"d0": d0, "d1": d1}
-    distance = "NULL"
-    if near:
-        lat, lon, radius = near
-        # Nearest point of the fire's box to the centre, then the great-circle distance to it.
-        distance = f"""2 * {EARTH_KM} * asin(sqrt(
-            pow(sin(radians(greatest(south, least(north, $lat)) - $lat) / 2), 2) +
-            cos(radians($lat)) * cos(radians(greatest(south, least(north, $lat)))) *
-            pow(sin(radians(greatest(west, least(east, $lon)) - $lon) / 2), 2)))"""
-        reach = radius / 111.0                              # degrees of latitude, a first coarse cut
-        where.append("north >= $lat - $reach AND south <= $lat + $reach "
-                     "AND east >= $lon - $reach / cos(radians($lat)) AND west <= $lon + $reach / cos(radians($lat))")
-        params |= {"lat": lat, "lon": lon, "reach": reach, "km": radius}
-    else:
-        west, south, east, north = bbox
-        where.append("east >= $west AND west <= $east AND north >= $south AND south <= $north")
-        params |= {"west": west, "south": south, "east": east, "north": north}
-    if min_level > 0:
-        where.append("level >= $min_level")
-        params["min_level"] = min_level
-    order = "level DESC NULLS LAST, " + ("km ASC" if near else "acres DESC")
-    rows = _run(f"""SELECT * FROM (SELECT {COLUMNS}, {distance} AS km FROM fires WHERE {' AND '.join(where)})
-                    {'WHERE km <= $km' if near else ''} ORDER BY {order} LIMIT {MAX_FIRES + 1}""", params)
-    names = COLUMNS.split(", ") + ["km"]
-    fires = [_describe(dict(zip(names, row)), near) for row in rows[:MAX_FIRES]]
-    return {"fires": fires, "truncated": len(rows) > MAX_FIRES}
-
-
 def _run(sql, params=None):
     try:
         return db.cursor().execute(sql, params or {}).fetchall()
     except Exception as e:
         if "does not exist" in str(e):
             raise NotBuilt("Fire ratings are not built yet. Run pipeline/danger_fires.py, danger_inputs.py, "
-                           "danger_model.py.") from e
+                           "danger_model.py, event_danger.py.") from e
         raise
 
 
@@ -129,43 +94,50 @@ def conditions(f):
     return out
 
 
-def _describe(f, near):
+def rating(f):
+    """One row of event_danger.parquet -> the rating of that fire event. None when the event has no rated part."""
     f = {k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in f.items()}
-    out = {
-        "id": f["fire_id"], "state": f["state"], "lat": round(f["lat"], 4), "lon": round(f["lon"], 4),
-        "bbox": [round(f[k], 4) for k in ("west", "south", "east", "north")],
-        "first_day": f["first_day"].isoformat(), "last_day": f["last_day"].isoformat(), "days_seen": f["days_seen"],
-        "acres": round(f["acres"]), "acres_day2": round(f["acres_day2"]), "frp_max": _clean(f["frp_max"], 1),
-        "level": f["level"], "level_name": None if f["level"] is None else LEVELS[f["level"]],
+    if f["fire_id"] is None:
+        return None
+    level = None if f["level"] is None else int(f["level"])
+    return {
+        "level": level, "level_name": None if level is None else LEVELS[level],
         "p100": _clean(f["p100"], 3), "p1000": _clean(f["p1000"], 3),
         "built_ha": _clean(None if f["built_5km"] is None else f["built_5km"] / 10_000, 1),
         "exposure": exposure_words(f["built_5km"]),
         "land_cover": LAND_COVER.get(f["lc"]), "conditions": conditions(f),
+        # The VIIRS group the model judged: its dates, its footprint on cells of about 440 m, and how
+        # much of the event it is (share of the event's VIIRS detections; fire_share is the other way round).
+        "first_day": f["rated_first_day"].isoformat(), "last_day": f["rated_last_day"].isoformat(),
+        "acres": round(f["acres"]), "acres_day2": round(f["acres_day2"]),
+        "parts": f["parts"], "share": round(f["share"], 3), "fire_share": round(f["fire_share"], 3),
     }
-    if near:
-        lat, lon, _ = near
-        out["km"] = round(f["km"], 1)
-        bearing = math.degrees(math.atan2(
-            math.sin(math.radians(f["lon"] - lon)) * math.cos(math.radians(f["lat"])),
-            math.cos(math.radians(lat)) * math.sin(math.radians(f["lat"])) -
-            math.sin(math.radians(lat)) * math.cos(math.radians(f["lat"])) * math.cos(math.radians(f["lon"] - lon))))
-        out["direction"] = COMPASS[round(bearing / 45) % 8]
-    return out
+
+
+def direction(lat, lon, to_lat, to_lon):
+    """Compass word for the way from (lat, lon) to (to_lat, to_lon)."""
+    bearing = math.degrees(math.atan2(
+        math.sin(math.radians(to_lon - lon)) * math.cos(math.radians(to_lat)),
+        math.cos(math.radians(lat)) * math.sin(math.radians(to_lat)) -
+        math.sin(math.radians(lat)) * math.cos(math.radians(to_lat)) * math.cos(math.radians(to_lon - lon))))
+    return COMPASS[round(bearing / 45) % 8]
 
 
 def self_check():
+    import datetime
     assert exposure_words(0) == EXPOSURE[0][1] and exposure_words(5e7) == EXPOSURE[-1][1]
     assert exposure_words(float("nan")) is None
     base = dict(days_seen=3, growth=2.0, d1_night_share=0.5, vs=8.0, rmin=12.0, fm1000=8.0, pr30=0.0, tmmx=312.0)
     assert len(conditions(base)) == 7, conditions(base)
     assert conditions(dict(base, days_seen=1, growth=0.0))[0] == "seen on one day only"
-    # A fire due north-east of the point.
-    f = dict(base, fire_id=1, state="CA", first_day=__import__("datetime").date(2024, 7, 24),
-             last_day=__import__("datetime").date(2024, 8, 12), lat=40.5, lon=-121.0, west=-121.1, south=40.4,
-             east=-120.9, north=40.6, acres=1234.4, acres_day2=200.0, frp_max=55.55, level=3, p100=1.0, p1000=0.2,
-             built_5km=250_000.0, lc=1, km=42.0)
-    d = _describe(f, (40.0, -121.5, 100))
-    assert d["direction"] == "NE" and d["level_name"] == "Very High" and d["built_ha"] == 25.0, d
+    f = dict(base, fire_id=1, parts=2, share=0.9, fire_share=1.0, rated_first_day=datetime.date(2024, 7, 24),
+             rated_last_day=datetime.date(2024, 8, 12), acres=1234.4, acres_day2=200.0, level=3.0, p100=1.0, p1000=0.2,
+             built_5km=250_000.0, lc=1)
+    d = rating(f)
+    assert d["level_name"] == "Very High" and d["built_ha"] == 25.0 and d["acres"] == 1234, d
+    assert rating(dict(f, level=float("nan")))["level"] is None           # Hawaii: grouped, not rated
+    assert rating(dict.fromkeys(COLUMNS)) is None                         # an event with no VIIRS detection
+    assert direction(40.0, -121.5, 40.5, -121.0) == "NE"
 
 
 if __name__ == "__main__":

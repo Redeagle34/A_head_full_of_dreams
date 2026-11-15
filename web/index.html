@@ -27,7 +27,6 @@
 
   <div class="actions">
     <button id="locate" type="button" title="Go to my location">My location</button>
-    <button id="nearBtn" type="button" aria-expanded="false" aria-controls="near">Fires nearby</button>
     <button id="fireBtn" type="button" aria-expanded="false" aria-controls="firePanel">Fires</button>
     <button id="satBtn" type="button" aria-expanded="false" aria-controls="satPanel">Satellites</button>
     <button id="filtersBtn" type="button" aria-expanded="false" aria-controls="filters">Filters</button>
@@ -84,11 +83,9 @@
   </div>
 
   <h2>Fire markers</h2>
-  <label class="slider">Show rated fires
+  <label class="slider">One marker for each fire of the Fires list, colored by danger level
     <select id="markers">
-      <option value="1" selected>Moderate danger and above</option>
-      <option value="2">High danger and above</option>
-      <option value="0">All fires</option>
+      <option value="on" selected>On</option>
       <option value="off">Off</option>
     </select></label>
 
@@ -139,51 +136,6 @@
   </div>
 </aside>
 
-<!-- Fires nearby: radius search, most dangerous first -->
-<aside id="near" class="panel glass" hidden>
-  <div class="panel-head">
-    <div>
-      <div class="eyebrow">Radius search</div>
-      <h2>Fires nearby</h2>
-    </div>
-    <button id="nearClose" type="button" aria-label="Close fires nearby">Close</button>
-  </div>
-
-  <div class="steps">
-    <div class="step">
-      <h3>1. Where</h3>
-      <div class="row">
-        <button id="nearLocate" type="button">My location</button>
-        <button id="nearCentre" type="button">Centre of the map</button>
-        <button id="nearPick" type="button" aria-pressed="false">Pick on the map</button>
-      </div>
-      <p id="nearPoint" class="hint">No point chosen yet.</p>
-    </div>
-    <div class="step two">
-      <label><h3>2. How far</h3>
-        <select id="nearKm">
-          <option value="10">10 km</option><option value="25">25 km</option><option value="50" selected>50 km</option>
-          <option value="100">100 km</option><option value="250">250 km</option>
-        </select></label>
-      <label><h3>3. Danger</h3>
-        <select id="nearLevel">
-          <option value="0" selected>All fires</option><option value="1">Moderate and above</option>
-          <option value="2">High and above</option><option value="3">Very High and above</option>
-        </select></label>
-    </div>
-  </div>
-  <p id="nearSummary" class="hint">Fires seen between the two dates in the top bar, most dangerous first, then nearest.</p>
-
-  <div id="nearList" class="fires"></div>
-
-  <details class="about">
-    <summary>What the danger levels mean</summary>
-    <p class="hint">The level is the chance that a fire reaches 1,000 acres, judged after the satellites have watched it for two days. The table shows what happened to fires at each level in 2022–2025, years the model never saw.</p>
-    <table id="levelTable"></table>
-    <p class="hint">Size is the satellite footprint, not a surveyed perimeter. This is a suggestion to help decide where to look first. It is not a dispatch order.</p>
-  </details>
-</aside>
-
 <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.16/dist/plot.umd.min.js"></script>
@@ -195,6 +147,5 @@
 <script src="fires.js"></script>
 <script src="timeline.js"></script>
 <script src="app.js"></script>
-<script src="danger.js"></script>
 </body>
 </html>
