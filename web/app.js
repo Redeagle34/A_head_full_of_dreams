@@ -8,7 +8,7 @@
  *   5. Top bar: place search, dates, buttons
  *   6. Start
  *
- * Rated fires and the "Fires nearby" search are in danger.js.
+ * The fires list, the fire markers and the search around a point are in fires.js.
  */
 
 // ---------- 1. State and helpers ----------
@@ -73,7 +73,6 @@ function createMap() {
     map.addSource("fire", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
     map.addLayer({ id: "fire", type: "fill", source: "fire", paint: { "fill-antialias": false } }, firstLabel);
     setBasemap();
-    setupFires();                                   // danger.js
     map.on("click", "fire", showPopup);
     map.on("mousemove", "fire", () => map.getCanvas().style.cursor = "pointer");
     map.on("mouseleave", "fire", () => map.getCanvas().style.cursor = "");
@@ -109,7 +108,7 @@ function setStatus(text) { $("status").textContent = text || ""; }
 async function refresh() {
   if (!map?.getSource("fire")) return;
   cellsRequest?.abort();
-  refreshFires();                                   // danger.js
+  window.fireView?.refresh();                       // fires.js
   updateDownload();
   if (state.layer === "none") { drawCells(null); if (!$("panel").hidden) loadCalendar(); return; }
   const m = META[state.layer];
@@ -192,7 +191,7 @@ function drawLegend(data, scale) {
 }
 
 function showPopup(e) {
-  if (near.picking || map.queryRenderedFeatures(e.point, { layers: ["fires"] }).length) return;   // a fire marker wins
+  if (window.fireView?.picking() || map.queryRenderedFeatures(e.point, { layers: ["fires"] }).length) return;   // a fire marker wins
   const p = e.features[0].properties;
   const days = +p.days, rows = [`<b>${days >= 0.95 ? Math.round(days) : days.toFixed(1)} fire ${Math.round(days) === 1 ? "day" : "days"}</b>`,
     `<div>Intensity: ${num(+p.frp)} MW</div>`];
@@ -335,7 +334,7 @@ async function searchPlace(query) {
   }
 }
 
-const PANELS = { filters: "filtersBtn", panel: "panelBtn", near: "nearBtn" };
+const PANELS = { filters: "filtersBtn", panel: "panelBtn" };
 function togglePanel(id, open) {
   const show = open ?? $(id).hidden;
   if (show && innerWidth <= 760) { window.fireView?.toggle(false); window.satelliteView?.toggle(false); }   // one sheet on a phone
@@ -344,7 +343,6 @@ function togglePanel(id, open) {
     $(other).hidden = !on; $(button).setAttribute("aria-expanded", String(on));
   }
   if (id === "panel" && show) loadCalendar();
-  if (id === "near" && show) refreshFires();
 }
 
 function wireControls() {
@@ -362,7 +360,6 @@ function wireControls() {
     () => setStatus("Location is not available in this browser."));
   for (const [id, button] of Object.entries(PANELS)) $(button).onclick = () => togglePanel(id);
   $("panelClose").onclick = () => togglePanel("panel", false);
-  $("nearClose").onclick = () => togglePanel("near", false);
   $("layerChoices").addEventListener("change", e => { state.layer = e.target.value; refresh(); });
   $("metricChoices").addEventListener("change", e => { state.metric = e.target.value; refresh(); });
   $("baseChoices").addEventListener("change", e => { state.base = e.target.value; setBasemap(); });

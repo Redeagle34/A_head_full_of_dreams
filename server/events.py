@@ -1,8 +1,15 @@
-"""Fires as single events, and the reported fires that were missed.
+"""Fires: one row per fire event, with its danger rating; and the reported fires that were missed.
 
-Reads the Parquet files written by pipeline/fire_events.py, pipeline/event_enrich.py
-and pipeline/missed_fires.py. Each is optional: a missing file gives an empty answer
-and a note saying which script to run.
+A fire is detections of MODIS and VIIRS that touch on a grid of about 1 km and follow
+within 5 days (pipeline/fire_events.py). This is the only kind of fire the page lists.
+
+Reads the Parquet files written by pipeline/fire_events.py, pipeline/event_enrich.py,
+pipeline/event_danger.py and pipeline/missed_fires.py. Each is optional: a missing file
+gives an empty answer or an empty field, and a note saying which script to run.
+
+Change here:
+  MAX_EVENTS, MAX_RADIUS_KM   most fires in one answer, widest search around a point
+  find()                      the order of the list
 """
 import datetime
 import decimal
@@ -10,11 +17,14 @@ import json
 
 import duckdb
 
+from . import fires
 from .config import EE_PROJECT, ROOT
 
 EVENTS = ROOT / "data" / "events"
 DLAT, DLON = 0.01, 0.0125       # the grid of pipeline/fire_events.py
 MAX_EVENTS = 300
+MAX_RADIUS_KM = 500
+EARTH_KM = 6371.0
 MAX_CELLS = 30_000
 MAX_REPORTED = 5_000
 
@@ -51,11 +61,28 @@ def _plain(row):
     return {k: one(v) for k, v in row.items()}
 
 
-def _enrichment_join():
-    path = EVENTS / "enrichment.parquet"
-    if not path.exists():
-        return "", "NULL AS burned_km2, NULL AS vegetation"
-    return f"LEFT JOIN '{path.as_posix()}' x USING (event_id)", "x.burned_km2, x.vegetation"
+def _source():
+    """SQL for the events with what the optional files add: (FROM clause, columns, note about a missing rating file)."""
+    tables, columns, note = [f"{_file('events.parquet', 'fire_events.py')} e"], ["e.*"], None
+    for name, alias, added in (("enrichment.parquet", "x", ["burned_km2", "vegetation"]),
+                               ("event_danger.parquet", "r", fires.COLUMNS)):
+        path = EVENTS / name
+        if path.exists():
+            tables.append(f"LEFT JOIN '{path.as_posix()}' {alias} USING (event_id)")
+            columns += [f"{alias}.{c}" for c in added]
+        else:
+            columns += [f"NULL AS {c}" for c in added]
+            if alias == "r":
+                note = "Danger levels are not linked to the fires yet. Run: python pipeline/event_danger.py"
+    return " ".join(tables), ", ".join(columns), note
+
+
+def _shape(row):
+    """A database row as the page gets it: plain values, vegetation as a list, the rating as `danger`."""
+    rated = {c: row.pop(c) for c in fires.COLUMNS}
+    row = _with_vegetation(_plain(row))
+    row["danger"] = fires.rating(rated)
+    return row
 
 
 def _with_vegetation(row):
@@ -69,26 +96,55 @@ def _with_vegetation(row):
     return row
 
 
-def list_events(bbox, start, end, min_km2):
-    """Fires that touch the box and the dates, largest first."""
-    west, south, east, north = bbox
-    join, cols = _enrichment_join()
-    rows = _rows(f"""
-        SELECT e.*, {cols} FROM {_file('events.parquet', 'fire_events.py')} e {join}
-        WHERE e.east >= ? AND e.west <= ? AND e.north >= ? AND e.south <= ?
-          AND e."end" >= ? AND e.start <= ? AND e.area_km2 >= ?
-        ORDER BY e.area_km2 DESC LIMIT {MAX_EVENTS}""", [west, east, south, north, start, end, min_km2])
-    return {"events": [_with_vegetation(_plain(r)) for r in rows], "limit": MAX_EVENTS}
+def find(start, end, min_km2, bbox=None, near=None, min_level=0):
+    """Fires that burned between start and end, in a map view (bbox) or within `km` of a point (near = lat, lon, km).
+
+    Order: largest first (map view); highest danger level first, then nearest (around a point).
+    Distance is to the nearest edge of the fire's bounding box, 0 inside it.
+    """
+    tables, columns, note = _source()
+    where, params = ['e."end" >= $start AND e.start <= $end AND e.area_km2 >= $min_km2'], \
+        {"start": start, "end": end, "min_km2": min_km2}
+    distance = "NULL"
+    if near:
+        lat, lon, radius = near
+        # Nearest point of the fire's box to the centre, then the great-circle distance to it.
+        distance = f"""2 * {EARTH_KM} * asin(sqrt(
+            pow(sin(radians(greatest(e.south, least(e.north, $lat)) - $lat) / 2), 2) +
+            cos(radians($lat)) * cos(radians(greatest(e.south, least(e.north, $lat)))) *
+            pow(sin(radians(greatest(e.west, least(e.east, $lon)) - $lon) / 2), 2)))"""
+        where.append("e.north >= $lat - $reach AND e.south <= $lat + $reach "       # a first coarse cut
+                     "AND e.east >= $lon - $reach / cos(radians($lat)) AND e.west <= $lon + $reach / cos(radians($lat))")
+        params |= {"lat": lat, "lon": lon, "reach": radius / 111.0, "km": radius}
+    else:
+        west, south, east, north = bbox
+        where.append("e.east >= $west AND e.west <= $east AND e.north >= $south AND e.south <= $north")
+        params |= {"west": west, "south": south, "east": east, "north": north}
+    outer = ["km <= $km"] if near else []
+    if min_level > 0:
+        outer.append("level >= $min_level")
+        params["min_level"] = min_level
+    order = "level DESC NULLS LAST, km ASC, area_km2 DESC" if near else "area_km2 DESC"
+    rows = _rows(f"""SELECT * FROM (SELECT {columns}, {distance} AS km FROM {tables} WHERE {' AND '.join(where)})
+                     {'WHERE ' + ' AND '.join(outer) if outer else ''} ORDER BY {order}, event_id LIMIT {MAX_EVENTS + 1}""", params)
+    events = []
+    for row in rows[:MAX_EVENTS]:
+        km = row.pop("km")
+        row = _shape(row)
+        if near:
+            row["km"] = round(km, 1)
+            row["direction"] = fires.direction(near[0], near[1], row["lat"], row["lon"])
+        events.append(row)
+    return {"events": events, "truncated": len(rows) > MAX_EVENTS, "limit": MAX_EVENTS, "note": note}
 
 
 def event(event_id):
-    """One fire: its numbers and its ground cells (GeoJSON, each with the day it first burned)."""
-    join, cols = _enrichment_join()
-    rows = _rows(f"SELECT e.*, {cols} FROM {_file('events.parquet', 'fire_events.py')} e {join} WHERE e.event_id = ?",
-                 [event_id])
+    """One fire: its numbers, its rating and its ground cells (GeoJSON, each with the day it first burned)."""
+    tables, columns, _ = _source()
+    rows = _rows(f"SELECT {columns} FROM {tables} WHERE e.event_id = ?", [event_id])
     if not rows:
         return None
-    info = _with_vegetation(_plain(rows[0]))
+    info = _shape(rows[0])
     cells = _rows(f"""SELECT gy, gx, first_day, last_day, days FROM {_file('event_cells.parquet', 'fire_events.py')}
                       WHERE event_id = ? ORDER BY first_day LIMIT {MAX_CELLS}""", [event_id])
     start = datetime.date.fromisoformat(info["start"])
