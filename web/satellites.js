@@ -130,7 +130,8 @@ function passesOver(place, from, only) {
 // ---------- 3. 3D layer ----------
 
 let map, sats = [], selected = null, enabled = true, panelOpen = false;
-let scene, camera, renderer, scanLines, scanFan, lastSwath = 0, lastOrbit = 0;
+let scene, camera, renderer, scanLines, scanFan, lastSwath = 0, lastOrbit = 0, repaintTimer = null;
+const REPAINT_MS = 250;           // satellites move about a pixel a second here: 4 redraws a second are enough
 // Every model is shown from the same three-quarter angle, whatever the globe is doing.
 const POSE = new THREE.Matrix4().makeRotationX(0.5).multiply(new THREE.Matrix4().makeRotationY(-0.65));
 
@@ -148,7 +149,7 @@ function placeholder(color) {                   // shown until the NASA model ha
   return g;
 }
 
-let loader = null;
+let loader = null, models = {};
 function gltfLoader() {                         // NASA's files are Draco-compressed
   if (!loader) {
     const draco = new THREE.DRACOLoader();
@@ -159,17 +160,20 @@ function gltfLoader() {                         // NASA's files are Draco-compre
 }
 
 function loadModel(sat) {
-  gltfLoader().load(sat.model, gltf => {
-    const box = new THREE.Box3().setFromObject(gltf.scene), size = box.getSize(new THREE.Vector3());
+  // One download and one Draco decode per file: NOAA-20 and NOAA-21 share the Suomi NPP model.
+  models[sat.model] ??= new Promise((ok, fail) => gltfLoader().load(sat.model, ok, undefined, fail));
+  models[sat.model].then(gltf => {
+    const scene = gltf.scene.clone();
+    const box = new THREE.Box3().setFromObject(scene), size = box.getSize(new THREE.Vector3());
     const inner = new THREE.Group();
-    gltf.scene.position.copy(box.getCenter(new THREE.Vector3())).multiplyScalar(-1);
-    inner.add(gltf.scene);
+    scene.position.copy(box.getCenter(new THREE.Vector3())).multiplyScalar(-1);
+    inner.add(scene);
     inner.scale.setScalar(1 / Math.max(size.x, size.y, size.z));     // longest side = 1 unit
     inner.traverse(o => { o.frustumCulled = false; });
     sat.group.clear(); sat.group.add(inner); sat.modelRoot = inner;
     if (sat === selected) showModel(sat);
     map.triggerRepaint();
-  }, undefined, () => { /* keep the placeholder */ });
+  }, () => { /* keep the placeholder */ });
 }
 
 function makeLine(color, points, opacity) {
@@ -283,7 +287,9 @@ const layer = {
     if (selected && now - lastSwath > 2000) { lastSwath = +now; drawRecentStrip(now); updateFacts(now); }
     renderer.resetState();
     renderer.render(scene, camera);
-    map.triggerRepaint();                        // keep moving
+    // Keep moving, but not at the screen's frame rate: each repaint redraws the whole map.
+    clearTimeout(repaintTimer);
+    repaintTimer = setTimeout(() => map.triggerRepaint(), REPAINT_MS);
   },
 };
 

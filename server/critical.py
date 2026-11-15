@@ -32,8 +32,7 @@ import os
 import pathlib
 import random
 
-import duckdb
-
+from . import db
 from .config import ROOT
 from .events import LAND_COVER
 
@@ -108,7 +107,7 @@ def choose_size(bbox):
         r0, r1, c0, c1 = _window(bbox, SIZES[name])
         if (r1 - r0 + 1) * (c1 - c0 + 1) > MAX_NODES * 20:      # far too many, skip the count
             continue
-        n = duckdb.connect().execute(
+        n = db.files().execute(
             f"SELECT count(*) FROM '{_file(name).as_posix()}' WHERE row BETWEEN ? AND ? AND col BETWEEN ? AND ? "
             f"AND lc IN ({', '.join(map(str, P_VEG))})", [r0, r1, c0, c1]).fetchall()[0][0]
         if n <= MAX_NODES:
@@ -128,7 +127,7 @@ def size_info(bbox):
 def load(bbox, name):
     """The cells of a view at one size: {(row, col): {...}}."""
     r0, r1, c0, c1 = _window(bbox, SIZES[name])
-    cur = duckdb.connect().execute(
+    cur = db.files().execute(
         f"SELECT * FROM '{_file(name).as_posix()}' WHERE row BETWEEN ? AND ? AND col BETWEEN ? AND ?", [r0, r1, c0, c1])
     names = [d[0] for d in cur.description]
     return {(r["row"], r["col"]): r for r in (dict(zip(names, v)) for v in cur.fetchall())}
@@ -290,20 +289,28 @@ def greedy(nodes, adjacent, p, p_in, cost, budget):
         comp = components(kept, adjacent)
         cuts = cut_points(kept, adjacent)
         best, best_score, best_drop = None, 0.0, 0.0
+        blocks = {}
+        for v in kept:
+            blocks.setdefault(comp[v], set()).add(v)
         for n in kept:
             if cost[n] > left:
                 continue
-            if n in cuts:                       # may split its block: count again without it
-                block = {v for v in kept if comp[v] == comp[n]} - {n}
+            # Its own pairs go with it.
+            drop = sum(v for j, v in p.get(n, {}).items() if j != n and j in kept and comp[j] == comp[n]) \
+                + sum(v for i, v in p_in.get(n, {}).items() if i != n and i in kept and comp[i] == comp[n])
+            if n in cuts:                       # it splits its block: add the pairs between the parts
+                block = blocks[comp[n]] - {n}
                 sub = components(block, adjacent)
-                before = sum(v for i in block | {n} for j, v in p.get(i, {}).items()
-                             if j != i and j in kept and comp[j] == comp[n])
-                after = sum(v for i in block for j, v in p.get(i, {}).items()
-                            if j != i and j in block and sub[j] == sub[i])
-                drop = before - after
-            else:                               # removes only its own pairs
-                drop = sum(v for j, v in p.get(n, {}).items() if j != n and j in kept and comp[j] == comp[n]) \
-                     + sum(v for i, v in p_in.get(n, {}).items() if i != n and i in kept and comp[i] == comp[n])
+                sizes = {}
+                for v in sub.values():
+                    sizes[v] = sizes.get(v, 0) + 1
+                largest = max(sizes, key=sizes.get)
+                # Every split pair has an end outside the largest part: count from those ends only.
+                for i in block:
+                    if sub[i] == largest:
+                        continue
+                    drop += sum(v for j, v in p.get(i, {}).items() if j in block and sub[j] != sub[i])
+                    drop += sum(v for j, v in p_in.get(i, {}).items() if j in block and sub[j] == largest)
             if drop / cost[n] > best_score:
                 best, best_score, best_drop = n, drop / cost[n], drop
         if best is None:

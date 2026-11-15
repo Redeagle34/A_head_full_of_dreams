@@ -25,6 +25,7 @@ import datetime
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -37,6 +38,7 @@ Layer = Literal["viirs", "modis", "both"]
 Metric = Literal["intensity", "days", "unusual"]
 
 app = FastAPI(title="Burning Calendar")
+app.add_middleware(GZipMiddleware, minimum_size=1000)    # map answers are mostly numbers: about 5 times smaller
 
 
 @app.exception_handler(db.Missing)

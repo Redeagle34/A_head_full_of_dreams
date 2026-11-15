@@ -7,7 +7,7 @@ function can write to) and the table `obs` is added to it as a view over the Par
 of the server does not know the difference.
 
 The cache of satellite orbits goes to the temporary folder too. Answers are compressed: a Vercel
-function may not answer with more than 4.5 MB.
+function may not answer with more than 4.5 MB (server/main.py).
 
 To try this start-up on your computer:  python -m uvicorn api.index:app --port 8791
 """
@@ -39,8 +39,4 @@ if (DEPLOY / "fire.duckdb").exists():
     os.environ["FIRE_EVENTS_DIR"] = str(DEPLOY / "events")
 os.environ.setdefault("TLE_CACHE_PATH", str(TMP / "tle_cache.json"))
 
-from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
-
-from server.main import app  # noqa: E402
-
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+from server.main import app  # noqa: E402,F401   (it compresses its answers itself)
