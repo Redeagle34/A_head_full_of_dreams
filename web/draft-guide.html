@@ -11,14 +11,19 @@
 <link rel="stylesheet" href="draft-base.css">
 <link rel="stylesheet" href="draft-guide.css">
 </head>
-<body class="guide" data-open="map">
+<body class="guide" data-stage="intro" data-open="map">
 <div class="lobe lobe-map" id="lobeMap">
   <div id="map" aria-label="Map of fire activity"></div>
   <div class="cross" aria-hidden="true"></div>
+  <div class="veil" id="veil">
+    <button id="begin" class="begin" type="button" aria-label="Open the Earth">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg></button>
+    <p>Press play to open the Earth</p>
+  </div>
 </div>
 
 <header class="bar">
-  <h1 class="brand">Burning<br>Calendar</h1>
+  <h1 class="brand">Burning <br>Calendar</h1>
   <div class="field search">
     <label for="place">Find a place</label>
     <input id="place" type="search" placeholder="Find a place" autocomplete="off">
@@ -30,24 +35,42 @@
   </div>
 </header>
 
-<nav class="actions" aria-label="Sections">
-    <button id="locate" type="button">My location</button>
+<section class="intro-report" id="introReport" aria-labelledby="introReportTitle">
+  <h2 id="introReportTitle">Make a report</h2>
+  <p>Tick what to include, then get a printable report on the fires. You can change the place and the dates on the next page.</p>
+  <div id="introSections" class="include" role="group" aria-label="What the report includes"></div>
+  <button id="introGet" class="get" type="button">Get the report</button>
+</section>
+
+<div class="tools">
+  <button id="locate" class="locate" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+    My location</button>
+  <button id="toolsBtn" class="gear" type="button" aria-expanded="false" aria-controls="actions">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    Settings</button>
+<nav class="actions" id="actions" aria-label="Settings" hidden>
     <button id="fireBtn" type="button" aria-expanded="false" aria-controls="firePanel">Fires</button>
     <button id="satBtn" type="button" aria-expanded="false" aria-controls="satPanel">Satellites</button>
     <button id="filtersBtn" type="button" aria-expanded="false" aria-controls="filters">Map layers</button>
     <button id="panelBtn" type="button" aria-expanded="false" aria-controls="panel">Area numbers</button>
     <button id="reportBtn" type="button" title="Scientific report for the area and dates on screen">Report</button>
+    <p id="credits" class="credits"></p>
 </nav>
+</div>
 
 <section class="lobe lobe-near" id="lobeNear" aria-label="Fires nearby">
-  <button class="grow" type="button" data-lobe="near" aria-expanded="false">Fires near here</button>
-  <h2 id="nearHeadline">Looking around.</h2>
+  <div class="lobe-head"><h2 id="nearYear"></h2>
+    <button class="mini" type="button" aria-expanded="true" aria-label="Minimize the fires near here"></button></div>
   <p id="seasonLine" class="sub"></p>
   <div id="sign" class="sign" role="img" aria-label="Danger levels"></div>
+  <button class="grow" type="button" data-lobe="near" aria-expanded="false">Fires near here</button>
   <div id="nearFires" class="fires"></div>
 </section>
 
 <section class="lobe lobe-wheel" id="lobeWheel" aria-label="The year here">
+  <div class="lobe-head"><span class="mini-label">The year here</span>
+    <button class="mini" type="button" aria-expanded="true" aria-label="Minimize the year here"></button></div>
   <button class="grow" type="button" data-lobe="wheel" aria-expanded="false">The year here</button>
   <div id="wheel" class="wheel"></div>
   <div class="wheel-side">

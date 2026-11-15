@@ -3,16 +3,26 @@
    Uses Draft (draft-common.js) and the helpers of app.js.
 
    Sections
-     1. Lobes         which lobe is swollen: the map, the fires, the year, or the Earth alone
+     1. Stages        the intro (veil and play), the opening, the live Earth; lobes, settings, report
      2. Satellites    the others stay in orbit; the picked one opens a bubble and the Earth turns under it
-     3. Fires lobe    sentence, sign and list for the fires around the red dot
+     3. Fires lobe    the year, the sign and the list for the fires around the red dot
      4. Year wheel    one ring is one year; a petal is a week
 */
 Draft.ready(() => {
 
 const el = id => document.getElementById(id);
 
-// ---------- 1. Lobes ----------
+// ---------- 1. Stages and lobes ----------
+
+// The page opens on the name, the Earth under a white veil and a play button. Play sends the
+// Earth to the centre, then its blue fills the window and the tools come in around it.
+function begin() {
+  if (document.body.dataset.stage !== "intro") return;
+  document.body.dataset.stage = "opening";
+  setTimeout(() => { document.body.dataset.stage = "live"; setTimeout(drawWheel, 500); }, 760);
+}
+el("veil").onclick = begin;
+el("begin").focus({ preventScroll: true });
 
 function open(which) {
   document.body.dataset.open = which;
@@ -21,29 +31,60 @@ function open(which) {
 }
 for (const b of document.querySelectorAll(".grow"))
   b.onclick = () => open(document.body.dataset.open === b.dataset.lobe ? "map" : b.dataset.lobe);
+
+// Each lobe folds down to a capsule and opens again.
+const ICON_MINI = { open: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>`,
+                    shut: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg>` };
+for (const b of document.querySelectorAll(".mini")) {
+  const lobe = b.closest(".lobe"), name = b.getAttribute("aria-label").replace("Minimize ", "");
+  const set = small => {
+    lobe.classList.toggle("min", small);
+    b.innerHTML = small ? ICON_MINI.shut : ICON_MINI.open;
+    b.setAttribute("aria-expanded", String(!small));
+    b.setAttribute("aria-label", (small ? "Show " : "Minimize ") + name);
+    if (small && document.body.dataset.open === lobe.querySelector(".grow")?.dataset.lobe) open("map");
+    if (!small) setTimeout(drawWheel, 430);
+  };
+  b.onclick = () => set(!lobe.classList.contains("min"));
+  set(false);
+}
+
+// Settings: one button opens the tools (fires, satellites, layers, numbers, report).
+const toolsBtn = el("toolsBtn"), tools = el("actions");
+const showTools = on => { tools.hidden = !on; toolsBtn.setAttribute("aria-expanded", String(on)); };
+toolsBtn.onclick = () => showTools(tools.hidden);
+tools.addEventListener("click", e => { if (e.target.closest("button")) showTools(false); });
+addEventListener("pointerdown", e => { if (!tools.hidden && !e.target.closest(".tools")) showTools(false); });
+
 addEventListener("keydown", e => {
   if (e.key !== "Escape" || !el("satLightbox")?.hidden) return;      // Escape closes the enlarged picture first
-  if (window.satelliteView && !el("satCard").hidden) window.satelliteView.toggle(false);
+  if (!tools.hidden) { showTools(false); toolsBtn.focus(); }
+  else if (window.satelliteView && !el("satCard").hidden) window.satelliteView.toggle(false);
   else open("map");
 });
 
-// A plain click on the Earth (not a drag, not a fire, not a satellite) leaves the Earth alone on screen.
-const back = document.createElement("button");
-back.type = "button"; back.className = "earth-back"; back.hidden = true; back.textContent = "Back to the guide";
-back.onclick = () => open("map");
-document.body.appendChild(back);
-new MutationObserver(() => { back.hidden = document.body.dataset.open !== "earth"; })
-  .observe(document.body, { attributes: true, attributeFilter: ["data-open"] });
+// The map credits leave the map and sit at the foot of the settings.
+const credits = () => {
+  const text = document.querySelector(".maplibregl-ctrl-attrib-inner")?.textContent.trim();
+  el("credits").textContent = text ? `Map credits: ${text.replace(/\s*\|\s*/g, " · ")}` : "";
+};
+setInterval(credits, 3000); credits();
 
-function onSatellite(point) {
-  return window.satelliteView.sats.some(s => s.screen && Math.hypot(s.screen.x - point.x, s.screen.y - point.y) < 50);
-}
-map.on("click", e => {
-  if (window.fireView.picking() || onSatellite(e.point)) return;
-  const layers = ["fire", "fires", "fire-reported"].filter(id => map.getLayer(id));
-  if (map.queryRenderedFeatures(e.point, { layers }).length) return;
-  if (document.body.dataset.open !== "earth") open("earth");
-});
+// The report: tick what to include, then open the report page for the Earth on screen.
+fetch("/api/report/sections").then(r => r.json()).then(list => {
+  el("introSections").replaceChildren(...list.map(s => {
+    const l = document.createElement("label");
+    l.innerHTML = `<input type="checkbox" value="${s.key}" checked><span>${s.title}</span>`;
+    return l;
+  }));
+}).catch(() => { el("introSections").innerHTML = `<p class="hint">The list of sections is not available now; the next page has it.</p>`; });
+el("introGet").onclick = () => {
+  const chosen = [...el("introSections").querySelectorAll("input:checked")].map(i => i.value);
+  const name = el("areaName").textContent.trim() || "Area on screen";
+  const q = new URLSearchParams({ start: state.start, end: state.end, box: `${name}|${viewParams().bbox}` });
+  if (chosen.length) q.set("sections", chosen.join(","));
+  location.href = `report.html?${q}`;
+};
 
 // ---------- 2. Satellites ----------
 
@@ -65,9 +106,7 @@ el("satCard").prepend(shut);
 Satellites.options.keepOthers = true;
 Satellites.options.onSelect = sat => {
   if (!sat?.here) return;
-  const earthOnly = document.body.dataset.open === "earth";
-  map.flyTo({ center: [sat.here.lon, sat.here.lat], zoom: Math.min(map.getZoom(), earthOnly ? 2.3 : 2), duration: 1800,
-              offset: earthOnly ? [180, 20] : [230, 40], essential: true });
+  map.flyTo({ center: [sat.here.lon, sat.here.lat], zoom: Math.min(map.getZoom(), 2.3), duration: 1800, offset: [190, 30], essential: true });
 };
 
 // ---------- 3. Fires lobe ----------
@@ -75,7 +114,6 @@ Satellites.options.onSelect = sat => {
 el("sign").innerHTML = Draft.LEVELS.map((name, i) => `<span style="--c:${Draft.LEVEL_COLOR[i]}">${name}</span>`).join("");
 
 Draft.watchNearby(50, near => {
-  el("nearHeadline").textContent = Draft.nearbySentence(near).replace("within 50 km", "within 50 km of the red dot");
   const top = Draft.worst(near.fires), sign = el("sign");
   [...sign.children].forEach((s, i) => s.classList.toggle("on", i === top));
   sign.setAttribute("aria-label", top < 0 ? "No rated fire nearby" : `Highest danger level nearby: ${Draft.LEVELS[top]}`);
@@ -130,11 +168,12 @@ function step(by) {
 el("wheelPrev").onclick = () => step(-1);
 el("wheelNext").onclick = () => step(1);
 
-Draft.watchCalendar(c => { cal = c; el("seasonLine").textContent = Draft.seasonSentence(c, state.end); drawWheel(); });
+const nearYear = () => { el("nearYear").textContent = state.end.slice(0, 4); };
+Draft.watchCalendar(c => { cal = c; nearYear(); el("seasonLine").textContent = Draft.seasonSentence(c, state.end); drawWheel(); });
 let seen = "";
 setInterval(() => {
   const k = `${state.start}|${state.end}`;
-  if (k !== seen && cal) { seen = k; followDates = true; el("seasonLine").textContent = Draft.seasonSentence(cal, state.end); drawWheel(); }
+  if (k !== seen && cal) { seen = k; followDates = true; nearYear(); el("seasonLine").textContent = Draft.seasonSentence(cal, state.end); drawWheel(); }
 }, 300);
 
 });
