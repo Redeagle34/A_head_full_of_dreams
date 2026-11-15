@@ -156,6 +156,7 @@ proofs/                 early feasibility scripts and their saved results
 .project/
   SPEC.md               plan, decisions and measured results for every step
   research/             background research, sources and findings
+deploy/aws/             scripts and steps to run the site on AWS (see its README.md)
 .env.example            template for .env (FIRMS key, Earth Engine project)
 requirements.txt        web server: duckdb, fastapi, uvicorn
 requirements-pipeline.txt  extra packages for the danger pipeline

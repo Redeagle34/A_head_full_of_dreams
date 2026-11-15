@@ -1,50 +1,25 @@
 #!/usr/bin/env bash
 # Remove everything deploy/aws/create.sh made. Asks before it starts.
 #
-#   deploy/aws/delete.sh BUCKET
+#   deploy/aws/delete.sh
 #
-# The CloudFront distribution is only switched off here: AWS needs about 15 minutes before
-# it can be deleted. The last line printed is the command that deletes it.
+# The data and the code stay on this computer; only the copy on AWS is removed.
 set -uo pipefail
+cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
+. deploy/aws/common.sh
 
-BUCKET="${1:?usage: deploy/aws/delete.sh BUCKET}"
-REGION="${AWS_REGION:-$(aws configure get region)}"
-NAME=fire-map
-export AWS_DEFAULT_REGION="$REGION" AWS_PAGER=""
-
-read -r -p "Delete the machine, the bucket $BUCKET with its files, and the role? Type yes: " answer
+read -r -p "Delete the machine $NAME, its addresses and its key? Type yes: " answer
 [ "$answer" = yes ] || exit 1
 
-INSTANCES="$(aws ec2 describe-instances --filters "Name=tag:Name,Values=$NAME" \
-  "Name=instance-state-name,Values=pending,running,stopping,stopped" \
-  --query 'Reservations[].Instances[].InstanceId' --output text)"
-if [ -n "$INSTANCES" ]; then
-  aws ec2 terminate-instances --instance-ids $INSTANCES >/dev/null
-  aws ec2 wait instance-terminated --instance-ids $INSTANCES
-fi
-GROUP="$(aws ec2 describe-security-groups --filters "Name=group-name,Values=$NAME" \
-  --query 'SecurityGroups[0].GroupId' --output text)"
-[ "$GROUP" != None ] && aws ec2 delete-security-group --group-id "$GROUP"
+step() { echo "$1"; shift; "$@" >/dev/null 2>&1 || echo "    not there, or could not be removed: check the Lightsail console"; }
+step "https address" aws lightsail delete-distribution --distribution-name "$NAME"
+step "fixed address: detach" aws lightsail detach-static-ip --static-ip-name "$NAME"
+step "fixed address: release" aws lightsail release-static-ip --static-ip-name "$NAME"
+step "machine" aws lightsail delete-instance --instance-name "$NAME"
+step "key pair" aws lightsail delete-key-pair --key-pair-name "$NAME"
+rm -f "$KEY_FILE" "$KNOWN_HOSTS"
 
-aws iam remove-role-from-instance-profile --instance-profile-name "$NAME-server" --role-name "$NAME-server"
-aws iam delete-instance-profile --instance-profile-name "$NAME-server"
-aws iam detach-role-policy --role-name "$NAME-server" \
-  --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-aws iam delete-role-policy --role-name "$NAME-server" --policy-name read-bucket-and-secrets
-aws iam delete-role --role-name "$NAME-server"
-
-aws s3 rb "s3://$BUCKET" --force
-
-ID="$(aws cloudfront list-distributions \
-  --query "DistributionList.Items[?Comment=='$NAME'].Id | [0]" --output text)"
-if [ "$ID" != None ] && [ -n "$ID" ]; then
-  TMP="$(mktemp)"
-  ETAG="$(aws cloudfront get-distribution-config --id "$ID" --query ETag --output text)"
-  aws cloudfront get-distribution-config --id "$ID" --query DistributionConfig \
-    | sed 's/"Enabled": true/"Enabled": false/' > "$TMP"
-  aws cloudfront update-distribution --id "$ID" --if-match "$ETAG" \
-    --distribution-config "file://$TMP" >/dev/null
-  rm -f "$TMP"
-  echo "CloudFront $ID is switching off. In about 15 minutes run:"
-  echo "  aws cloudfront delete-distribution --id $ID --if-match \$(aws cloudfront get-distribution-config --id $ID --query ETag --output text)"
-fi
+echo "Left in the account (should be empty):"
+aws lightsail get-instances --query "instances[?name=='$NAME'].name" --output text
+aws lightsail get-static-ips --query "staticIps[?name=='$NAME'].name" --output text
+aws lightsail get-distributions --query "distributions[?name=='$NAME'].name" --output text
