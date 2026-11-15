@@ -46,11 +46,11 @@ unit across the whole period.
 
 - **Area history:** weekly calendar of whatever is on screen, with unusual and
   record weeks, the usual fire season, and a CSV download.
-- **Fire markers:** every fire with a danger level, colored like U.S. fire danger
-  signs (green, blue, yellow, orange, red). Click one for its three factors.
-- **Fires nearby:** choose a point (my location, map centre or a click), a
-  distance and a minimum level; the list shows the most dangerous fires first,
-  then the nearest.
+- **Fires:** one list of fires, the same in the panel and as markers on the map,
+  colored by danger level like U.S. fire danger signs (green, blue, yellow, orange,
+  red). Show the fires on screen (largest first) or around a point: choose my
+  location, the map centre or a click, and a distance; the most dangerous come
+  first, then the nearest. Click a fire for its rating and its details.
 - **State overview:** the earlier state-by-state calendar, at `/states.html`.
 
 ## Fire danger rating
@@ -92,12 +92,33 @@ How it is made:
 
 The weather-and-place inputs and the comparison model come from the team's
 experiments in branch `us-findings` (`proofs/us-experiments`).
+
+### One definition of a fire on the page
+
+The page lists one kind of fire: MODIS and VIIRS detections that touch on squares of
+about 1 km and follow within 5 days (`pipeline/fire_events.py`). The danger model was
+trained on a stricter grouping (VIIRS only, gaps of up to 2 days, above), and its inputs
+and scores belong to that grouping. `pipeline/event_danger.py` carries each rating over:
+every VIIRS detection lies in exactly one fire of each kind, so the two are matched by the
+detections they share, and a fire takes the level of the rated group that holds most of
+its VIIRS detections.
+
+What still differs, and is said on the page:
+
+- A fire can hold several rated groups (a pause of 3 to 5 days splits the groups but not
+  the fire). Its page says when the rated group is only part of it.
+- The rating's size is the footprint on squares of 440 m; the fire's area counts squares
+  of 1 km from both sensors.
+- Fires seen by MODIS only (all fires before 2012) and fires in Hawaii have no level.
+- The table of what each level meant counts rated groups, not fires.
+
+Training the model again on the fires of the page would remove these differences.
 ## Fires one by one, missed fires, satellites and the time bar
 
 Added on the branch `fire-events-satellite-globe`. Method, sources and measured results:
 [.project/research/notebooks/modis-viirs-burning-calendar/fire-events-validation-satellites.md](.project/research/notebooks/modis-viirs-burning-calendar/fire-events-validation-satellites.md).
 
-- **Fires** button: every fire in view as one event, with first and last day, duration,
+- **Fires** button: every fire in view or around a point, with its danger level, first and last day, duration,
   area (from hotspots, from the MODIS burned-area map, and burn severity from Landsat),
   the vegetation that burned, pictures before and after, and the agency reports it matches.
   A switch shows reported wildfires that the satellites missed or that the prediction
@@ -114,10 +135,12 @@ Added on the branch `fire-events-satellite-globe`. Method, sources and measured 
 | `pipeline/fire_events.py` | `data/events/events.parquet`, `event_cells.parquet` | `calendar_table.py` |
 | `pipeline/event_enrich.py [project] [min_km2]` | `data/events/enrichment.parquet` (burned area, vegetation) | Earth Engine sign-in |
 | `pipeline/missed_fires.py` | `data/events/reported_fires.parquet`, `missed_summary.json` | `lightgbm`, the models in `proofs/us-experiments/models/` |
+| `pipeline/event_danger.py` | `data/events/event_danger.parquet` (danger level of each fire) | `fire_events.py`, `danger_model.py` |
 
 | Route | Answers |
 |---|---|
-| `GET /api/events?bbox&start&end&min_km2` | fires in the box and dates, largest first |
+| `GET /api/events?bbox&start&end&min_km2&min_level` | fires in the box and dates with their danger rating, largest first |
+| `GET /api/events/near?lat&lon&km&start&end&min_km2&min_level` | the same around a point, most dangerous first, then nearest |
 | `GET /api/events/{id}` | one fire, its ground cells and nearby agency reports |
 | `GET /api/events/{id}/sharp` | Landsat pictures before and after, burn severity (Earth Engine; set `EE_PROJECT` in `.env`) |
 | `GET /api/reported?bbox&start&end&missed` | reported wildfires; `missed` is `satellite`, `model`, `both` or `all` |
@@ -132,23 +155,26 @@ pipeline/               builds the data, in this order
   harmonize.py          VIIRS -> MODIS-equivalent, scored on withheld years
   export_web.py         data files for the state overview page
   build_db.py           data/fire.duckdb, the database the server reads
-  danger_fires.py        group VIIRS detections into fires
+  danger_fires.py       group VIIRS detections into the fires the danger model rates
   danger_inputs.py      weather and place inputs per fire, from Google Earth Engine
   danger_model.py       train the danger model, rate every fire, store it in the database
+  fire_events.py        group MODIS and VIIRS detections into the fires the page lists
+  event_danger.py       give each listed fire its danger rating
   check_keys.py         test the keys in .env (FIRMS, Earth Engine)
 server/                 FastAPI application
   main.py               routes and input checks only
   queries.py            the SQL behind each route
   grid.py               map grid: cell size, cell of a point, cell bounds
   stats.py              typical range, unusual and record weeks
-  fires.py              rated fires for a map view or around a point; level names and words
+  events.py             the fires: in a map view, around a point, one by one; reported fires
+  fires.py              the danger rating in words: level names, exposure, conditions
   db.py                 read-only DuckDB connection
   config.py             paths, limits, .env loading
 web/
   index.html            map page: layout
   style.css             map page: appearance
   app.js                map page: behaviour (sections are listed at the top)
-  danger.js              map page: fire markers and the "Fires nearby" search
+  fires.js              map page: the Fires panel, fire markers and the search around a point
   states.html           state overview page
   data/                 calendar.json, states.geojson (generated, committed)
 data/                   raw CSV, Parquet, fire.duckdb (generated, not in git)
@@ -169,8 +195,6 @@ requirements-pipeline.txt  extra packages for the danger pipeline
 | `GET /api/cells?layer&bbox&start&end&metric` | colored grid cells for the view |
 | `GET /api/calendar?layer&bbox` | weekly history of the area, with flags |
 | `GET /api/detections.csv?layer&bbox&start&end` | observations behind the layer |
-| `GET /api/fires?bbox&start&end&min_level` | rated fires in a map view |
-| `GET /api/fires/near?lat&lon&km&start&end&min_level` | rated fires around a point, most dangerous first, then nearest |
 | `GET /api/danger/levels` | what each level meant in 2022-2025 |
 
 `layer` is `viirs`, `modis` or `both`; `bbox` is `west,south,east,north`;
@@ -329,7 +353,16 @@ python pipeline/danger_inputs.py
 python pipeline/danger_model.py
 ```
 
-Run `danger_model.py` again after every `build_db.py`, with the server stopped.
+```bash
+python pipeline/fire_events.py
+```
+
+```bash
+python pipeline/event_danger.py
+```
+
+Run `danger_model.py` again after every `build_db.py`, with the server stopped, and
+`event_danger.py` after it.
 
 ```bash
 python -m uvicorn server.main:app --port 8780

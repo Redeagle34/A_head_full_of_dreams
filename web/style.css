@@ -86,7 +86,7 @@ button[aria-expanded="true"] { background: var(--accent); color: #1a1205; border
 .panel-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 4px; }
 .quiet { color: var(--muted); }
 
-/* ---- fires nearby ---- */
+/* ---- fires: around a point, list, danger level ---- */
 .steps { display: grid; gap: 10px; }
 .step { display: grid; gap: 6px; }
 .step.two { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -94,8 +94,8 @@ button[aria-expanded="true"] { background: var(--accent); color: #1a1205; border
 .row { display: flex; flex-wrap: wrap; gap: 6px; }
 .row button { flex: 1 1 auto; }
 button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-color: var(--accent); }
-.panel select, .filters select { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: 100%; }
-.panel select option, .filters select option { color: #111; }
+.panel select, .filters select, .fire-panel select { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: 100%; }
+.panel select option, .filters select option, .fire-panel select option { color: #111; }
 .fires { display: grid; gap: 8px; }
 .fire { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; text-align: left; width: 100%; white-space: normal;
         padding: 10px 12px; border-left: 6px solid var(--level, #777); }
@@ -177,7 +177,7 @@ button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-
 /* ---- fires, one by one ---- */
 .fire-panel { width: min(400px, calc(100vw - 24px)); }
 #fireListView, #fireDetail { display: grid; gap: 10px; align-content: start; }
-#fireListView[hidden], #fireDetail[hidden] { display: none; }
+#fireListView[hidden], #fireDetail[hidden], .fire-panel [hidden] { display: none; }
 .fire-title { font-size: 18px; text-transform: none; letter-spacing: -.01em; color: var(--ink); }
 .fire-legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
 .fire-legend i { flex: 1; height: 10px; border-radius: 5px; }

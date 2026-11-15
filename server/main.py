@@ -8,12 +8,11 @@ Routes
   GET /api/cells            colored grid cells for a view and date range
   GET /api/calendar         weekly history of an area, with unusual weeks
   GET /api/detections.csv   download of the observations behind the layer
-  GET /api/fires            fires with their danger rating, in a map view
-  GET /api/fires/near       the same within a distance of a point, most dangerous first
+  GET /api/events           fires in a map view: dates, duration, area, vegetation, danger rating
+  GET /api/events/near      the same within a distance of a point, most dangerous first
+  GET /api/events/{id}      one fire with its ground cells and nearby reported fires
   GET /api/danger/levels    what each danger level meant on years the model never saw
   GET /api/tle              orbit data of the fire-watching satellites
-  GET /api/events           fires as single events: dates, duration, area, vegetation
-  GET /api/events/{id}      one fire with its ground cells and nearby reported fires
   GET /api/events/{id}/sharp  Landsat pictures before and after, and burn severity
   GET /api/reported         reported wildfires, optionally only those missed
   GET /                     the website in web/
@@ -81,27 +80,6 @@ def detections(layer: Layer, bbox: str, start: datetime.date, end: datetime.date
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
-def rated_fires(**arguments):
-    try:
-        return fires.find(**arguments)
-    except fires.NotBuilt as e:
-        raise HTTPException(503, str(e))
-
-
-@app.get("/api/fires")
-def fires_in_view(bbox: str, start: datetime.date, end: datetime.date, min_level: int = Query(0, ge=0, le=4)):
-    check_dates(start, end)
-    return rated_fires(d0=start, d1=end, bbox=parse_bbox(bbox), min_level=min_level)
-
-
-@app.get("/api/fires/near")
-def fires_near(start: datetime.date, end: datetime.date,
-               lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=180),
-               km: float = Query(50, gt=0, le=fires.MAX_RADIUS_KM), min_level: int = Query(0, ge=0, le=4)):
-    check_dates(start, end)
-    return rated_fires(d0=start, d1=end, near=(lat, lon, km), min_level=min_level)
-
-
 @app.get("/api/danger/levels")
 def danger_levels():
     try:
@@ -113,13 +91,27 @@ def danger_levels():
 Missed = Literal["satellite", "model", "both", "all"]
 
 
-@app.get("/api/events")
-def fire_events(bbox: str, start: datetime.date, end: datetime.date, min_km2: float = Query(2.0, ge=0)):
-    check_dates(start, end)
+def find_events(**arguments):
     try:
-        return events.list_events(parse_bbox(bbox), start, end, min_km2)
+        return events.find(**arguments)
     except events.Missing as e:
         raise HTTPException(503, str(e))
+
+
+@app.get("/api/events")
+def fire_events(bbox: str, start: datetime.date, end: datetime.date, min_km2: float = Query(2.0, ge=0),
+                min_level: int = Query(0, ge=0, le=4)):
+    check_dates(start, end)
+    return find_events(start=start, end=end, min_km2=min_km2, bbox=parse_bbox(bbox), min_level=min_level)
+
+
+@app.get("/api/events/near")                    # before /api/events/{event_id}, or "near" is read as an id
+def fire_events_near(start: datetime.date, end: datetime.date,
+                     lat: float = Query(ge=-90, le=90), lon: float = Query(ge=-180, le=180),
+                     km: float = Query(50, gt=0, le=events.MAX_RADIUS_KM), min_km2: float = Query(2.0, ge=0),
+                     min_level: int = Query(0, ge=0, le=4)):
+    check_dates(start, end)
+    return find_events(start=start, end=end, min_km2=min_km2, near=(lat, lon, km), min_level=min_level)
 
 
 @app.get("/api/events/{event_id}")
