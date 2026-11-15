@@ -437,3 +437,26 @@ Not done or not verified:
 - The area name passed from the map can be stale while the map is still moving.
 - Still open from the original plan: seven-day forecast, prevention layers,
   Hawaii volcano mask, Terra 2000-2002, 2026 data.
+
+### Report output check (2026-11-15)
+
+Checked with a headless browser: one picture per section, the report printed
+to PDF and rendered page by page, every CSV parsed, the JSON read.
+
+Found and fixed:
+- Print: sections refused to split, so pages were left almost empty (12 pages,
+  two nearly blank), and tables shrank to their content because the phone rule
+  also applied on paper. Now 8 pages, full-width tables, table headings repeat
+  on each page, no chart, row or tile is cut.
+- CSV: no byte-order mark, so Excel would show km2 headings wrongly; the flag
+  column had no heading; shares had no unit. Now with the mark, "Flag (1
+  unusual, 2 record)", and "(fraction)" on share columns.
+- Charts: the missed-fires axis did not say percent; two axis labels touched a
+  tick; dates wrapped inside table cells.
+
+Confirmed: all eight charts match their tables; the builder and the CSV links
+are not printed; each of the nine CSV files has the rows of its table; the JSON
+holds places, dates and the eleven sections.
+
+Not verified: printing from the browser's own print dialog (margins and paper
+size chosen there), and opening the CSV in Excel itself.
