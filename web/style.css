@@ -8,6 +8,11 @@
   --accent: #ffb02e;
   --radius: 12px;
   --gap: 12px;
+  /* Where the top bar ends, and where the time bar and the legend start, measured from the top
+     and the bottom of the screen. layout.js keeps them true; these are the usual values. */
+  --bar-end: 76px;
+  --time-start: 138px;
+  --legend-start: 176px;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
@@ -45,8 +50,9 @@ button[aria-expanded="true"] { background: var(--accent); color: #1a1205; border
 .actions { display: flex; gap: 8px; margin-left: auto; }
 
 /* ---- filters ---- */
-.filters { position: fixed; top: 88px; right: var(--gap); z-index: 4; width: min(340px, calc(100vw - 24px));
-           max-height: calc(100vh - 240px); overflow: auto; padding: 14px; display: grid; gap: 10px; }
+.filters { position: fixed; top: calc(var(--bar-end) + var(--gap)); right: var(--gap); z-index: 4; width: min(340px, calc(100vw - 24px));
+           max-height: calc(100vh - var(--bar-end) - var(--time-start) - 2 * var(--gap)); overflow: auto; padding: 14px; display: grid; gap: 10px; }
+.sheet-only { display: none; }
 .filters[hidden], .panel[hidden], .results[hidden] { display: none; }
 .choices { display: grid; gap: 6px; }
 .choices.row { grid-template-columns: 1fr 1fr; }
@@ -68,7 +74,7 @@ button[aria-expanded="true"] { background: var(--accent); color: #1a1205; border
 .status { font-size: 13px; margin-top: 8px; color: var(--accent); min-height: 18px; }
 
 /* ---- area panel ---- */
-.panel { position: fixed; top: 88px; right: var(--gap); bottom: 150px; z-index: 3; width: min(420px, calc(100vw - 24px));
+.panel { position: fixed; top: calc(var(--bar-end) + var(--gap)); right: var(--gap); bottom: calc(var(--time-start) + var(--gap)); z-index: 3; width: min(420px, calc(100vw - 24px));
          padding: 16px; overflow: auto; display: grid; gap: 10px; align-content: start; }
 .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .eyebrow { font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
@@ -115,7 +121,8 @@ button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-
 .factors small { display: block; color: var(--muted); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 .maplibregl-popup { max-width: 300px !important; }
 /* ---- satellites ---- */
-.sat-panel { position: fixed; top: 88px; left: var(--gap); bottom: 150px; z-index: 4; width: min(380px, calc(100vw - 24px));
+.sat-panel { position: fixed; top: calc(var(--bar-end) + var(--gap)); left: var(--gap);
+             bottom: calc(max(var(--time-start), var(--legend-start)) + var(--gap)); z-index: 4; width: min(380px, calc(100vw - 24px));
              padding: 16px; overflow: auto; }
 .sat-panel[hidden] { display: none; }
 #satHome, #satCard { display: grid; gap: 10px; align-content: start; }
@@ -162,6 +169,7 @@ button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-
 .tl-date select option { color: #111; }
 .tl-length { min-width: 78px; font-variant-numeric: tabular-nums; }
 .tl-group { display: flex; align-items: center; gap: 4px; }
+.tl-more { display: none; }
 .tl-group > span { color: var(--muted); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; margin-right: 2px; }
 .tl-track { position: relative; height: 40px; cursor: pointer; touch-action: none; user-select: none; }
 .tl-track::before { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 16px; border-radius: 8px; background: var(--field); }
@@ -202,16 +210,96 @@ button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-
 .maplibregl-popup-content div { color: var(--muted); }
 .maplibregl-popup-close-button { color: var(--ink); }
 
-/* The top bar wraps to two rows below this width. */
-@media (max-width: 1240px) { .filters, .panel { top: 136px; } }
+/* ---- narrower screens ----
+   Three layouts. Wide: as above. Middle (up to 1100 px): the time bar takes the full width and
+   the legend sits above it. Phone (up to 760 px wide, or a phone held sideways): the top bar is
+   one or two rows, the time bar lies on the bottom edge and a panel opens as a sheet above it. */
 
-@media (max-width: 760px) {
-  .brand { width: 100%; padding-bottom: 0; }
-  .actions { margin-left: 0; width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
-  .filters, .panel, .sat-panel { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 48vh; border-radius: var(--radius) var(--radius) 0 0; }
-  .legend { bottom: 8px; }
-  .bar { gap: 6px 10px; padding: 8px 10px; }
-  .search label, .field:has(#preset) label { display: none; }
-  .field:has(#preset) { flex: 1 1 100%; }
-  .timeline { left: 0; right: 0; bottom: 150px; border-radius: 0; }
+/* The top bar wraps to two rows below this width. */
+@media (max-width: 1240px) { :root { --bar-end: 124px; } }
+
+@media (max-width: 1100px), (max-height: 480px) {
+  .timeline { left: var(--gap); }
+  /* Short legend: a tap shows or hides its note. */
+  .legend { bottom: calc(var(--time-start) + var(--gap)); padding: 8px 12px; cursor: pointer; }
+  .legend-title { margin-bottom: 6px; }
+  .legend-title::after { content: " ▾"; color: var(--muted); }
+  .legend.open .legend-title::after { content: " ▴"; }
+  .legend:not(.open) .legend-note { display: none; }
+  .status { min-height: 0; }
+  .status:empty { display: none; }
+}
+
+/* Fingers: controls at least 40 px high, text at least 12 px. */
+@media (max-width: 760px), (max-height: 480px), (pointer: coarse) {
+  button, .button, select, input[type="search"], input[type="date"] { min-height: 40px; }
+  .button, .quiet { display: inline-flex; align-items: center; }
+  .quiet { min-height: 40px; }
+  .results li, .choices label { min-height: 40px; }
+  .choices label { align-items: center; }
+  .choices input { margin-top: 0; }
+  .about summary { padding: 10px 0; }
+  .pair figcaption button { min-width: 40px; }
+  .sat-label { min-height: 32px; padding: 4px 10px; }
+  .field label, .choices small, .results small, .eyebrow, .tiles span, .periods .tag, .factors small, .sat-list small, .tl-group > span, .tl-ticks span { font-size: 12px; }
+  /* the period on the time bar: taller, with wider edges to grab */
+  .tl-track { height: 52px; }
+  .tl-track::before { top: 6px; height: 24px; }
+  .tl-window { top: 2px; height: 32px; }
+  .tl-window i { width: 28px; }
+  .tl-window i::after { left: 13px; top: 8px; bottom: 8px; }
+  .tl-window i[data-edge="left"] { left: -14px; }
+  .tl-window i[data-edge="right"] { right: -14px; }
+  .tl-ticks span { top: 34px; }
+  .tl-ticks span::before { top: -28px; height: 24px; }
+}
+
+@media (max-width: 760px), (max-height: 480px) {
+  /* top bar: search and quick dates, then the buttons in a row that scrolls sideways */
+  .bar { top: 6px; left: 6px; right: 6px; gap: 6px; padding: 8px; }
+  .brand, .search label, .field:has(#preset) label { display: none; }
+  .search { flex: 1 1 0; }
+  .field:has(#preset) { flex: 0 1 150px; }
+  .actions { width: 100%; margin-left: 0; gap: 6px; padding: 2px 26px 2px 2px; overflow-x: auto; scrollbar-width: none;
+             -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+             mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent); }
+  .actions::-webkit-scrollbar { display: none; }
+  .actions button { flex: none; }
+
+  /* time bar: on the bottom edge; From, To, Play and the period stay, the rest opens with More */
+  .timeline { left: 0; right: 0; bottom: 0; gap: 6px; padding: 8px 10px max(4px, env(safe-area-inset-bottom));
+              border-width: 1px 0 0; border-radius: var(--radius) var(--radius) 0 0; }
+  .tl-row { gap: 6px 8px; }
+  .tl-date { flex: 1 1 140px; }
+  .tl-date:not(.tl-extra) { order: -1; }
+  .tl-date input, .tl-date select { flex: 1; min-width: 0; padding: 4px 6px; }
+  .tl-length { flex: 1; min-width: 0; }
+  .tl-more { display: inline-block; }
+  .timeline:not(.more) .tl-extra { display: none; }
+  .tl-group { flex-wrap: wrap; }
+
+  /* the map's own buttons and the legend stand on the time bar */
+  .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-bottom-left { bottom: var(--time-start); }
+  .legend { left: 6px; bottom: calc(var(--time-start) + 6px); width: min(300px, calc(100vw - 64px)); }
+
+  /* panels: one sheet above the time bar, scrolling inside itself, Close always in sight */
+  .filters, .panel, .sat-panel { top: auto; left: 0; right: 0; bottom: var(--time-start); z-index: 4; width: 100%;
+    max-height: calc((100vh - var(--bar-end) - var(--time-start)) * 0.72); padding: 0 14px 14px;
+    border-width: 1px 0 0; border-radius: var(--radius) var(--radius) 0 0; overscroll-behavior: contain; }
+  .sheet-only { display: flex; }
+  :is(.filters, .panel, .sat-panel) .panel-head { position: sticky; top: 0; z-index: 1; margin: 0 -14px; padding: 10px 14px 8px; align-items: center;
+                background: #14161a; border-radius: var(--radius) var(--radius) 0 0; }
+  .sat-hero { margin: 0 -14px; }
+  .chart { overflow-x: auto; }
+  .chart svg { max-width: none; font-size: 12px !important; }
+  .lightbox { padding: 8px; }
+  .lightbox-inner { padding: 12px; }
+}
+
+/* A phone held sideways: one row on top, and an open sheet covers the time bar. */
+@media (max-height: 480px) {
+  .bar { flex-wrap: nowrap; align-items: center; }
+  .search { flex: 1 1 150px; }
+  .actions { width: auto; flex: 1 1 55%; min-width: 0; }
+  .filters, .panel, .sat-panel { top: calc(var(--bar-end) + 6px); bottom: 0; max-height: none; }
 }
