@@ -83,6 +83,7 @@ function createMap() {
     refresh();
     Satellites.attach(map).then(api => { window.satelliteView = api; });   // see satellites.js
     window.fireView = Fires.attach();                                       // see fires.js
+    window.preventionView = Prevention.attach();                            // see prevention.js
   };
   map.on("load", begin);
   map.on("style.load", () => setTimeout(begin, 4000));
@@ -191,7 +192,7 @@ function drawLegend(data, scale) {
 }
 
 function showPopup(e) {
-  if (window.fireView?.picking() || map.queryRenderedFeatures(e.point, { layers: ["fires"] }).length) return;   // a fire marker wins
+  if (window.fireView?.picking() || map.queryRenderedFeatures(e.point, { layers: ["fires", "prevent-cells"] }).length) return;   // a fire marker or a prevention cell wins
   const p = e.features[0].properties;
   const days = +p.days, rows = [`<b>${days >= 0.95 ? Math.round(days) : days.toFixed(1)} fire ${Math.round(days) === 1 ? "day" : "days"}</b>`,
     `<div>Intensity: ${num(+p.frp)} MW</div>`];

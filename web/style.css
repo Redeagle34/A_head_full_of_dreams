@@ -100,8 +100,8 @@ button[aria-expanded="true"] { background: var(--accent); color: #1a1205; border
 .row { display: flex; flex-wrap: wrap; gap: 6px; }
 .row button { flex: 1 1 auto; }
 button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-color: var(--accent); }
-.panel select, .filters select, .fire-panel select { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: 100%; }
-.panel select option, .filters select option, .fire-panel select option { color: #111; }
+.panel select, .filters select, .fire-panel select, .prevent-panel select, .prevent-panel input { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: 100%; }
+.panel select option, .filters select option, .fire-panel select option, .prevent-panel select option { color: #111; }
 .fires { display: grid; gap: 8px; }
 .fire { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; text-align: left; width: 100%; white-space: normal;
         padding: 10px 12px; border-left: 6px solid var(--level, #777); }
@@ -201,6 +201,18 @@ button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-
 .pair figcaption, figure.wide figcaption { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px; font-size: 12px; color: var(--muted); }
 .pair figcaption button { padding: 1px 8px; }
 .reported { padding: 6px 0; border-top: 1px solid var(--line); }
+
+/* ---- prevention ---- */
+.prevent-panel { display: grid; gap: 10px; align-content: start; width: min(400px, calc(100vw - 24px)); }
+.prevent-panel[hidden], .prevent-panel [hidden] { display: none; }
+.prevent-panel .primary { background: var(--accent); color: #1a1205; border-color: var(--accent); font-weight: 600; }
+.prevent-panel .primary:disabled { opacity: .6; cursor: progress; }
+.prevent-panel .swatch { display: inline-block; flex: none; width: 12px; height: 12px; border: 3px solid; border-radius: 2px; vertical-align: -2px; }
+#preventResult { display: grid; gap: 10px; }
+.prevent-list { display: grid; gap: 6px; }
+.prevent-list button { display: flex; gap: 10px; align-items: flex-start; text-align: left; white-space: normal; }
+.prevent-list b { flex: none; min-width: 22px; color: #35e0d0; font-variant-numeric: tabular-nums; }
+.prevent-list small { display: block; color: var(--muted); font-size: 12px; }
 
 /* ---- map popup ---- */
 .maplibregl-popup-content { background: var(--glass); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;

@@ -170,6 +170,36 @@ Added on the branch `fire-events-satellite-globe`. Method, sources and measured 
 | `GET /api/report/sections` | the sections a report can hold |
 | `POST /api/report` | the report as data. Body: `states` (two-letter codes), `boxes` (`name`, `bbox`), `start`, `end`, `sections` |
 
+## Prevention: cells to treat with prescribed burns
+
+The **Prevention** button on the map. For the area on screen it finds the cells (0.1°, about
+10 km) where a prescribed burn cuts the most likely routes a wildfire would spread along. Plan
+and sources: [CriticalNode.md](CriticalNode.md) (Yemshanov et al. 2021; Alexandridis et al. 2008).
+
+1. **Simulated fires** (Monte Carlo, 2,000-20,000): each starts in a cell drawn by how many fires
+   started there in 2000-2025, and jumps to each of the 8 neighbours with
+   `p_h x (1 + p_veg) x (1 + p_den) x p_wind x p_slope`: land cover (MCD12Q1), tree cover in forests
+   (MOD44B), the wind chosen in the panel (speed defaults to the usual first-day wind of fires
+   there, gridMET), and the height difference between cells (SRTM). `p_h` is set so the simulated
+   fires have the mean size of the real fires that started in the area.
+2. **Weights:** `p_ij` = share of simulated fires that started in cell `i` and reached cell `j`.
+3. **Search:** treat, one at a time, the cell that lowers the sum of `p_ij` over pairs still
+   connected the most per km², until the area to treat is used (greedy, as in the plan; good, not
+   necessarily optimal).
+
+The panel shows the burn probability of every cell, the cells to treat in order, how much each
+lowers the connected routes, and two checks: simulated against real mean fire size, and the rank
+correlation between simulated burn probability and how many real fires touched each cell.
+
+Data: `python pipeline/critical_landscape.py` writes `data/events/landscape.parquet` (0.5 MB, one
+row per cell). Search: `server/critical.py`, pure Python so it also runs on Vercel; at most 2,500
+cells (about 5° x 5°) and 5,000 km² per search, a few seconds. Check: `python -m server.critical`.
+
+Limits: fires stop at the edge of the screen; cells with no land cover record (never near a VIIRS
+fire, 2012-2025) count as land fire cannot cross; one wind for the whole area; no fuel moisture or
+season. Ignitions include agricultural burning, so in farm valleys (for example the Sacramento
+Valley) cropland cells can rank first.
+
 ## Repository structure
 
 ```
@@ -183,6 +213,7 @@ pipeline/               builds the data, in this order
   danger_inputs.py      weather and place inputs per fire, from Google Earth Engine
   danger_model.py       train the danger model, rate every fire, store it in the database
   fire_events.py        group MODIS and VIIRS detections into the fires the page lists
+  critical_landscape.py the 0.1 degree cells of the Prevention search: ignitions, land cover, height, wind
   check_keys.py         test the keys in .env (FIRMS, Earth Engine)
 server/                 FastAPI application
   main.py               routes and input checks only
@@ -191,6 +222,7 @@ server/                 FastAPI application
   stats.py              typical range, unusual and record weeks
   events.py             the fires: in a map view, around a point, one by one; reported fires
   report.py             the scientific report: places, sections, fixed text
+  critical.py           Prevention: fire spread simulation and the cells to treat (CriticalNode.md)
   fires.py              the danger rating in words: level names, exposure, conditions
   db.py                 read-only DuckDB connection
   config.py             paths, limits, .env loading
@@ -199,6 +231,7 @@ web/
   style.css             map page: appearance
   app.js                map page: behaviour (sections are listed at the top)
   fires.js              map page: the Fires panel, fire markers and the search around a point
+  prevention.js         map page: the Prevention panel and its layers
   report.html, report.css, report.js   scientific report page
   states.html           state overview page
   data/                 calendar.json, states.geojson (generated, committed)
@@ -222,6 +255,7 @@ requirements-pipeline.txt  extra packages for the danger pipeline
 | `GET /api/calendar?layer&bbox` | weekly history of the area, with flags |
 | `GET /api/detections.csv?layer&bbox&start&end` | observations behind the layer |
 | `GET /api/danger/levels` | what each level meant in 2022-2025 |
+| `GET /api/critical?bbox&budget_km2&wind_ms&wind_from&runs&seed` | Prevention: burn probability per cell and the cells to treat |
 
 `layer` is `viirs`, `modis` or `both`; `bbox` is `west,south,east,north`;
 `metric` is `intensity`, `days` or `unusual`. Interactive documentation is at
@@ -389,6 +423,10 @@ python pipeline/danger_model.py
 
 `build_db.py` keeps the table of danger levels when it is run again, so the model does
 not have to be trained again after it.
+
+```bash
+python pipeline/critical_landscape.py
+```
 
 ```bash
 python -m uvicorn server.main:app --port 8780

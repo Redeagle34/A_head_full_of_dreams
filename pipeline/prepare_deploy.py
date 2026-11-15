@@ -45,6 +45,7 @@ EVENT_FILES = {
     "event_cells.parquet": ("fire_events.py", "SELECT * FROM {src} ORDER BY event_id"),
     "enrichment.parquet": ("event_enrich.py", "SELECT * FROM {src} ORDER BY event_id"),
     "reported_fires.parquet": ("missed_fires.py", "SELECT * FROM {src} ORDER BY date"),
+    "landscape.parquet": ("critical_landscape.py", "SELECT * FROM {src} ORDER BY row, col"),
     "event_danger.parquet": ("danger_model.py", """
         SELECT event_id, fire_id, parts, share, fire_share, rated_first_day, rated_last_day, days_seen,
                round(acres) AS acres, round(acres_day2) AS acres_day2, round(growth, 2) AS growth,
