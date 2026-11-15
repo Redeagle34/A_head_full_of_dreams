@@ -406,3 +406,42 @@ Schroeder et al. 2014; Abatzoglou 2013 (gridMET).
 | Matsypura, Prokopyev & Zahar 2018, *Eur. J. Oper. Res.*, doi:10.1016/j.ejor.2017.06.050 (optimizing prescribed burning) | title and abstract only; a candidate reference for idea 27, nothing built on it |
 | Shmuel et al. code files | not used; our models are written separately |
 | NASA GFWED fire-weather database | considered for weather; gridMET chosen for the U.S. (finer grid, includes ERC). GFWED remains the option for use outside the U.S. |
+
+## 14. Blind-zone test on one real week
+
+`scripts/40_blind_feeds.py`, `results/blind_week_metrics.json`. Fires
+discovered 9–11 November 2026 in the contiguous U.S., from the live WFIGS
+feed: 172 wildfires and 91 prescribed burns. Detections are FIRMS
+near-real-time VIIRS (NOAA-20, NOAA-21) and MODIS for 9–13 November, matched
+within 2 km on the discovery day or the two days after. Cloud is the observed
+cloud flag at the Terra and Aqua daytime passes (MOD09GA / MYD09GA) on the
+discovery day and the next day; "cloudy" means at least half of those looks
+were cloudy or mixed. Smoke is the NOAA HMS daily outlines.
+
+| | Wildfires | Prescribed burns |
+|---|---|---|
+| Reports | 172 | 91 |
+| Seen by VIIRS or MODIS | 9.9% | 37.4% |
+| Seen by Landsat | 2.3% | 6.6% |
+| Cloudy at the passes | 63% | 81% |
+| Seen when clear | 12.7% (of 63) | 58.8% (of 17) |
+| Seen when cloudy | 8.3% (of 109) | 32.4% (of 74) |
+| Reported but never seen | 155 | 57 |
+| ... of which cloudy | 100 | 50 |
+| Under a smoke outline (same or next day) | 75% | 68% |
+
+What it says:
+
+- Reports are the feed that fills the gap: 155 of 172 wildfires were known to
+  the agencies and invisible in the detections. Two thirds of the wildfires
+  were under 1 acre, so most would be missed with a clear sky too.
+- Cloud matters most for fires large enough to see: prescribed burns were
+  seen 59% of the time when clear and 32% when cloudy.
+- Smoke outlines covered 15–33% of the country on these days and 75% of
+  wildfire reports. That is a real signal, but the outlines are regional: they
+  say "fire somewhere in here", not where.
+- Landsat adds little for new fires because it passes rarely.
+
+Limits: one week, in November, with 20 wildfires of 10 acres or more. The
+match window is one day shorter than in section 3. Cloud is taken from MODIS
+passes and applied to VIIRS, which passes at a similar time of day.
