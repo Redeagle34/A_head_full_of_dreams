@@ -241,7 +241,7 @@ button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-
   .about summary { padding: 10px 0; }
   .pair figcaption button { min-width: 40px; }
   .sat-label { min-height: 32px; padding: 4px 10px; }
-  .field label, .eyebrow, .tiles span, .periods .tag, .factors small, .sat-list small, .tl-group > span, .tl-ticks span { font-size: 12px; }
+  .field label, .choices small, .results small, .eyebrow, .tiles span, .periods .tag, .factors small, .sat-list small, .tl-group > span, .tl-ticks span { font-size: 12px; }
   /* the period on the time bar: taller, with wider edges to grab */
   .tl-track { height: 52px; }
   .tl-track::before { top: 6px; height: 24px; }
