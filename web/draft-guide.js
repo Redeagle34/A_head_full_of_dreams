@@ -9,6 +9,7 @@
      4. Satellites    the others stay in orbit; the picked one opens a card and the Earth turns under it
      5. Fires card    fires around the red dot: where, how far, how dangerous, how large
      6. Year wheel    one ring is one year; a petal is a week
+     7. Tour          the first-visit tour of the open map; "?" starts it again
 */
 Draft.ready(() => {
 
@@ -44,16 +45,23 @@ function toUnitedStates() {
 
 async function begin() {
   if (document.body.dataset.stage !== "intro") return;
+  scrollTo({ top: 0, behavior: "instant" });                          // from the tutorial below, back to the cover first
+  document.body.querySelector("#tutorial video")?.pause();
   document.body.dataset.stage = "opening";
   toUnitedStates();
   await wait(760);
   document.body.dataset.stage = "live";
   await wait(500);
+  document.body.classList.add("settled");
   drawWheel();
+  tourFirstTime();
 }
 async function leave() {
   if (document.body.dataset.stage !== "live") return;
   closeAll();
+  if (tourCard && !tourCard.hidden) tourEnd();
+  document.body.classList.remove("settled");         // back to the full-window shape, so it can morph to the globe
+  await wait(40);
   document.body.dataset.stage = "opening";
   await wait(620);
   document.body.dataset.stage = "intro";
@@ -61,8 +69,8 @@ async function leave() {
   el("begin").focus({ preventScroll: true });
 }
 el("veil").onclick = begin;
+addEventListener("scroll", () => document.body.classList.toggle("scrolled", scrollY > 40), { passive: true });
 el("exitMap").onclick = leave;
-el("begin").focus({ preventScroll: true });
 
 function closeAll() {
   showTools(false);
@@ -293,5 +301,110 @@ setInterval(() => {
   seen = k; dates();
   if (cal) { followDates = true; el("seasonLine").textContent = Draft.seasonSentence(cal, state.end); drawWheel(); }
 }, 300);
+
+// ---------- 7. Tour ----------
+
+// The first time the map opens, a short tour lights up each part of the page in turn; the visitor
+// can use it (the step moves on by itself) or press Next. Shown once per browser; "?" starts it again.
+// After main's tour.js, made for this page.
+const TOUR_KEY = "burning-calendar-guide-tour-done";
+const STEPS = [
+  { target: "#legend", title: "Fire seen from space",
+    text: "Each colored square is fire that NASA's MODIS and VIIRS satellites saw. The legend says what the colors mean. Click a square for its numbers.",
+    action: ["Show the Park Fire, 2024", () => { const s = el("preset"); if ([...s.options].some(o => o.value === "ex:park")) { s.value = "ex:park"; s.dispatchEvent(new Event("change", { bubbles: true })); } }] },
+  { target: ".bar .search", title: "Go anywhere in the U.S.",
+    text: "Type a city, county or park and press Enter. Or drag and zoom the Earth.",
+    on: ["#place", "keydown", e => e.key === "Enter"] },
+  { target: "#timeline", title: "Choose the dates",
+    text: "Drag the bright block to move the period, pull its edges to change its length, or press Play to watch fires through time. More holds the length and ready-made dates.",
+    on: ["#tlPlay", "click"] },
+  { target: "#lobeNear", title: "Fires around the red dot",
+    text: "The fires inside the dashed ring, the worst first, each rated from low to extreme danger. Change the distance, or go to your location.",
+    on: ["#nearMine", "click"] },
+  { target: "#lobeWheel", title: "The year here",
+    text: "One ring is one year, a petal is a week. Red petals are the usual fire season; pick a petal to see that week on the map.",
+    on: ["#wheel", "click"] },
+  { target: "#toolsBtn", title: "Settings: every other tool",
+    text: "Fires and how each one grew, the satellites overhead, map layers, the history of the area, Prevention (where a prescribed burn stops the most spread), and the report.",
+    on: ["#toolsBtn", "click"] },
+  { target: "#exitMap", title: "Back to the cover",
+    text: "Exit the map returns to the cover. Scroll down there for a 37-second tutorial video, or to make a report." },
+];
+let tourStep = -1, tourCard = null, tourSpot = null, tourTimer = null, tourUnhook = null;
+
+function tourBuild() {
+  tourSpot = Object.assign(document.createElement("div"), { className: "tour-spot", hidden: true });
+  tourCard = Object.assign(document.createElement("div"), { className: "tour-card", hidden: true });
+  tourCard.setAttribute("role", "dialog"); tourCard.setAttribute("aria-live", "polite"); tourCard.setAttribute("aria-label", "Tour of the page");
+  document.body.append(tourSpot, tourCard);
+  tourCard.onclick = e => {
+    const go = e.target.closest("[data-go]")?.dataset.go;
+    if (go === "next") tourNext();
+    else if (go === "back") tourShow(tourStep - 1);
+    else if (go === "end") tourEnd();
+    else if (go === "action") { STEPS[tourStep].action[1](); setTimeout(tourNext, 2200); }
+  };
+  addEventListener("keydown", e => { if (!tourCard.hidden && e.key === "Escape") tourEnd(); });
+}
+function tourStart() {
+  if (!tourCard) tourBuild();
+  tourStep = -1; tourSpot.hidden = true; tourCard.hidden = false; tourCard.className = "tour-card welcome";
+  tourCard.innerHTML = `<h2>Every wildfire satellites saw in the U.S. since 2000</h2>
+    <p>A quick tour: ${STEPS.length} steps, under a minute. Try each part as you go.</p>
+    <div class="tour-buttons"><button type="button" class="quiet" data-go="end">Skip, I'll explore</button>
+      <button type="button" data-go="next">Start the tour</button></div>`;
+  tourCard.style.left = tourCard.style.top = "";
+  tourCard.querySelector("[data-go=next]").focus();
+  clearInterval(tourTimer); tourTimer = setInterval(tourPlace, 250);
+}
+function tourShow(i) {
+  tourUnhook?.(); tourUnhook = null; showTools(false);
+  tourStep = i;
+  const s = STEPS[i], last = i === STEPS.length - 1;
+  tourCard.className = "tour-card";
+  tourCard.innerHTML = `<div class="tour-count">${i + 1} of ${STEPS.length}</div><h2>${s.title}</h2><p>${s.text}</p>
+    ${s.action ? `<button type="button" class="tour-try" data-go="action">${s.action[0]}</button>` : ""}
+    <div class="tour-buttons">${i ? `<button type="button" class="quiet" data-go="back">Back</button>` : ""}
+      <button type="button" class="quiet" data-go="end">Skip</button>
+      <button type="button" data-go="next">${last ? "Start exploring" : "Next"}</button></div>`;
+  if (s.on) {
+    const [sel, type, test] = s.on, target = document.querySelector(sel);
+    const h = e => { if (!test || test(e)) { tourUnhook?.(); tourUnhook = null; setTimeout(tourNext, 1200); } };
+    target?.addEventListener(type, h); tourUnhook = () => target?.removeEventListener(type, h);
+  }
+  document.querySelector(s.target)?.scrollIntoView({ block: "nearest" });
+  tourPlace();
+  tourCard.querySelector("[data-go=next]").focus({ preventScroll: true });
+}
+function tourNext() { if (!tourCard.hidden) tourStep + 1 < STEPS.length ? tourShow(tourStep + 1) : tourEnd(); }
+function tourPlace() {                 // light up the target; the card goes beside it, inside the screen
+  if (tourStep < 0 || tourCard.hidden) return;
+  const t = document.querySelector(STEPS[tourStep].target);
+  if (!t) return;
+  const r = t.getBoundingClientRect(), pad = 6, gap = 14, W = innerWidth, H = innerHeight;
+  tourSpot.hidden = false;
+  Object.assign(tourSpot.style, { left: `${r.left - pad}px`, top: `${r.top - pad}px`, width: `${r.width + 2 * pad}px`, height: `${r.height + 2 * pad}px` });
+  const c = tourCard.getBoundingClientRect();
+  let left, top;
+  if (r.right + gap + c.width <= W - gap) { left = r.right + pad + gap; top = Math.min(Math.max(gap, r.top), H - c.height - gap); }        // right of it
+  else {
+    const below = r.bottom + pad + gap, above = r.top - pad - gap - c.height;
+    top = below + c.height <= H - gap ? below : above >= gap ? above : Math.max(gap, (H - c.height) / 2);
+    left = Math.min(Math.max(gap, r.left + r.width / 2 - c.width / 2), W - c.width - gap);
+  }
+  tourCard.style.left = `${left}px`; tourCard.style.top = `${top}px`;
+}
+function tourEnd() {
+  tourUnhook?.(); tourUnhook = null; clearInterval(tourTimer);
+  tourCard.hidden = tourSpot.hidden = true; tourStep = -1;
+  try { localStorage.setItem(TOUR_KEY, "1"); } catch (e) { /* private window: the tour shows again next time */ }
+  el("tourBtn").focus();
+}
+el("tourBtn").onclick = tourStart;
+function tourFirstTime() {
+  let seen = false;
+  try { seen = localStorage.getItem(TOUR_KEY) === "1"; } catch (e) { /* no storage: show it */ }
+  if (!seen) setTimeout(tourStart, 600);
+}
 
 });

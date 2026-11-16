@@ -96,6 +96,22 @@ body:not([data-stage="live"]) .cross, body:has(.lobe-near.min) .cross { display:
 .include input:focus-visible + span { outline: 3px solid var(--marble); outline-offset: 2px; }
 .intro-report .get { justify-self: start; min-height: 46px; padding: 0 24px; font-size: 16px; }
 
+/* the cover scrolls: the name, the Earth and the report go up, and the tutorial comes in below */
+body[data-stage="intro"] { overflow-y: auto; position: relative; }
+body.scrolled .sat-label { display: none !important; }       /* the name tags float over the page; not over the tutorial */
+body[data-stage="intro"] :is(.lobe-map, .bar, .intro-report) { position: absolute; }
+body:not([data-stage="intro"]) :is(.tutorial, .scroll-cue) { display: none; }
+.scroll-cue { position: absolute; z-index: 9; left: 71vw; top: calc(100vh - 64px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px;
+              padding: 8px 16px; border-radius: var(--r-control); background: var(--paper); color: var(--cosmos); text-decoration: none; font-size: 15px; font-weight: 700; }
+.scroll-cue svg { width: 18px; height: 18px; }
+.scroll-cue:hover { background: var(--paper-2); }
+.tutorial { position: relative; z-index: 5; margin: 100vh auto 0; padding: 72px 24px 64px; width: min(1180px, 100%); display: grid; gap: 14px; justify-items: center; text-align: center; }
+.tutorial h2 { font-size: clamp(30px, 3.4vw, 48px); letter-spacing: -.03em; }
+.tutorial > p { max-width: 62ch; color: rgba(255, 255, 255, .84); font-size: 17px; line-height: 1.5; }
+.tutorial video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin-top: 12px; border-radius: var(--r-panel); background: #000; }
+.tutorial .fine { font-size: 13px; color: rgba(255, 255, 255, .62); }
+html { scroll-behavior: smooth; }
+
 body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { opacity: 0; pointer-events: none; visibility: hidden; }
 body[data-stage="intro"] .maplibregl-ctrl-bottom-right { display: none; }
 
@@ -107,6 +123,7 @@ body[data-stage="opening"] .bar { opacity: 0; transform: translateX(-40px); }
 
 /* ---- 3. live: the blue fills the window and the tools come in around the Earth ---- */
 body[data-stage="live"] .lobe-map { clip-path: var(--shape-full); }
+body.settled .lobe-map { clip-path: none; transition: none; }     /* once open, no cut at all: the corners stay covered */
 body[data-stage="live"] :is(.bar, .tools, .rail, .timeline, .legend) { animation: arrive .5s .25s both cubic-bezier(.2, .8, .2, 1); }
 @keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
 body[data-stage="live"] .bar { left: var(--gap); top: calc(var(--sw) + 16px); width: auto; display: flex; align-items: center; gap: 14px; }
@@ -235,6 +252,25 @@ body[data-open="wheel"] .wheel-side .hint { display: block; }
 .lightbox-inner { padding: 24px; }
 .maplibregl-popup-content { border: 0; }
 
+/* ---- first-visit tour (section 7 of draft-guide.js) ---- */
+.tour-spot { position: fixed; z-index: 50; border-radius: var(--r-panel); pointer-events: none; box-shadow: 0 0 0 4px var(--white), 0 0 0 9999px rgba(0, 25, 40, .45);
+             transition: left .3s, top .3s, width .3s, height .3s; }
+.tour-card { position: fixed; z-index: 51; width: min(340px, calc(100vw - 24px)); padding: 18px 20px; display: grid; gap: 10px;
+             background: var(--paper); color: var(--ink); border-radius: var(--r-panel); box-shadow: 0 18px 50px -14px rgba(0, 20, 35, .6); }
+.tour-card[hidden], .tour-spot[hidden] { display: none; }
+.tour-card.welcome { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%); width: min(440px, calc(100vw - 24px)); padding: 24px; }
+.tour-card h2 { font-size: 19px; line-height: 1.2; letter-spacing: -.01em; }
+.tour-card.welcome h2 { font-size: 24px; }
+.tour-card p { color: var(--muted); font-size: 15px; line-height: 1.45; }
+.tour-count { font-size: 13px; color: var(--muted); }
+.tour-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.tour-buttons button { min-height: 40px; padding: 0 16px; }
+.tour-card .quiet, .tour-try { background: var(--paper-2); color: var(--cosmos); }
+.tour-card .quiet:hover, .tour-try:hover { background: #dde8ee; color: var(--cosmos); }
+.tour-try { justify-self: start; min-height: 38px; padding: 0 14px; }
+.tools .help { width: 44px; padding: 0; justify-content: center; font-size: 19px; }
+@media (prefers-reduced-motion: reduce) { .tour-spot { transition: none; } }
+
 /* ---- smaller screens: the page scrolls, everything stacks ---- */
 @media (max-width: 1180px) {
   html, body { height: auto; }
@@ -246,6 +282,8 @@ body[data-open="wheel"] .wheel-side .hint { display: block; }
   .lobe-map, body[data-stage] .lobe-map { clip-path: none; }
   body:not([data-stage="intro"]) .lobe-map { width: auto; height: 62vh; border-radius: var(--r-panel); }
   body:not([data-stage="intro"]) .intro-report { display: none; }
+  .tutorial { margin-top: 0; }
+  .scroll-cue { display: none; }
   body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { display: none; }
   .tools { flex-wrap: wrap; }
   .tools .actions { left: 0; right: auto; }

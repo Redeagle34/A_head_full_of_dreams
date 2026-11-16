@@ -10,8 +10,8 @@
 */
 const Draft = (() => {
 
-const PAGES = [["draft-park.html", "Field guide"], ["draft-forecast.html", "Forecast"], ["draft-guide.html", "Guide map"]];
-const here = PAGES.findIndex(([file]) => location.pathname.endsWith(file));
+const PAGES = [["draft-park.html", "Field guide"], ["draft-forecast.html", "Forecast"], ["index.html", "Guide map"]];
+const here = PAGES.findIndex(([file]) => location.pathname.endsWith(file) || (file === "index.html" && location.pathname.endsWith("/")));
 const embedded = window.self !== window.top;
 if (embedded) document.documentElement.classList.add("embedded");
 
@@ -24,13 +24,13 @@ function remember() {                            // so the next design opens on 
 }
 
 function buildSwitcher() {
-  if (embedded || here < 0) return;
+  if (embedded || here < 0 || document.documentElement.classList.contains("no-switch")) return;
   const next = PAGES[(here + 1) % PAGES.length];
   const bar = document.createElement("nav");
   bar.className = "draft-switch"; bar.setAttribute("aria-label", "Design drafts");
   bar.innerHTML = `<span>Design ${here + 1} of ${PAGES.length}: ${PAGES[here][1]}</span>
     <a class="next" href="${next[0]}">Next design: ${next[1]}</a>
-    <a href="drafts.html">All three side by side</a><a href="index.html">Current page</a>`;
+    <a href="drafts.html">All three side by side</a><a href="classic.html">Classic page</a>`;
   bar.addEventListener("click", remember);
   document.body.appendChild(bar);
   addEventListener("keydown", e => {             // D moves to the next design

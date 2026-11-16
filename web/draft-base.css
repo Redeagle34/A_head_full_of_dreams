@@ -177,7 +177,7 @@ h3 { font: 700 13px/1.2 var(--font); letter-spacing: .06em; text-transform: uppe
 
 /* ---- the design switcher: a strip across the top; one button changes everything ---- */
 :root { --sw: 38px; }
-html.embedded { --sw: 0px; }
+html.embedded, html.no-switch { --sw: 0px; }
 .draft-switch { position: fixed; top: 0; left: 0; right: 0; height: var(--sw); z-index: 80; display: flex; align-items: center; justify-content: center;
                 gap: 4px; padding: 0 12px; background: #111418; color: #fff; font: 600 13px/1 system-ui, sans-serif; }
 .draft-switch a { color: #c9ccd1; text-decoration: none; padding: 7px 12px; border-radius: 999px; white-space: nowrap; }
