@@ -12,13 +12,31 @@ import { geoOrthographic, geoPath, geoGraticule10, geoDistance } from 'https://c
 import { feature } from 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm';
 
 const W = 1920, H = 1080, CX = W / 2, CY = H / 2;
-const DURATION = 37;
+const DURATION = 30;
+// The film is authored on a 'story' clock; this remap compresses the intro so the video lasts 30 s.
+// [video s, story s] pairs, linear in between (intro x1.9, transition x1.3, team x1.4, satellite x1.7, ending x1).
+// Synced to the recorded voice: audio/voice_clean.wav = voice_raw.mp4 with the lead silence cut and the first
+// sentence sped up 1.25x (pitch kept). Word times in the final track: "prevent" 3.2 s, "control" 4.5 s,
+// "understand" 6.3 s, "A Head Full of Dreams" 8.5-9.9 s, "here's our proposal" 10.0-11.1 s,
+// "Our solution is an interactive..." 11.5 s, "MODIS / VIIRS" 15.3-18.1 s.
+// After the proposal: "Our solution ... all the fires that are active" over OUR WEBPAGE + the live map (to 15.3 s),
+// "detected by MODIS or by VIIRS" over DATASETS (15.3-18.8 s); ALGORITHMS 18.7-21 s; features 21.2-27.4 s; exit to 30 s.
+const REMAP = [[0, 0], [3.19, 4.0], [4.46, 6.0], [6.29, 8.0], [7.5, 9.6], [8.6, 11.0], [9.95, 12.6], [11.1, 13.7], [13.6, 18.0], [15.0, 19.9], [18.7, 22.8], [21.0, 25.8], [27.4, 34.45], [30, 37.8]];
+function storyTime(v) {
+  for (let k = 1; k < REMAP.length; k++) { const [v0, s0] = REMAP[k - 1], [v1, s1] = REMAP[k]; if (v <= v1) return s0 + ((v - v0) / (v1 - v0)) * (s1 - s0); }
+  return REMAP[REMAP.length - 1][1];
+}
+let VT = 0; // video time of the frame being drawn (drives the hand-drawn boil)
 window.__duration = DURATION;
 const RENDER = new URLSearchParams(location.search).has('render');
 const F = CY / Math.tan(THREE.MathUtils.degToRad(15)); // focal length in px for fov 30
 const R0 = 280; // chalk globe radius (px)
 const T_FREEZE = 18.0; // the picture freezes here (satellite settling into orbit) and becomes a laptop screen
 const TF = T_FREEZE;
+// ending order: OUR WEBPAGE -> DATASETS -> ALGORITHMS -> three app features -> exit
+const T_DATA = TF + 1.9, T_ALGO = T_DATA + 2.9, T_FEAT = T_ALGO + 3.0;
+const TFS = T_FEAT + 0.45 - 1.9;          // feature times below are written as TFS + (1.9 ... 10.1)
+const T_EXIT = TFS + 1.9 + 8.2;
 
 // ------------------------------------------------------------------ people (placeholders)
 // Put photos in assets/people/persona1.png ... persona5.png (or .jpg) and change the names.
@@ -65,10 +83,13 @@ async function loadAll() {
     loadJSON('assets/land-110m.json'), loadJSON('data/fires_ca_20200908.json'), loadJSON('data/fires_us_sep2020.json'),
     loadJSON('data/mosaics.json'), loadJSON('data/patches.json'), loadJSON('data/weekly_ca_2020.json')]);
   const mosImgs = await Promise.all(mosaics.map(m => loadImg(m.src)));
-  const web = await Promise.all(['intro', 'live', 'zoomed', 'satellite', 'settings', 'history'].map(n => loadImg(`assets/web/guide_${n}.png`)));   // the Guide map design (tools/capture_guide.mjs)
+  const featNames = ['f0_open', 'f1_typing', 'f1_result', 'f2_set', ...Array.from({ length: 12 }, (_, i) => `f2_play${i}`), 'f3_fire', 'f3_landsat'];   // real app screens (tools/capture_features.mjs)
+  const featImgs = await Promise.all(featNames.map(n => loadImg(`assets/web/${n}.png`)));
+  const feat = Object.fromEntries(featNames.map((n, k) => [n, featImgs[k]]));
+  const logo = await loadImg('assets/nasa_spaceapps.png');
   const people = await Promise.all(PEOPLE.map(async (_, i) => (await loadImg(`assets/people/persona${i + 1}.png`)) || (await loadImg(`assets/people/persona${i + 1}.jpg`))));
   await fontsP; await document.fonts.ready;
-  return { land, firesCA, firesUS, mosaics, mosImgs, patches, weekly, people, web };
+  return { land, firesCA, firesUS, mosaics, mosImgs, patches, weekly, people, feat, logo };
 }
 
 // ------------------------------------------------------------------ backgrounds
@@ -354,7 +375,7 @@ const FL = [ // flames standing on the letters: x, size, tEnter, palette
 ];
 const FLAME_BASE = TITLE.y - TITLE.size * 0.36;
 const WORDS = [ // text, t, x, color, icon
-  ['PREDICT', 4.0, 420, CH.blue, 'chart'], ['PREVENT', 6.0, 960, CH.green, 'shield'], ['TAKE ACTION', 8.0, 1500, CH.orange, 'bolt'],
+  ['PREVENT', 4.0, 420, CH.green, 'shield'], ['CONTROL', 6.0, 960, CH.blue, 'target'], ['UNDERSTAND', 8.0, 1500, CH.yellow, 'lens'],
 ];
 function scene1(ctx, t, alpha, titleXf) {
   if (alpha > 0) FL.forEach(([x, s, te, pal], i) => {
@@ -713,13 +734,13 @@ function updateUI(t) {
 let A, BOARD, SPACE, GRAIN, grainPat;
 const strokeC = document.createElement('canvas'); strokeC.width = W; strokeC.height = H; const stx = strokeC.getContext('2d');
 
-function seek(t) {
-  t = clamp(t, 0, DURATION - 1e-4);
+function seek(tv) {
+  VT = clamp(tv, 0, DURATION - 1e-4); BOIL = Math.floor(VT * 12);
+  const t = storyTime(VT);
   if (t >= T_FREEZE) { finalScene(t); return; }
   seekScene(t);
 }
 function seekScene(t) {
-  BOIL = Math.floor(t * 12);
   const chalkScene = t < 17.6;
 
   // ---------- background
@@ -734,6 +755,11 @@ function seekScene(t) {
   if (chalkScene) {
     const Rg = globeR(t);
     const fade = 1 - E.inQuad(prog(t, 9.55, 10.0));
+    if (A.logo && fade > 0) { // NASA Space Apps Challenge logo, top of the first page
+      const lw = 430, lh = (lw * A.logo.height) / A.logo.width, pop = E.outBack(prog(t, 0.0, 0.55));
+      phx.save(); phx.globalAlpha = fade * clamp(prog(t, 0, 0.3)); phx.translate(CX, 150); phx.scale(pop, pop);
+      phx.drawImage(A.logo, -lw / 2, -lh / 2, lw, lh); phx.restore();
+    }
     if (t < 10.3) {
       const punch = WORDS.reduce((s, w) => s + 0.02 * Math.exp(-(((t - w[1]) / 0.12) ** 2)), 0);
       const drift = 1 + 0.04 * prog(t, 0, 9.6) + punch - 0.04 * E.inOutCubic(prog(t, 9.5, 10.2));
@@ -767,11 +793,19 @@ function seekScene(t) {
     if (t >= 11 && t < 14.8) {
       const out = 1 - prog(t, 14.0, 14.45);
       rainbowTitle(stx, 'A HEAD FULL OF DREAMS', CX, 112, 104, E.inOutSine(prog(t, 11.6, 12.6)), t, out);
-      chalkText(stx, 'this is our proposal', CX, 198, { font: '"Gochi Hand"', weight: 400, size: 54, color: CH.orange, reveal: E.inOutSine(prog(t, 13.0, 13.6)), seed: 4, alpha: out });
+      chalkText(stx, "here's our proposal", CX, 198, { font: '"Gochi Hand"', weight: 400, size: 54, color: CH.orange, reveal: E.inOutSine(prog(t, 13.0, 13.6)), seed: 4, alpha: out });
       [[330, 92, 16, 12.3], [1590, 86, 20, 12.4], [420, 168, 10, 12.5], [1500, 170, 12, 12.6], [250, 150, 9, 12.7], [1680, 150, 9, 12.8]].forEach(([x, y, r, ts], i) => {
         const p = E.outBack(prog(t, ts, ts + 0.4)); if (p <= 0) return;
         const tw = 1 + Math.sin(t * 6 + i) * 0.12;
         drawPoly(stx, starPts(x, y, r * p * tw), { w: 2.5, color: `hsl(${(i * 60 + t * 160) % 360} 90% 72%)`, amp: 0.8, closed: true, alpha: out, seed: 600 + i * 20 });
+      });
+      // vibrating rainbow stars around the Earth and around each teammate
+      TEAM_STARS.forEach(([x, y, r, ts], i) => {
+        const p = E.outBack(prog(t, ts, ts + 0.35)); if (p <= 0) return;
+        const vib = 1 + Math.sin(t * 15 + i * 1.7) * 0.25, dx = Math.sin(t * 9 + i) * 3.5, dy = Math.cos(t * 11 + i * 2) * 3.5;
+        const col = `hsl(${(i * 47 + t * 220) % 360} 95% 70%)`;
+        drawPoly(stx, starPts(x + dx, y + dy, r * p * vib), { w: 3.4, color: col, amp: 0.8, closed: true, alpha: out, seed: 1700 + i * 13 });
+        if (i % 2 === 0) { stx.save(); stx.globalAlpha = out * (0.5 + 0.5 * Math.sin(t * 20 + i)); stx.fillStyle = col; stx.beginPath(); stx.arc(x + dx, y + dy, r * 0.22 * p, 0, 7); stx.fill(); stx.restore(); }
       });
       drawPeopleOn(stx, t);
     }
@@ -849,6 +883,22 @@ function seekScene(t) {
   updateUI(t);
 }
 
+const TEAM_STARS = (() => { // [x, y, size, appear time]: a ring around the globe, then a cluster around each person
+  const r = mulberry32(77), out = [];
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2 + r() * 0.2, d = R0 + 34 + r() * 120;
+    const x = CX + Math.cos(a) * d, y = CY + Math.sin(a) * d * 0.95;
+    if (y < 235) continue; // keep the title clear
+    out.push([x, y, 13 + r() * 16, 11.0 + (i / 24) * 0.9]);
+  }
+  PEOPLE.forEach((P, k) => {
+    for (let j = 0; j < 6; j++) {
+      const side = j % 2 ? 1 : -1, x = P.x + side * (110 + r() * 120), y = 500 + r() * 300;
+      out.push([clamp(x, 30, W - 30), y, 12 + r() * 15, P.t + 0.35 + j * 0.07]);
+    }
+  });
+  return out;
+})();
 function drawPeopleOn(ctx, t) { drawPeople(ctx, t, A.people); }
 function rainbowTitle(ctx, text, x, y, size, reveal, t, alpha) {
   ctx.save(); ctx.font = `700 ${size}px "Cabin Sketch"`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
@@ -1006,15 +1056,33 @@ function captureFreeze() {
   }
   f.globalAlpha = 1;
 }
-const WEB_CLICKS = [ // cursor targets on the Guide map (1920x1080 captures, assets/web/guide_clicks.json):
-  // Play, zoom out twice, a satellite, Settings, Area numbers
-  { x: 1363, y: 518, t: TF + 3.2, img: 1 },
-  { x: 1880, y: 908, t: TF + 3.9, img: 1 },
-  { x: 1880, y: 908, t: TF + 4.45, img: 2 },
-  { x: 1543, y: 236, t: TF + 5.15, img: 3 },
-  { x: 1840, y: 38, t: TF + 5.95, img: 4 },
-  { x: 1760, y: 250, t: TF + 6.6, img: 5 },
-]
+const SHOTS = [ // what the laptop screen shows: start time, screenshot, optional zoom keyframes [t, zoom, focusX, focusY]
+  { t: TF + 1.9, img: 'f0_open' },                                     // the map, while DATASETS / ALGORITHMS play
+  { t: TFS + 1.9, img: 'f1_typing' },                                   // search a city
+  { t: TFS + 3.2, img: 'f1_result', zoom: [[TFS + 3.45, 1, CX, CY], [TFS + 3.95, 2.0, 330, 600], [TFS + 4.55, 2.0, 330, 600], [TFS + 4.8, 1, CX, CY]] },
+  { t: TFS + 4.8, img: 'f2_set' },                                      // a period, then Play
+  ...Array.from({ length: 12 }, (_, i) => ({ t: TFS + 5.3 + i * 0.19, img: `f2_play${i}`, cut: true })),
+  { t: TFS + 7.6, img: 'f3_fire' },                                     // one fire, then its Landsat pictures
+  { t: TFS + 8.4, img: 'f3_landsat', zoom: [[TFS + 8.6, 1, CX, CY], [TFS + 9.1, 2.4, 400, 790], [TFS + 10.6, 2.55, 400, 790]] },
+];
+const CURSOR = [ // [t, x, y, click] in screenshot pixels
+  [TFS + 2.0, 980, 640], [TFS + 2.5, 300, 34, true], [TFS + 3.3, 760, 560],
+  [TFS + 4.95, 476, 982, true], [TFS + 7.0, 900, 700], [TFS + 8.15, 207, 544, true], [TFS + 9.0, 600, 760],
+];
+function zoomOf(shot, t) {
+  const k = shot.zoom; if (!k) return [1, CX, CY];
+  if (t <= k[0][0]) return k[0].slice(1);
+  for (let i = 1; i < k.length; i++) if (t <= k[i][0]) { const e = E.inOutCubic(prog(t, k[i - 1][0], k[i][0])); return [1, 2, 3].map(j => lerp(k[i - 1][j], k[i][j], e)); }
+  return k[k.length - 1].slice(1);
+}
+function drawShot(g, shot, t, alpha) {
+  const img = A.feat[shot.img]; if (!img || alpha <= 0) return null;
+  let [z, fx, fy] = zoomOf(shot, t);
+  fx = clamp(fx, CX / z, W - CX / z); fy = clamp(fy, CY / z, H - CY / z);
+  g.save(); g.globalAlpha = alpha; g.translate(CX, CY); g.scale(z, z); g.translate(-fx, -fy);
+  g.drawImage(img, 0, 0, W, H); g.restore();
+  return [z, fx, fy];
+}
 function drawCursor(g, x, y, s, a) {
   g.save(); g.translate(x, y); g.scale(s, s); g.globalAlpha = a;
   g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 22); g.lineTo(5.5, 17); g.lineTo(9.5, 26); g.lineTo(13, 24.5); g.lineTo(9, 16); g.lineTo(16, 16); g.closePath();
@@ -1022,34 +1090,32 @@ function drawCursor(g, x, y, s, a) {
 }
 function drawScreen(t) {
   const g = scx; g.clearRect(0, 0, W, H);
-  const swap = prog(t, TF + 1.9, TF + 2.6);
+  const swap = prog(t, TF + 1.9, TF + 2.5);
   if (swap < 1) { // the frozen frame, darkened under the title, zooms away into the site
     const z = 1 + 0.35 * E.inCubic(swap);
     g.save(); g.globalAlpha = 1 - E.inQuad(swap); g.translate(CX, CY); g.scale(z, z); g.drawImage(FREEZE, -CX, -CY); g.restore();
     g.fillStyle = `rgba(0,0,0,${0.38 * E.outCubic(prog(t, TF, TF + 0.4)) * (1 - swap)})`; g.fillRect(0, 0, W, H);
   }
   if (swap > 0) {
-    const base = A.web[0], z = lerp(0.92, 1, E.outCubic(swap));
-    g.save(); g.globalAlpha = swap; g.translate(CX, CY); g.scale(z, z); g.translate(-CX, -CY);
-    g.drawImage(base, 0, 0, W, H);
-    WEB_CLICKS.forEach(c => { const a = prog(t, c.t + 0.1, c.t + 0.45); if (a > 0 && A.web[c.img]) { g.globalAlpha = Math.min(1, a); g.drawImage(A.web[c.img], 0, 0, W, H); } });
-    g.restore();
-    // cursor
-    const ca = prog(t, TF + 2.9, TF + 3.2);
+    let k = 0; SHOTS.forEach((sh, i) => { if (t >= sh.t) k = i; });
+    const cur = SHOTS[k], prev = SHOTS[k - 1];
+    const a = cur.cut ? 1 : E.inOutSine(prog(t, cur.t, cur.t + 0.22));
+    if (prev && a < 1) drawShot(g, prev, t, swap);
+    const view = drawShot(g, cur, t, a * swap) || [1, CX, CY];
+    // cursor and clicks, in the same zoom as the screen
+    const ca = prog(t, CURSOR[0][0], CURSOR[0][0] + 0.25) * (1 - prog(t, TFS + 9.6, TFS + 9.9));
     if (ca > 0) {
-      let px = 980, py = 640;
-      const path = [{ x: 980, y: 640, t: TF + 2.9 }, ...WEB_CLICKS.map(c => ({ x: c.x, y: c.y, t: c.t }))];
-      for (let k = 1; k < path.length; k++) {
-        const a = path[k - 1], b = path[k], t0 = a.t + 0.35, t1 = b.t - 0.15;
-        if (t >= t0) { const e = E.inOutCubic(prog(t, t0, t1)); px = lerp(a.x, b.x, e); py = lerp(a.y, b.y, e); }
-      }
-      WEB_CLICKS.forEach(c => { const r = prog(t, c.t, c.t + 0.5); if (r > 0 && r < 1) { g.strokeStyle = `rgba(255,170,60,${1 - r})`; g.lineWidth = 4; g.beginPath(); g.arc(c.x, c.y, 10 + r * 46, 0, 7); g.stroke(); } });
-      const press = WEB_CLICKS.reduce((m, c) => m + Math.exp(-(((t - c.t) / 0.07) ** 2)), 0);
-      drawCursor(g, px, py, 2.1 * (1 - 0.18 * press), ca);
+      let px = CURSOR[0][1], py = CURSOR[0][2];
+      for (let i = 1; i < CURSOR.length; i++) { const [t0] = CURSOR[i - 1], [t1, x1, y1] = CURSOR[i]; if (t >= t0) { const e = E.inOutCubic(prog(t, t0 + 0.05, t1)); px = lerp(CURSOR[i - 1][1], x1, e); py = lerp(CURSOR[i - 1][2], y1, e); } }
+      const [z, fx, fy] = view;
+      g.save(); g.translate(CX, CY); g.scale(z, z); g.translate(-fx, -fy);
+      let press = 0;
+      CURSOR.forEach(([tc, x, y, click]) => { if (!click) return; press += Math.exp(-(((t - tc) / 0.07) ** 2)); const r = prog(t, tc, tc + 0.5); if (r > 0 && r < 1) { g.strokeStyle = `rgba(255,170,60,${1 - r})`; g.lineWidth = 4 / z; g.beginPath(); g.arc(x, y, (10 + r * 46) / z, 0, 7); g.stroke(); } });
+      drawCursor(g, px, py, (2.1 / z) * (1 - 0.18 * press), ca);
+      g.restore();
     }
   }
-  // glass sheen once it is a real screen
-  const sh = prog(t, TF + 0.8, TF + 1.9) * 0.9;
+  const sh = prog(t, TF + 0.8, TF + 1.9) * 0.9; // glass sheen once it is a real screen
   if (sh > 0) { const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, `rgba(255,255,255,${0.10 * sh})`); gr.addColorStop(0.35, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
   LAP.tex.needsUpdate = true;
 }
@@ -1068,39 +1134,100 @@ function finalScene(t) {
   const d0 = LAP.SH / 2 / Math.tan(THREE.MathUtils.degToRad(15));
   const e = E.inOutCubic(prog(t, TF + 0.45, TF + 1.9));
   const push = E.inOutSine(prog(t, TF + 1.9, TF + 7.0));
-  const back = E.inOutCubic(prog(t, T_DATA, T_DATA + 0.8));           // step back to make room for the panels
+  const back = E.inOutCubic(prog(t, T_DATA, T_DATA + 0.8)) * (1 - E.inOutCubic(prog(t, T_FEAT, T_FEAT + 0.75)));           // step back to make room for the panels
   const dist = lerp(lerp(d0, lerp(4.45, 4.05, push), e), 6.1, back);
   const lift = lerp(0, 0.15, e) - 0.12 * back;
   // laptop slides right for DATASETS, then left (past the centre) for ALGORITHMS
-  const shiftPx = 370 * E.inOutCubic(prog(t, T_DATA, T_DATA + 0.8)) - 1000 * E.inOutCubic(prog(t, T_ALGO, T_ALGO + 1.2));
+  const shiftPx = 370 * E.inOutCubic(prog(t, T_DATA, T_DATA + 0.8)) - 1000 * E.inOutCubic(prog(t, T_ALGO, T_ALGO + 1.2)) + 630 * E.inOutCubic(prog(t, T_FEAT, T_FEAT + 0.75));
   const right = new THREE.Vector3().crossVectors(LAP.up, LAP.normal).normalize();
   const worldPerPx = (2 * dist * Math.tan(THREE.MathUtils.degToRad(15))) / H;
   const look = LAP.center.clone().add(LAP.up.clone().multiplyScalar(lift)).add(right.clone().multiplyScalar(-shiftPx * worldPerPx));
   lapCam.position.copy(look.clone().add(LAP.normal.clone().multiplyScalar(dist)));
   lapCam.up.copy(LAP.up);
   lapCam.lookAt(look);
-  gl.render(lapScene, lapCam);
-  // OUR WEBPAGE
-  const pop = E.outBack(prog(t, TF, TF + 0.45)) * (1 - E.inCubic(prog(t, T_DATA, T_DATA + 0.5))), mv = E.inOutCubic(prog(t, TF + 0.55, TF + 1.9));
-  if (pop > 0.001) {
-    const size = lerp(176, 80, mv), y = lerp(CY, 70, mv);
-    stx.save(); stx.translate(CX, y); stx.scale(pop, pop);
-    stx.font = `700 ${size}px "Space Grotesk"`; stx.textAlign = 'center'; stx.textBaseline = 'middle';
-    if ('letterSpacing' in stx) stx.letterSpacing = `${size * 0.04}px`;
-    const gr = stx.createLinearGradient(0, -size / 2, 0, size / 2); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(0.55, '#ff9a3d'); gr.addColorStop(1, '#ff5a3a');
-    stx.shadowColor = 'rgba(0,0,0,0.55)'; stx.shadowBlur = 30; stx.shadowOffsetY = 8;
-    stx.fillStyle = gr; stx.fillText('OUR WEBPAGE', 0, 0);
-    stx.restore();
-  }
+  const ex = E.inCubic(prog(t, T_EXIT, T_EXIT + 1.0)); // exit: the laptop is flung back and away
+  lapScene.rotation.set(-0.7 * ex, 2.6 * ex, 0.6 * ex); lapScene.position.set(0, -2.2 * ex, -7 * ex);
+  if (t < T_EXIT + 1.0) gl.render(lapScene, lapCam); else gl.clear();
+  // captions: OUR WEBPAGE, then one line per feature
+  const capOut = 1 - E.inCubic(prog(t, T_EXIT, T_EXIT + 0.3)), webOut = 1 - E.inCubic(prog(t, T_DATA, T_DATA + 0.45));
+  const pop = E.outBack(prog(t, TF, TF + 0.45)), mv = E.inOutCubic(prog(t, TF + 0.55, TF + 1.9));
+  CAPS.forEach(([t0, text], i) => {
+    const t1 = CAPS[i + 1] ? CAPS[i + 1][0] : 1e9;
+    const leave = E.inCubic(prog(t, t1, t1 + 0.3));
+    if (t < t0 || leave >= 1) return;
+    if (i === 0) caption(text, lerp(CY, 70, mv) - 40 * (1 - webOut), lerp(176, 80, mv), pop, webOut);
+    else { const e = E.outBack(prog(t, t0, t0 + 0.4)); caption(text, 70 + (1 - e) * -60 - 40 * leave, 66, 1, clamp(prog(t, t0, t0 + 0.25)) * (1 - leave) * capOut); }
+  });
   // DATASETS: in from the left, out the same way
   const dIn = E.outBack(prog(t, T_DATA + 0.3, T_DATA + 1.0)), dOut = E.inCubic(prog(t, T_ALGO, T_ALGO + 0.7));
-  if (dIn > 0 && dOut < 1) drawPanel(stx, lerp(-900, 60, dIn) - 1000 * dOut, 70, 800, 940, 'DATASETS', DATASETS, T_DATA + 0.8, t, 0.27);
+  if (dIn > 0 && dOut < 1) drawPanel(stx, lerp(-900, 60, dIn) - 1000 * dOut, 70, 800, 940, 'DATASETS', DATASETS, T_DATA + 0.6, t, 0.2);
   // ALGORITHMS: in from the right, to the centre
   const aIn = E.outBack(prog(t, T_ALGO + 0.45, T_ALGO + 1.3));
-  if (aIn > 0) drawPanel(stx, lerp(W + 100, CX - 470, aIn), 110, 940, 860, 'ALGORITHMS', ALGORITHMS, T_ALGO + 1.2, t, 0.3);
+  const aOut = E.inCubic(prog(t, T_FEAT, T_FEAT + 0.6));
+  if (aIn > 0 && aOut < 1) drawPanel(stx, lerp(W + 100, CX - 470, aIn) + 1500 * aOut, 110, 940, 860, 'ALGORITHMS', ALGORITHMS, T_ALGO + 0.9, t, 0.22);
+  drawExit(t);
   chx.clearRect(0, 0, W, H); chx.drawImage(strokeC, 0, 0);
 }
-const T_DATA = TF + 7.2, T_ALGO = TF + 12.2;
+const CAPS = [[TF, 'OUR WEBPAGE'], [TFS + 1.9, 'ANALYSING FIRES IN A GIVEN AREA'], [TFS + 4.8, 'ANALYSING FIRES ACROSS A PERIOD'], [TFS + 7.6, 'BEFORE AND AFTER A FIRE PICTURES']];
+function caption(text, y, size, scale, alpha) {
+  if (alpha <= 0.001) return;
+  stx.save(); stx.globalAlpha = alpha; stx.translate(CX, y); stx.scale(scale, scale);
+  stx.font = `700 ${size}px "Space Grotesk"`; stx.textAlign = 'center'; stx.textBaseline = 'middle';
+  if ('letterSpacing' in stx) stx.letterSpacing = `${size * 0.04}px`;
+  const gr = stx.createLinearGradient(0, -size / 2, 0, size / 2); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(0.55, '#ff9a3d'); gr.addColorStop(1, '#ff5a3a');
+  stx.shadowColor = 'rgba(0,0,0,0.6)'; stx.shadowBlur = 30; stx.shadowOffsetY = 8;
+  stx.fillStyle = gr; stx.fillText(text, 0, 0);
+  stx.restore();
+}
+// ---- the exit: the laptop is flung away, a wall of fire rises, white flash, the title slams in
+function drawExit(t) {
+  const u = t - T_EXIT; if (u < 0) return;
+  const g = stx, fw = E.inCubic(prog(u, 0.1, 1.0));
+  if (u < 1.05) {
+    g.save();
+    const shake = 16 * fw; g.translate(jit(1, 3) * shake, jit(2, 4) * shake);
+    g.fillStyle = `rgba(28,4,2,${0.75 * fw})`; g.fillRect(-40, -40, W + 80, H + 80);   // the room goes dark red
+    const glow = g.createLinearGradient(0, H, 0, H - H * 1.35 * fw);
+    glow.addColorStop(0, 'rgba(255,120,20,1)'); glow.addColorStop(0.35, 'rgba(230,40,10,0.85)'); glow.addColorStop(0.75, 'rgba(120,10,5,0.5)'); glow.addColorStop(1, 'rgba(60,0,0,0)');
+    g.fillStyle = glow; g.fillRect(-40, -40, W + 80, H + 80);
+    g.globalCompositeOperation = 'lighter';                                                // flames add light
+    for (let i = 0; i < 17; i++) {
+      const x = -60 + (i / 16) * (W + 120) + Math.sin(t * 3 + i) * 20, sz = (180 + hash(i * 7) * 260) * (0.25 + fw * 3.4);
+      drawFlame(g, x, H + 80, sz, t * 1.7 + i, 60 + i, clamp(prog(u, i * 0.02, i * 0.02 + 0.2)), i % 4);
+    }
+    g.globalCompositeOperation = 'source-over';
+    g.restore();
+  }
+  const fl = clamp(prog(u, 0.85, 1.0)) * (1 - prog(u, 1.0, 1.45)); // white flash
+  if (u >= 1.0) { // end card
+    const card = prog(u, 1.0, 1.1);
+    g.save(); g.globalAlpha = card;
+    const bgG = g.createRadialGradient(CX, CY, 60, CX, CY, 1100); bgG.addColorStop(0, '#2a0e06'); bgG.addColorStop(0.55, '#0c0507'); bgG.addColorStop(1, '#030205');
+    g.fillStyle = bgG; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 170; i++) { // embers
+      const ph = (u * (0.25 + hash(i) * 0.35) + hash(i * 3.3)) % 1, x = hash(i * 7.1) * W + Math.sin(u * 2 + i) * 30, y = H + 20 - ph * (H + 80);
+      g.globalAlpha = card * (1 - ph) * (0.4 + hash(i * 2.2) * 0.6); g.fillStyle = i % 3 ? '#ffb347' : '#ff6a2b';
+      g.beginPath(); g.arc(x, y, 1.2 + hash(i * 5.5) * 3.2, 0, 7); g.fill();
+    }
+    g.globalAlpha = 1; g.restore();
+    const slam = E.outBack(prog(u, 1.05, 1.45)), impact = Math.exp(-Math.max(0, u - 1.3) * 7) * (u > 1.3 ? 1 : 0);
+    g.save(); g.translate(jit(5, 1) * 22 * impact, jit(6, 2) * 22 * impact);
+    const ring = prog(u, 1.3, 1.9); // shockwave
+    if (ring > 0 && ring < 1) { g.strokeStyle = `rgba(255,200,120,${0.8 * (1 - ring)})`; g.lineWidth = 10 * (1 - ring) + 1; g.beginPath(); g.arc(CX, 560, 80 + ring * 1100, 0, 7); g.stroke(); }
+    if (A.logo) { const lw = 430, lh = (lw * A.logo.height) / A.logo.width, la = clamp(prog(u, 1.4, 1.75)); g.globalAlpha = la; g.drawImage(A.logo, CX - lw / 2, 210 - lh / 2 + (1 - la) * -30, lw, lh); g.globalAlpha = 1; }
+    g.save(); g.translate(CX, 560); const sc = lerp(3.2, 1, slam); g.scale(sc, sc); g.translate(-CX, -560);
+    rainbowTitle(g, 'A HEAD FULL OF DREAMS', CX, 560, 150, 1, t, clamp(prog(u, 1.05, 1.15)));
+    g.restore();
+    const sa = clamp(prog(u, 1.6, 2.0));
+    g.globalAlpha = sa; g.font = '600 36px "Space Grotesk"'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffd9b0';
+    if ('letterSpacing' in g) g.letterSpacing = '6px';
+    g.fillText('BURNING CALENDAR', CX, 690 + (1 - sa) * 20);
+    if ('letterSpacing' in g) g.letterSpacing = '0px';
+    g.globalAlpha = 1; g.restore();
+    const fade = prog(u, 3.05, 3.3); if (fade > 0) { g.fillStyle = `rgba(0,0,0,${fade})`; g.fillRect(0, 0, W, H); }
+  }
+  if (fl > 0) { g.fillStyle = `rgba(255,248,235,${fl})`; g.fillRect(0, 0, W, H); }
+}
 const DATASETS = [ // name, detail (what each one is used for in the project)
   ['NASA FIRMS · MODIS C6.1', 'Terra + Aqua fire detections, 2000–2025'],
   ['NASA FIRMS · VIIRS 375 m', 'Suomi NPP + NOAA-20 detections, 2012–2025'],

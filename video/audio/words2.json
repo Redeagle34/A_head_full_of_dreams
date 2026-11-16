@@ -1,0 +1,140 @@
+﻿[
+    {
+        "text":  "but",
+        "start":  0,
+        "dur":  0.15,
+        "conf":  0
+    },
+    {
+        "text":  "who",
+        "start":  0.15,
+        "dur":  1.46,
+        "conf":  0.12
+    },
+    {
+        "text":  "are",
+        "start":  1.92,
+        "dur":  0.24,
+        "conf":  0.41
+    },
+    {
+        "text":  "older",
+        "start":  2.16,
+        "dur":  0.38,
+        "conf":  0.03
+    },
+    {
+        "text":  "than",
+        "start":  2.54,
+        "dur":  0.18,
+        "conf":  0.65
+    },
+    {
+        "text":  "trade",
+        "start":  2.72,
+        "dur":  0.38,
+        "conf":  0.4
+    },
+    {
+        "text":  "every",
+        "start":  3.17,
+        "dur":  0.29,
+        "conf":  0.73
+    },
+    {
+        "text":  "fire",
+        "start":  3.46,
+        "dur":  0.36,
+        "conf":  0.66
+    },
+    {
+        "text":  "center",
+        "start":  3.82,
+        "dur":  0.53,
+        "conf":  0
+    },
+    {
+        "text":  "serge",
+        "start":  4.99,
+        "dur":  0.56,
+        "conf":  0.76
+    },
+    {
+        "text":  "and",
+        "start":  5.64,
+        "dur":  0.3,
+        "conf":  0
+    },
+    {
+        "text":  "please",
+        "start":  5.94,
+        "dur":  0.73,
+        "conf":  0
+    },
+    {
+        "text":  "replace",
+        "start":  6.87,
+        "dur":  0.75,
+        "conf":  0.02
+    },
+    {
+        "text":  "the",
+        "start":  7.62,
+        "dur":  0.12,
+        "conf":  0.01
+    },
+    {
+        "text":  "need",
+        "start":  7.74,
+        "dur":  0.19,
+        "conf":  0.19
+    },
+    {
+        "text":  ".",
+        "start":  7.93,
+        "dur":  0.61,
+        "conf":  0.07
+    },
+    {
+        "text":  "seems",
+        "start":  0,
+        "dur":  0.39,
+        "conf":  0
+    },
+    {
+        "text":  "fire",
+        "start":  0.39,
+        "dur":  0.5,
+        "conf":  0.77
+    },
+    {
+        "text":  "before",
+        "start":  1.02,
+        "dur":  0.57,
+        "conf":  0.41
+    },
+    {
+        "text":  "and",
+        "start":  1.71,
+        "dur":  0.14,
+        "conf":  0.42
+    },
+    {
+        "text":  "after",
+        "start":  1.85,
+        "dur":  0.47,
+        "conf":  0.25
+    },
+    {
+        "text":  "burning",
+        "start":  0,
+        "dur":  0.4,
+        "conf":  0.22
+    },
+    {
+        "text":  "calendar",
+        "start":  0.4,
+        "dur":  0.59,
+        "conf":  0.74
+    }
+]

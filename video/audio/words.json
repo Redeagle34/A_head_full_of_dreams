@@ -1,0 +1,488 @@
+﻿[
+    {
+        "text":  "but",
+        "start":  0,
+        "dur":  0.13,
+        "conf":  0
+    },
+    {
+        "text":  "who",
+        "start":  0.13,
+        "dur":  1.02,
+        "conf":  0
+    },
+    {
+        "text":  "love",
+        "start":  1.15,
+        "dur":  0.49,
+        "conf":  0
+    },
+    {
+        "text":  "more",
+        "start":  1.64,
+        "dur":  0.26,
+        "conf":  0.82
+    },
+    {
+        "text":  "and",
+        "start":  1.9,
+        "dur":  0.1,
+        "conf":  0.38
+    },
+    {
+        "text":  "more",
+        "start":  2,
+        "dur":  0.24,
+        "conf":  0.42
+    },
+    {
+        "text":  "allows",
+        "start":  2.24,
+        "dur":  0.44,
+        "conf":  0.01
+    },
+    {
+        "text":  "layers",
+        "start":  2.68,
+        "dur":  0.45,
+        "conf":  0.06
+    },
+    {
+        "text":  "that",
+        "start":  3.13,
+        "dur":  0.13,
+        "conf":  0
+    },
+    {
+        "text":  "some",
+        "start":  3.26,
+        "dur":  0.15,
+        "conf":  0.45
+    },
+    {
+        "text":  "one",
+        "start":  3.41,
+        "dur":  0.2,
+        "conf":  0.55
+    },
+    {
+        "text":  "form",
+        "start":  3.61,
+        "dur":  0.25,
+        "conf":  0.48
+    },
+    {
+        "text":  "than",
+        "start":  3.86,
+        "dur":  0.17,
+        "conf":  0.21
+    },
+    {
+        "text":  "ever",
+        "start":  4.03,
+        "dur":  0.22,
+        "conf":  0.82
+    },
+    {
+        "text":  "to",
+        "start":  4.25,
+        "dur":  0.19,
+        "conf":  0
+    },
+    {
+        "text":  "prevent",
+        "start":  4.44,
+        "dur":  0.46,
+        "conf":  0
+    },
+    {
+        "text":  "up",
+        "start":  4.9,
+        "dur":  0.22,
+        "conf":  0.54
+    },
+    {
+        "text":  "to",
+        "start":  5.26,
+        "dur":  0.15,
+        "conf":  0.69
+    },
+    {
+        "text":  "the",
+        "start":  5.41,
+        "dur":  0.09,
+        "conf":  0
+    },
+    {
+        "text":  "net",
+        "start":  5.5,
+        "dur":  0.28,
+        "conf":  0.01
+    },
+    {
+        "text":  "under",
+        "start":  5.78,
+        "dur":  0.25,
+        "conf":  0.46
+    },
+    {
+        "text":  "control",
+        "start":  6.03,
+        "dur":  0.64,
+        "conf":  0.55
+    },
+    {
+        "text":  "of",
+        "start":  6.75,
+        "dur":  0.17,
+        "conf":  0
+    },
+    {
+        "text":  "their",
+        "start":  6.92,
+        "dur":  0.14,
+        "conf":  0.82
+    },
+    {
+        "text":  "children",
+        "start":  7.06,
+        "dur":  0.45,
+        "conf":  0
+    },
+    {
+        "text":  "as",
+        "start":  7.51,
+        "dur":  0.37,
+        "conf":  0
+    },
+    {
+        "text":  "it",
+        "start":  7.9,
+        "dur":  0.21,
+        "conf":  0.06
+    },
+    {
+        "text":  "under",
+        "start":  8.11,
+        "dur":  0.2,
+        "conf":  0.32
+    },
+    {
+        "text":  "standard",
+        "start":  8.31,
+        "dur":  0.44,
+        "conf":  0.07
+    },
+    {
+        "text":  "causes",
+        "start":  8.75,
+        "dur":  0.55,
+        "conf":  0.75
+    },
+    {
+        "text":  "and",
+        "start":  9.32,
+        "dur":  0.13,
+        "conf":  0.28
+    },
+    {
+        "text":  "effects",
+        "start":  9.45,
+        "dur":  0.58,
+        "conf":  0.01
+    },
+    {
+        "text":  "would",
+        "start":  10.29,
+        "dur":  0.25,
+        "conf":  0.23
+    },
+    {
+        "text":  "seem",
+        "start":  10.54,
+        "dur":  0.33,
+        "conf":  0.03
+    },
+    {
+        "text":  "I",
+        "start":  11.03,
+        "dur":  0.19,
+        "conf":  0.13
+    },
+    {
+        "text":  "have",
+        "start":  11.22,
+        "dur":  0.28,
+        "conf":  0.16
+    },
+    {
+        "text":  "full",
+        "start":  11.5,
+        "dur":  0.21,
+        "conf":  0.48
+    },
+    {
+        "text":  "of",
+        "start":  11.71,
+        "dur":  0.11,
+        "conf":  0.69
+    },
+    {
+        "text":  "trees",
+        "start":  11.82,
+        "dur":  0.5,
+        "conf":  0.17
+    },
+    {
+        "text":  "and",
+        "start":  12.44,
+        "dur":  0.15,
+        "conf":  0
+    },
+    {
+        "text":  "here\u0027s",
+        "start":  12.59,
+        "dur":  0.25,
+        "conf":  0
+    },
+    {
+        "text":  "our",
+        "start":  12.84,
+        "dur":  0.1,
+        "conf":  0.42
+    },
+    {
+        "text":  "proposal",
+        "start":  12.94,
+        "dur":  0.53,
+        "conf":  0.16
+    },
+    {
+        "text":  "was",
+        "start":  13.93,
+        "dur":  0.19,
+        "conf":  0.01
+    },
+    {
+        "text":  "loses",
+        "start":  14.12,
+        "dur":  0.41,
+        "conf":  0.25
+    },
+    {
+        "text":  "an",
+        "start":  14.53,
+        "dur":  0.15,
+        "conf":  0.61
+    },
+    {
+        "text":  "interactive",
+        "start":  14.72,
+        "dur":  0.51,
+        "conf":  0.34
+    },
+    {
+        "text":  "at",
+        "start":  15.23,
+        "dur":  0.24,
+        "conf":  0.47
+    },
+    {
+        "text":  "the",
+        "start":  15.55,
+        "dur":  0.17,
+        "conf":  0.24
+    },
+    {
+        "text":  "vistas",
+        "start":  15.72,
+        "dur":  0.51,
+        "conf":  0
+    },
+    {
+        "text":  "yet",
+        "start":  16.23,
+        "dur":  0.28,
+        "conf":  0
+    },
+    {
+        "text":  "of",
+        "start":  16.51,
+        "dur":  0.11,
+        "conf":  0.1
+    },
+    {
+        "text":  "all",
+        "start":  16.62,
+        "dur":  0.17,
+        "conf":  0.14
+    },
+    {
+        "text":  "fires",
+        "start":  16.79,
+        "dur":  0.32,
+        "conf":  0.06
+    },
+    {
+        "text":  "are",
+        "start":  17.11,
+        "dur":  0.1,
+        "conf":  0
+    },
+    {
+        "text":  "not",
+        "start":  17.21,
+        "dur":  0.25,
+        "conf":  0.18
+    },
+    {
+        "text":  "until",
+        "start":  17.74,
+        "dur":  0.34,
+        "conf":  0.68
+    },
+    {
+        "text":  "which",
+        "start":  18.08,
+        "dur":  0.18,
+        "conf":  0.04
+    },
+    {
+        "text":  "ones",
+        "start":  18.26,
+        "dur":  0.22,
+        "conf":  0.61
+    },
+    {
+        "text":  "were",
+        "start":  18.48,
+        "dur":  0.12,
+        "conf":  0.87
+    },
+    {
+        "text":  "ejected",
+        "start":  18.6,
+        "dur":  0.46,
+        "conf":  0.25
+    },
+    {
+        "text":  "idealism",
+        "start":  19.08,
+        "dur":  0.65,
+        "conf":  0.01
+    },
+    {
+        "text":  "or",
+        "start":  19.73,
+        "dur":  0.15,
+        "conf":  0.23
+    },
+    {
+        "text":  "to",
+        "start":  19.94,
+        "dur":  0.44,
+        "conf":  0
+    },
+    {
+        "text":  "the",
+        "start":  20.42,
+        "dur":  0.08,
+        "conf":  0
+    },
+    {
+        "text":  "networks",
+        "start":  20.5,
+        "dur":  0.64,
+        "conf":  0.11
+    },
+    {
+        "text":  "which",
+        "start":  21.3,
+        "dur":  0.21,
+        "conf":  0.81
+    },
+    {
+        "text":  "has",
+        "start":  21.51,
+        "dur":  0.22,
+        "conf":  0.47
+    },
+    {
+        "text":  "ordered",
+        "start":  21.73,
+        "dur":  0.32,
+        "conf":  0
+    },
+    {
+        "text":  "the",
+        "start":  22.05,
+        "dur":  0.31,
+        "conf":  0
+    },
+    {
+        "text":  "tides",
+        "start":  22.38,
+        "dur":  0.35,
+        "conf":  0.23
+    },
+    {
+        "text":  "years",
+        "start":  22.73,
+        "dur":  0.33,
+        "conf":  0.43
+    },
+    {
+        "text":  "of",
+        "start":  23.08,
+        "dur":  0.15,
+        "conf":  0.88
+    },
+    {
+        "text":  "warts",
+        "start":  23.23,
+        "dur":  0.38,
+        "conf":  0.5
+    },
+    {
+        "text":  "on",
+        "start":  23.61,
+        "dur":  0.14,
+        "conf":  0.35
+    },
+    {
+        "text":  "the",
+        "start":  23.75,
+        "dur":  0.13,
+        "conf":  0.09
+    },
+    {
+        "text":  "NT",
+        "start":  23.88,
+        "dur":  0.27,
+        "conf":  0.06
+    },
+    {
+        "text":  "P.",
+        "start":  24.15,
+        "dur":  0.34,
+        "conf":  0.84
+    },
+    {
+        "text":  "and",
+        "start":  24.69,
+        "dur":  0.25,
+        "conf":  0.03
+    },
+    {
+        "text":  "with",
+        "start":  24.94,
+        "dur":  0.18,
+        "conf":  0.12
+    },
+    {
+        "text":  "twenty",
+        "start":  25.12,
+        "dur":  0.37,
+        "conf":  0.01
+    }
+]

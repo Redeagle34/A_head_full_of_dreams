@@ -1,47 +1,55 @@
 # Script: A Head Full of Dreams presentation video
 
-Format: 16:9 landscape, 1920×1080, 60 fps, 37 s.
-English voice-over. Pace: about 2.8 words per second (brisk but clear).
-Times mark where each line starts; the animation is currently synced to them. Once your recordings are in, the animation will be retimed to your voices (see "Recording the voices" below).
+Format: 16:9 landscape, 1920×1080, 60 fps, 30 s.
+English voice-over, brisk (about 3 words per second). Times mark where each line starts; once your recordings are in, the animation will be retimed to your voices (see "Recording the voices").
 
 | Time | Voice-over | On screen |
 |---|---|---|
-| 0:00 – 0:03.5 | "In a world with more and more fires…" | Green chalkboard. **MORE AND MORE FIRES** is written in the centre in textured, fire-coloured chalk, and hand-drawn flames grow on top of the letters. |
-| 0:03.5 – 0:05.6 | "…today more than ever we need to predict them," | A forecast chart pops in with **PREDICT** under it. |
-| 0:05.6 – 0:07.6 | "…prevent them…" | A shield with **PREVENT**. |
-| 0:07.6 – 0:09.6 | "…and take action in time when they are already burning." | A lightning bolt with **TAKE ACTION**. |
-| 0:09.6 – 0:11.4 | *(no voice, music hit)* | Zoom out on the letters: they flatten into one line, both ends curl down into a rainbow circle, and the circle becomes a colourful chalk Earth. |
-| 0:11.0 – 0:14.0 | "We are team A Head Full of Dreams, and this is our proposal." | The 5 teammates slide in, upright and at the same scale, cut out with a colour-cycling outline that follows each silhouette, all pointing at the Earth. **A HEAD FULL OF DREAMS** in shifting colours, with "this is our proposal" underneath. |
-| 0:14.0 – 0:17.4 | *(no voice, music rises)* | The team slides out. A 3D satellite (Suomi NPP) rises from below without stopping while the Earth shrinks a little, and glides into orbit. The chalkboard opens into space and the chalk Earth becomes the real Earth. Terra and Aqua circle on their own orbits. |
-| 0:17.4 – 0:18.0 | "Our solution…" | The satellite settles into orbit and the Earth starts turning toward North America. |
-| 0:18.0 – 0:20.0 | "…is an interactive app, our webpage,…" | The picture freezes and **OUR WEBPAGE** appears. Straight zoom out: what we were watching was the screen of a laptop, seen head-on. |
-| 0:20.0 – 0:25.2 | "…where you can see fires on the map, when the satellites pass overhead, and the fire history of any area." | On the screen the frozen picture turns into the real Burning Calendar page (the Guide map design), big and head-on: the cover with the Earth and play. A cursor presses *Play* and the map opens on the United States; it zooms out until the satellites show, picks one (its card opens on the left), then opens *Settings* → *Area numbers* for the fire history. |
-| 0:25.2 – 0:30.2 | "We built it on open data: NASA FIRMS detections from MODIS and VIIRS, gridMET weather, LANDFIRE, MODIS and Landsat imagery, and NIFC fire reports." | The laptop slides right and steps back; a **DATASETS** panel slides in from the left and lists the 9 sources, one by one. |
-| 0:30.2 – 0:37.0 | "And these algorithms: a satellite observation operator that makes VIIRS and MODIS comparable, fire grouping, and a LightGBM model that rates the danger of each fire." | DATASETS leaves to the left the way it came, the laptop keeps sliding left past the centre, and an **ALGORITHMS** panel arrives from the right to the centre, listing the 8 methods. |
+| 0:00 – 0:05.0 | "In a world with more and more fires, we need to predict them, prevent them, and take action." | NASA Space Apps Challenge logo on top. **MORE AND MORE FIRES** in textured fire-coloured chalk, flames growing on the letters; **PREDICT · PREVENT · TAKE ACTION** pop in under it. |
+| 0:05.0 – 0:06.1 | *(music hit)* | The letters flatten into a line, the line curls into a rainbow circle, the circle becomes a colourful chalk Earth. |
+| 0:06.1 – 0:08.3 | "We are A Head Full of Dreams, and this is our proposal." | The 5 teammates slide in, alternating left and right, cut out with colour-cycling outlines, heads aligned, all pointing at the Earth. **A HEAD FULL OF DREAMS** in shifting colours. |
+| 0:08.3 – 0:10.6 | *(music rises)* | A 3D satellite rises without stopping and glides into orbit; the chalkboard opens into space and the Earth becomes real. |
+| 0:10.6 – 0:12.0 | "Our webpage," | The picture freezes, **OUR WEBPAGE**, straight zoom out: it was a laptop screen. |
+| 0:12.0 – 0:14.9 | "built on open NASA data…" | The laptop slides right; **DATASETS** slides in from the left: 9 sources. |
+| 0:14.9 – 0:17.9 | "…and our own algorithms." | DATASETS leaves left, the laptop slides past the centre, **ALGORITHMS** arrives from the right: 8 methods. |
+| 0:17.9 – 0:18.4 | | ALGORITHMS leaves right and the laptop comes back to the centre, close and head-on. |
+| 0:18.4 – 0:21.2 | "Search any place and analyse its fires," | **ANALYSING FIRES IN A GIVEN AREA**: typing "Paradise, California", then the result card zooms in: the Camp Fire, 171,251 acres, rated Extreme. |
+| 0:21.2 – 0:23.9 | "watch any period play out," | **ANALYSING FIRES ACROSS A PERIOD**: Play is clicked and California's 2020 fire season runs month by month. |
+| 0:23.9 – 0:26.6 | "and compare satellite pictures before and after a fire." | **BEFORE AND AFTER A FIRE PICTURES**: the Camp Fire's Landsat pictures before and after, and its burn-severity map, zoomed in. |
+| 0:26.6 – 0:30.0 | *(no voice, big hit)* | The laptop is flung away, a wall of fire rises, white flash, **A HEAD FULL OF DREAMS** slams in with a shockwave, NASA Space Apps logo, embers, fade to black. |
 
-## Full text to record
+## Full text to record (about 21 seconds of speech)
 
-> In a world with more and more fires, today more than ever we need to predict them, prevent them, and take action in time when they are already burning.
+> In a world with more and more fires, we need to predict them, prevent them, and take action.
 >
-> We are team A Head Full of Dreams, and this is our proposal.
+> We are A Head Full of Dreams, and this is our proposal.
 >
-> Our solution is an interactive app, our webpage, where you can see fires on the map, when the satellites pass overhead, and the fire history of any area.
->
-> We built it on open data: NASA FIRMS detections from MODIS and VIIRS, gridMET weather, LANDFIRE, MODIS and Landsat imagery, and NIFC fire reports.
->
-> And these algorithms: a satellite observation operator that makes VIIRS and MODIS comparable, fire grouping, and a LightGBM model that rates the danger of each fire.
+> Our webpage, built on open NASA data and our own algorithms. Search any place and analyse its fires, watch any period play out, and compare satellite pictures before and after a fire.
 
 ## Recording the voices
 
-Put the recordings in `video/audio/` (WAV, MP3 or M4A all work). Two ways, pick one:
+**Already recorded** (`audio/voice_raw.mp4`, used in `audio/voice_clean.wav`): the intro (sped up 1.25×, pitch kept), the team line, and
+"Our solution is an interactive app, where you can see all the fires that are active, and which ones were detected by MODIS or by VIIRS".
+The clause "which are aboard Terra and Aqua, Suomi NPP and NOAA-20" was cut: it repeats the DATASETS panel and kept the video from fitting in 30 s.
 
-- **One file per line** (easiest to retime): `01_fires.wav`, `02_team.wav`, `03_solution.wav`, each starting right when the person starts speaking.
-- **One continuous take**: `voice.wav`, with a short pause (about half a second) between the three blocks above.
+**Second recording** (`audio/voice2_raw.mp4`): the five lines below, each placed on its slide at normal speed (final voice track: `audio/voice_full.wav`):
 
-What happens next: the start and end of every phrase are measured from the audio itself (silence detection with ffmpeg), the scenes are stretched or shortened so each animation beat lands on its words (title on "fires", the three icons on "predict / prevent / take action", the team on "A Head Full of Dreams", the freeze on "our webpage", the clicks on "satellites" and "history", the DATASETS panel on "open data", ALGORITHMS on "algorithms"), and the voice is mixed into the final MP4.
+| Line in the take | Line | Slide | Placed at |
+|---|---|---|---|
+| 2.0–4.4 s | "Our algorithms rate every fire's danger." | ALGORITHMS | 18.95 s |
+| 5.1–6.5 s | "Search any place," | Analysing fires in a given area | 21.2 s |
+| 6.8–8.5 s | "replay any period," | Analysing fires across a period | 23.25 s |
+| 9.0–11.5 s | "and see each fire, before and after." | Before and after a fire pictures | 25.1 s |
+| 12.7–13.6 s | "Burning Calendar." | Title slam | 28.6 s |
 
-## Check before recording
+Music and sound effects are synthesized by `tools/make_audio.py` (royalty-free, timed to the film's events); the music ducks under the voice in the final mix.
 
-- **"see fires on the map", not "around the world" or "live".** According to `PRODUCT.md`, Burning Calendar covers only the contiguous United States and Hawaii, and its data ends on 31 December 2025 (live detections need a FIRMS key and are not wired in). The script avoids promising worldwide or real-time coverage.
-- **What is on screen is real**: the fire dots on the globe are FIRMS detections from September 2020, and the laptop screens are captures of the real page (`assets/web/`, made with `tools/capture_web.mjs`).
-- **Credits to include** (in the description or at the end of the full video): Earth texture NASA Blue Marble; 3D models from NASA 3D Resources; fire detections from NASA FIRMS; map imagery inside the webpage from Esri World Imagery.
+## What is on screen is real
+
+- The laptop shows the real Burning Calendar page (the Guide map design), captured from the app with `tools/capture_features.mjs`: the Paradise search and its fire card, a Play run over 2020, and the Camp Fire (event 1564960) with its Landsat before/after pictures and burn severity from Earth Engine.
+- The fire dots on the globe are FIRMS detections from September 2020.
+- The script says "any place", but coverage is the contiguous United States and Hawaii (see `PRODUCT.md`), and data ends on 31 December 2025. If the jury may try other countries, say "any place in the U.S.".
+
+## Credits to include
+
+NASA Space Apps Challenge logo; Earth texture NASA Blue Marble; 3D models from NASA 3D Resources; fire detections from NASA FIRMS; Landsat imagery (USGS/NASA) via Google Earth Engine; map imagery inside the webpage from Esri World Imagery.

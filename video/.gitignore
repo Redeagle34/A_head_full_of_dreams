@@ -1,2 +1,4 @@
 out/
 tools/node_modules/
+audio/*16k.wav
+audio/*_clean.wav
