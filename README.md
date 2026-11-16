@@ -244,7 +244,7 @@ web/
   prevention.js         the Prevention panel and its layers
   satellites.js         satellites, their 3D models, scan lines and passes
   timeline.js           the time bar
-  media/                tutorial.mp4 and its poster (made from video/, see video/README.md)
+  media/                tutorial-30s.mp4 and its poster (made from video/, see video/README.md)
   classic.html, style.css, layout.js, tour.js   the previous map page, kept as classic.html
   drafts.html           the three design drafts side by side (draft-park, draft-forecast, the Guide map)
   report.html, report.css, report.js   scientific report page
