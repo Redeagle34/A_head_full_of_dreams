@@ -29,10 +29,6 @@
     <input id="place" type="search" placeholder="Find a place" autocomplete="off">
     <ul id="results" class="results" hidden></ul>
   </div>
-  <div class="field dates">
-    <label for="preset">Dates</label>
-    <select id="preset"></select>
-  </div>
 </header>
 
 <section class="intro-report" id="introReport" aria-labelledby="introReportTitle">
@@ -43,6 +39,9 @@
 </section>
 
 <div class="tools">
+  <button id="exitMap" class="exit" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    Exit the map</button>
   <button id="locate" class="locate" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
     My location</button>
@@ -59,19 +58,42 @@
 </nav>
 </div>
 
-<section class="lobe lobe-near" id="lobeNear" aria-label="Fires nearby">
-  <div class="lobe-head"><h2 id="nearYear"></h2>
-    <button class="mini" type="button" aria-expanded="true" aria-label="Minimize the fires near here"></button></div>
+<div class="rail" id="rail">
+<section class="lobe lobe-near card" id="lobeNear" aria-labelledby="nearTitle">
+  <div class="lobe-head"><h2 id="nearTitle">Fires around the red dot</h2>
+    <button class="mini" type="button" aria-expanded="true" aria-label="Minimize fires around the red dot"></button></div>
+  <p class="hint">The red dot is the middle of the Earth on screen; drag the Earth to move it. This card lists the fires the satellites saw around it in the dates of the time bar, and how dangerous each one was.</p>
+  <div class="year-line"><b id="nearYear"></b><span id="nearDates"></span></div>
   <p id="seasonLine" class="sub"></p>
+  <div class="near-where" role="group" aria-label="Where the red dot is">
+    <button id="nearMine" type="button">Go to my location</button>
+    <button id="nearPickBtn" type="button" aria-pressed="false">Pick a point</button>
+  </div>
+  <div class="near-filters">
+    <label>Within <select id="nearRadius"><option value="10">10 km</option><option value="25">25 km</option>
+      <option value="50" selected>50 km</option><option value="100">100 km</option><option value="250">250 km</option></select></label>
+    <label>Danger <select id="nearLevel"><option value="0" selected>All</option><option value="1">Moderate +</option>
+      <option value="2">High +</option><option value="3">Very High +</option></select></label>
+    <label>Size <select id="nearSize"><option value="0" selected>Any</option><option value="2">2 km² +</option>
+      <option value="10">10 km² +</option><option value="100">100 km² +</option></select></label>
+  </div>
+  <h3>Highest danger nearby</h3>
   <div id="sign" class="sign" role="img" aria-label="Danger levels"></div>
-  <button class="grow" type="button" data-lobe="near" aria-expanded="false">Fires near here</button>
+  <p id="nearCount" class="count"></p>
   <div id="nearFires" class="fires"></div>
+  <button id="nearAll" class="quiet-btn" type="button" hidden></button>
+  <details class="about">
+    <summary>What the danger levels mean</summary>
+    <p class="hint">The level is the chance that a fire grows past 1,000 acres, judged after the VIIRS satellites have watched it for two days. The table shows what happened at each level in 2022 to 2025. It suggests where to look first; it is not a dispatch order.</p>
+    <table id="nearLevels"></table>
+  </details>
+  <button id="nearMore" class="quiet-btn" type="button">Missed fires and all fire tools</button>
 </section>
 
-<section class="lobe lobe-wheel" id="lobeWheel" aria-label="The year here">
+<section class="lobe lobe-wheel card" id="lobeWheel" aria-label="The year here">
   <div class="lobe-head"><span class="mini-label">The year here</span>
     <button class="mini" type="button" aria-expanded="true" aria-label="Minimize the year here"></button></div>
-  <button class="grow" type="button" data-lobe="wheel" aria-expanded="false">The year here</button>
+  <button class="grow" type="button" data-lobe="wheel" aria-expanded="false">How to read the wheel</button>
   <div id="wheel" class="wheel"></div>
   <div class="wheel-side">
     <div class="stepper">
@@ -81,9 +103,10 @@
     </div>
     <p id="wheelNote" class="sub"></p>
     <p class="hint">The ring is one year, January at the top. A petal is a week: its length is how much usually burns then.
-      Red petals are the usual fire season. White dots are the chosen year; red dots are the dates on the map. Pick a petal to see that week on the map.</p>
+      Red petals are the usual fire season. Blue dots are the chosen year; red dots are the dates on the map. Pick a petal to see that week on the map.</p>
   </div>
 </section>
+</div>
 
 <aside id="legend" class="legend" aria-live="polite">
   <div id="legendTitle" class="legend-title"></div>
@@ -97,8 +120,9 @@
     <button id="tlPlay" type="button" aria-pressed="false" title="Slide the period forward through time">Play</button>
     <label class="tl-date">From <input id="start" type="date"></label>
     <label class="tl-date">To <input id="end" type="date"></label>
-    <b id="tlLength" class="tl-length"></b>
     <button id="tlMore" class="tl-more" type="button" aria-expanded="false">More</button>
+    <b id="tlLength" class="tl-length tl-extra"></b>
+    <label class="tl-date tl-extra">Dates <select id="preset"></select></label>
     <span class="tl-group tl-extra"><span>Period</span>
       <button id="tlShorter" type="button" title="Halve the period">Shorter</button>
       <button id="tlLonger" type="button" title="Double the period">Longer</button></span>

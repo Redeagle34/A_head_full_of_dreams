@@ -85,13 +85,15 @@ function watchCalendar(fn) {
 }
 
 /* Fires within `km` of the centre of the map, in the dates of the time bar, most dangerous first.
+   `km` is a number, or a function that returns the distance chosen now.
    fn receives { fires, km, place: {lat, lon} } */
-function watchNearby(km, fn) {
+function watchNearby(distance, fn) {
   let timer = null, request = 0, lastKey = "";
   const load = () => {
     clearTimeout(timer);
     timer = setTimeout(async () => {
-      const c = map.getCenter(), key = `${c.lat.toFixed(3)},${c.lng.toFixed(3)},${state.start},${state.end}`;
+      const km = typeof distance === "function" ? distance() : distance;
+      const c = map.getCenter(), key = `${c.lat.toFixed(3)},${c.lng.toFixed(3)},${km},${state.start},${state.end}`;
       if (key === lastKey) return;
       lastKey = key;
       const mine = ++request;

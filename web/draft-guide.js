@@ -1,38 +1,67 @@
-/* Draft 3, "Guide map": the lobes and the year wheel.
+/* Draft 3, "Guide map": the stages, the left column, the fires card and the year wheel.
 
    Uses Draft (draft-common.js) and the helpers of app.js.
 
    Sections
-     1. Stages        the intro (veil and play), the opening, the live Earth; lobes, settings, report
-     2. Satellites    the others stay in orbit; the picked one opens a bubble and the Earth turns under it
-     3. Fires lobe    the year, the sign and the list for the fires around the red dot
-     4. Year wheel    one ring is one year; a petal is a week
+     1. Stages        the intro (veil and play), the opening, the live Earth, and the exit back
+     2. Left column   every card and panel stacks here, so nothing covers anything else
+     3. Settings      the tools menu, the map credits, the report builder
+     4. Satellites    the others stay in orbit; the picked one opens a card and the Earth turns under it
+     5. Fires card    fires around the red dot: where, how far, how dangerous, how large
+     6. Year wheel    one ring is one year; a petal is a week
 */
 Draft.ready(() => {
 
 const el = id => document.getElementById(id);
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
-// ---------- 1. Stages and lobes ----------
+// ---------- 1. Stages ----------
 
 // The page opens on the name, the Earth under a white veil and a play button. Play sends the
 // Earth to the centre, then its blue fills the window and the tools come in around it.
-function begin() {
+async function begin() {
   if (document.body.dataset.stage !== "intro") return;
   document.body.dataset.stage = "opening";
-  setTimeout(() => { document.body.dataset.stage = "live"; setTimeout(drawWheel, 500); }, 760);
+  await wait(760);
+  document.body.dataset.stage = "live";
+  await wait(500);
+  drawWheel();
+}
+async function leave() {
+  if (document.body.dataset.stage !== "live") return;
+  closeAll();
+  document.body.dataset.stage = "opening";
+  await wait(620);
+  document.body.dataset.stage = "intro";
+  el("begin").focus({ preventScroll: true });
 }
 el("veil").onclick = begin;
+el("exitMap").onclick = leave;
 el("begin").focus({ preventScroll: true });
+
+function closeAll() {
+  showTools(false);
+  window.satelliteView.toggle(false);
+  window.fireView.toggle(false);
+  for (const [panel, button] of [["filters", "filtersBtn"], ["panel", "panelBtn"]])
+    if (!el(panel).hidden) el(button).click();
+}
+
+// ---------- 2. Left column ----------
+
+// The satellite card and the panels of the settings join the column above the two cards, and
+// push them down; the column scrolls when it is full.
+const rail = el("rail");
+for (const id of ["panel", "filters", "firePanel", "satPanel"]) rail.prepend(el(id));
 
 function open(which) {
   document.body.dataset.open = which;
   for (const b of document.querySelectorAll(".grow")) b.setAttribute("aria-expanded", String(b.dataset.lobe === which));
-  setTimeout(drawWheel, 430);                     // after the swell, at the new size
 }
 for (const b of document.querySelectorAll(".grow"))
   b.onclick = () => open(document.body.dataset.open === b.dataset.lobe ? "map" : b.dataset.lobe);
 
-// Each lobe folds down to a capsule and opens again.
+// Each card folds down to its title and opens again.
 const ICON_MINI = { open: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>`,
                     shut: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg>` };
 for (const b of document.querySelectorAll(".mini")) {
@@ -42,25 +71,27 @@ for (const b of document.querySelectorAll(".mini")) {
     b.innerHTML = small ? ICON_MINI.shut : ICON_MINI.open;
     b.setAttribute("aria-expanded", String(!small));
     b.setAttribute("aria-label", (small ? "Show " : "Minimize ") + name);
-    if (small && document.body.dataset.open === lobe.querySelector(".grow")?.dataset.lobe) open("map");
-    if (!small) setTimeout(drawWheel, 430);
   };
   b.onclick = () => set(!lobe.classList.contains("min"));
   set(false);
 }
 
-// Settings: one button opens the tools (fires, satellites, layers, numbers, report).
+// ---------- 3. Settings ----------
+
 const toolsBtn = el("toolsBtn"), tools = el("actions");
-const showTools = on => { tools.hidden = !on; toolsBtn.setAttribute("aria-expanded", String(on)); };
+function showTools(on) { tools.hidden = !on; toolsBtn.setAttribute("aria-expanded", String(on)); }
 toolsBtn.onclick = () => showTools(tools.hidden);
-tools.addEventListener("click", e => { if (e.target.closest("button")) showTools(false); });
+tools.addEventListener("click", e => {
+  if (!e.target.closest("button")) return;
+  showTools(false);
+  rail.scrollTo({ top: 0, behavior: "smooth" });                     // the panel just opened is at the top
+});
 addEventListener("pointerdown", e => { if (!tools.hidden && !e.target.closest(".tools")) showTools(false); });
 
 addEventListener("keydown", e => {
   if (e.key !== "Escape" || !el("satLightbox")?.hidden) return;      // Escape closes the enlarged picture first
   if (!tools.hidden) { showTools(false); toolsBtn.focus(); }
-  else if (window.satelliteView && !el("satCard").hidden) window.satelliteView.toggle(false);
-  else open("map");
+  else if (!el("satPanel").hidden) window.satelliteView.toggle(false);
 });
 
 // The map credits leave the map and sit at the foot of the settings.
@@ -86,7 +117,7 @@ el("introGet").onclick = () => {
   location.href = `report.html?${q}`;
 };
 
-// ---------- 2. Satellites ----------
+// ---------- 4. Satellites ----------
 
 const ICON = {
   expand: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -101,28 +132,64 @@ shut.type = "button"; shut.className = "sat-close"; shut.innerHTML = ICON.close;
 shut.onclick = () => window.satelliteView.toggle(false);
 el("satCard").prepend(shut);
 
-// The others stay in orbit; the Earth turns until the picked satellite looks straight down at it,
-// with the satellite set to the right of the bubble.
+// The others stay in orbit; the Earth turns until the picked satellite looks straight down at
+// it, set in the free part of the screen to the right of the column.
 Satellites.options.keepOthers = true;
 Satellites.options.onSelect = sat => {
+  rail.scrollTo({ top: 0, behavior: "smooth" });
   if (!sat?.here) return;
-  map.flyTo({ center: [sat.here.lon, sat.here.lat], zoom: Math.min(map.getZoom(), 2.3), duration: 1800, offset: [190, 30], essential: true });
+  map.flyTo({ center: [sat.here.lon, sat.here.lat], zoom: Math.min(map.getZoom(), 2.3), duration: 1800, offset: [200, 20], essential: true });
 };
 
-// ---------- 3. Fires lobe ----------
+// ---------- 5. Fires card ----------
 
-el("sign").innerHTML = Draft.LEVELS.map((name, i) => `<span style="--c:${Draft.LEVEL_COLOR[i]}">${name}</span>`).join("");
+const pick = { on: false };
+el("sign").innerHTML = Draft.LEVELS.map((name, i) => `<span style="--c:${Draft.LEVEL_COLOR[i]}"><i></i>${name}</span>`).join("");
+let near = { fires: [] }, showAll = false;
 
-Draft.watchNearby(50, near => {
-  const top = Draft.worst(near.fires), sign = el("sign");
+function drawNear() {
+  const level = +el("nearLevel").value, size = +el("nearSize").value, km = el("nearRadius").value;
+  const fires = near.fires.filter(f => (level === 0 || (Draft.levelOf(f) ?? -1) >= level) && f.area_km2 >= size);
+  const top = Draft.worst(fires), sign = el("sign");
   [...sign.children].forEach((s, i) => s.classList.toggle("on", i === top));
   sign.setAttribute("aria-label", top < 0 ? "No rated fire nearby" : `Highest danger level nearby: ${Draft.LEVELS[top]}`);
-  const list = el("nearFires");
-  list.replaceChildren(...near.fires.slice(0, 14).map(Draft.fireRow));
-  if (!near.fires.length) list.innerHTML = `<p class="hint">Nothing to list here. Slide the map or stretch the dates.</p>`;
-});
+  el("nearCount").textContent = near.error ? near.error
+    : !fires.length ? `None within ${km} km in these dates.`
+    : `${Draft.plural(fires.length, "fire")} within ${km} km${top < 0 ? ", none rated" : `, the worst rated ${Draft.LEVELS[top]}`}.`;
+  el("nearFires").replaceChildren(...(showAll ? fires : fires.slice(0, 4)).map(Draft.fireRow));
+  el("nearAll").hidden = fires.length <= 4;
+  el("nearAll").textContent = showAll ? "Show fewer" : `Show all ${fires.length}`;
+}
+Draft.watchNearby(() => +el("nearRadius").value, n => { near = n; drawNear(); });
+for (const id of ["nearLevel", "nearSize"]) el(id).onchange = () => { showAll = false; drawNear(); };
+el("nearAll").onclick = () => { showAll = !showAll; drawNear(); };
 
-// ---------- 4. Year wheel ----------
+// Where the red dot is: my location, or a point picked on the Earth.
+el("nearMine").onclick = () => {
+  if (!navigator.geolocation) return el("nearCount").textContent = "Location is not available in this browser.";
+  el("nearCount").textContent = "Finding your location…";
+  navigator.geolocation.getCurrentPosition(
+    p => { el("areaName").textContent = "Around my location"; map.flyTo({ center: [p.coords.longitude, p.coords.latitude], zoom: 8 }); },
+    () => el("nearCount").textContent = "Location was not shared. Drag the Earth or pick a point.");
+};
+function setPick(on) {
+  pick.on = on;
+  el("nearPickBtn").setAttribute("aria-pressed", String(on));
+  el("nearPickBtn").textContent = on ? "Now click the Earth" : "Pick a point";
+  map.getCanvas().style.cursor = on ? "crosshair" : "";
+}
+el("nearPickBtn").onclick = () => setPick(!pick.on);
+map.on("click", e => { if (pick.on) { setPick(false); map.flyTo({ center: e.lngLat, zoom: Math.max(map.getZoom(), 7) }); } });
+el("nearMore").onclick = () => { window.fireView.toggle(true); rail.scrollTo({ top: 0, behavior: "smooth" }); };
+
+api("/api/danger/levels", {}).then(levels => {
+  const pct = v => `${d3.format(".2~r")(v * 100)}%`;
+  el("nearLevels").innerHTML = `<tr><th>Level</th><th>Grew past 1,000 acres</th><th>Typical size</th></tr>` +
+    levels.map(l => `<tr><td><i class="dot" style="background:${Draft.LEVEL_COLOR[l.level]}"></i>${l.name}</td>
+      <td>${pct(l.reached_1000)}</td><td>${d3.format(",")(l.median_acres)} acres</td></tr>`).join("");
+}).catch(() => { el("nearLevels").innerHTML = ""; });
+
+// ---------- 6. Year wheel ----------
 
 let cal = null, year = null, followDates = true;
 const TAU = 2 * Math.PI, MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -130,23 +197,22 @@ const TAU = 2 * Math.PI, MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Ju
 function drawWheel() {
   if (!cal) return;
   if (followDates || year == null) year = +state.end.slice(0, 4);
-  const big = document.body.dataset.open === "wheel";
-  const S = 400, c = S / 2, r0 = big ? 64 : 58, R = 172, clim = cal.clim;
+  const S = 400, c = S / 2, r0 = 62, R = 168, clim = cal.clim;
   const mine = cal.rows.filter(r => r.yr === year);
   const len = d3.scaleSqrt([0, Math.max(1, d3.max(clim.p50), d3.max(mine, r => r.value) || 0)], [0, R - r0]);
   const angle = w => (w - 1) / 52 * TAU;          // 0 = January, at the top
-  const petal = d3.arc().innerRadius(r0).cornerRadius(5).padAngle(0.012);
+  const petal = d3.arc().innerRadius(r0).cornerRadius(3).padAngle(0.012);
   const at = (w, r) => [c + Math.sin(angle(w) + TAU / 104) * r, c - Math.cos(angle(w) + TAU / 104) * r];
   const inPeriod = r => addDays(r.date, 6) >= state.start && r.date <= state.end;
   const weeks = d3.range(1, 53);
-  el("wheel").innerHTML = `<svg viewBox="0 0 ${S} ${S}" role="img" aria-label="The year ${year} here, week by week, against a usual year">
+  el("wheel").innerHTML = `<svg viewBox="-24 -24 ${S + 48} ${S + 48}" role="img" aria-label="The year ${year} here, week by week, against a usual year">
     <g transform="translate(${c} ${c})">
-      ${weeks.map(w => `<path class="petal" data-wk="${w}" fill="${clim.critical[w - 1] ? "var(--crimson)" : "var(--marble)"}" stroke="var(--gochujang)" stroke-width="1.5"
+      ${weeks.map(w => `<path class="petal" data-wk="${w}" fill="${clim.critical[w - 1] ? "var(--crimson)" : "var(--marble)"}"
           d="${petal({ startAngle: angle(w), endAngle: angle(w + 1), outerRadius: r0 + Math.max(7, len(clim.p50[w - 1])) })}"></path>`).join("")}
     </g>
     ${mine.filter(r => r.value > 0 && r.wk <= 52).map(r => { const [x, y] = at(r.wk, r0 + len(r.value));
-        return `<circle cx="${x}" cy="${y}" r="${r.flag ? 6 : 3.4}" fill="${inPeriod(r) ? "var(--crimson)" : "var(--white)"}" stroke="${inPeriod(r) ? "var(--white)" : "var(--cosmos)"}" stroke-width="2" pointer-events="none"></circle>`; }).join("")}
-    ${big ? MONTHS.map((m, i) => { const [x, y] = at(1 + i * 52 / 12 + 1.6, R + 16); return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle">${m}</text>`; }).join("") : ""}
+        return `<circle cx="${x}" cy="${y}" r="${r.flag ? 6 : 3.6}" fill="${inPeriod(r) ? "var(--crimson)" : "var(--cosmos)"}" stroke="var(--white)" stroke-width="1.5" pointer-events="none"></circle>`; }).join("")}
+    ${MONTHS.map((m, i) => { const [x, y] = at(1 + i * 52 / 12 + 1.6, R + 20); return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle">${m}</text>`; }).join("")}
     <text class="yr" x="${c}" y="${c}" text-anchor="middle" dominant-baseline="central">${year}</text>
   </svg>`;
   for (const p of el("wheel").querySelectorAll(".petal")) p.onclick = () => {
@@ -168,12 +234,19 @@ function step(by) {
 el("wheelPrev").onclick = () => step(-1);
 el("wheelNext").onclick = () => step(1);
 
-const nearYear = () => { el("nearYear").textContent = state.end.slice(0, 4); };
-Draft.watchCalendar(c => { cal = c; nearYear(); el("seasonLine").textContent = Draft.seasonSentence(c, state.end); drawWheel(); });
+// The year and the dates at the top of the fires card follow the time bar.
+function dates() {
+  el("nearYear").textContent = state.end.slice(0, 4);
+  const f = d => new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  el("nearDates").textContent = `${f(state.start)} to ${f(state.end)}`;
+}
+Draft.watchCalendar(c => { cal = c; dates(); el("seasonLine").textContent = Draft.seasonSentence(c, state.end); drawWheel(); });
 let seen = "";
 setInterval(() => {
   const k = `${state.start}|${state.end}`;
-  if (k !== seen && cal) { seen = k; followDates = true; nearYear(); el("seasonLine").textContent = Draft.seasonSentence(cal, state.end); drawWheel(); }
+  if (k === seen) return;
+  seen = k; dates();
+  if (cal) { followDates = true; el("seasonLine").textContent = Draft.seasonSentence(cal, state.end); drawWheel(); }
 }, 300);
 
 });

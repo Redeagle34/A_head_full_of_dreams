@@ -1,168 +1,68 @@
 /* Draft 3, "Guide map".
 
-   Drawn like the fold-out guide of a zoo or a garden: flat color, no shadows, and every area of
-   the page is a soft lobe. The night-blue ground is the sky; the large Blue Marble lobe holds
-   the Earth and runs off the right and bottom edges. A crimson lobe holds the fires near you, a
-   deep red lobe holds the year as a wheel, a red capsule holds time.
-   The page opens on three things: the name, the Earth under a white veil, and a play button
-   (with the report builder below the name). Play sends the Earth to the centre, then its blue
-   fills the window and the tools come in: the time capsule in the centre, search top left,
-   my location and settings top right, the fires and the year as lobes that fold down.
-   Pick a satellite and a night bubble opens in the top left.
+   The page opens on three things: the name, the Earth under a white veil, and a play button,
+   with the report builder below the name. Play sends the Earth to the centre, then its blue
+   fills the window and the tools come in around it:
+     top left     the name and Find a place
+     top right    Exit the map, My location, Settings (fires, satellites, layers, numbers, report)
+     left column  every card stacks here and pushes the others down, so nothing covers anything:
+                  a picked satellite, an open panel, the fires around the red dot, the year wheel
+     right        the legend
+     bottom       the time bar, beside the column
+   Cards are white with red controls; corners are small.
 
    Palette (from the owner, 2026-11-15)
      Cosmos blue #003049 · Blue Marble #669BBC · Crimson Blaze #C1121F · Varden #AE1F23 · Gochujang Red #780000
-     White carries text on the dark colors and the ground of panels; the five danger-level
-     colors stay as they are, because they are the U.S. fire danger signs.
+     The five danger-level colors stay as they are, because they are the U.S. fire danger signs.
 
    Change here
-     tokens (first block)              palette, face, corner shapes
-     .lobe-map / -near / -wheel        where each lobe sits, at rest and swollen
-     body[data-stage=...]              intro, opening, live: the three stages of the page
-     body[data-open=...]               near, wheel: the swollen states
-     #satPanel:has(#satCard...)        the satellite bubble
+     tokens (first block)        palette, face, corners
+     body[data-stage=...]        intro, opening, live: the three stages of the page
+     .rail                       the left column and its cards
 */
 :root {
   --cosmos: #003049; --marble: #669bbc; --crimson: #c1121f; --varden: #ae1f23; --gochujang: #780000; --white: #ffffff;
-  --ink: var(--white); --muted: rgba(255, 255, 255, .8); --surface: var(--white); --field: rgba(255, 255, 255, .16); --line: rgba(255, 255, 255, .4);
-  --accent: var(--white); --on-accent: var(--cosmos); --focus: var(--white);
-  --r-panel: 40px; --r-control: 999px; --r-track: 999px;
+  --paper: #ffffff; --paper-2: #eef3f6;
+  --ink: var(--cosmos); --muted: #476576; --surface: var(--paper); --field: var(--paper-2); --line: rgba(0, 48, 73, .18);
+  --accent: var(--crimson); --on-accent: var(--white); --focus: var(--crimson);
+  --r-panel: 14px; --r-control: 10px; --r-track: 8px;
   --font: "Schibsted Grotesk", system-ui, sans-serif; --font-display: var(--font);
-  --track: rgba(0, 0, 0, .26); --window: rgba(255, 255, 255, .34); --window-edge: var(--white);
-  --swell: .45s cubic-bezier(.34, 1.56, .64, 1);
-  --left-col: 340px;                  /* the name, the search and the dates */
+  --track: rgba(0, 48, 73, .1); --window: rgba(193, 18, 31, .16); --window-edge: var(--crimson);
+  --left-col: 340px;                  /* intro: the name and the report */
+  --rail: 380px;                      /* live: the left column */
+  --gap: 20px;
 }
 html, body { height: 100%; }
-body { background: var(--cosmos); overflow: hidden; padding-top: var(--sw); }
+body { background: var(--cosmos); color: var(--white); overflow: hidden; padding-top: var(--sw); }
 body *, body *::before { font-weight: 500 !important; }            /* one face, one weight: size does the ranking */
-button, .button { background: var(--white); color: var(--cosmos); border: 0; }
-button:hover, .button:hover { background: var(--marble); color: var(--cosmos); }
-input[type="search"], input[type="date"], select { background: var(--white); color: var(--cosmos); border: 0; color-scheme: light; }
+button, .button { background: var(--crimson); color: var(--white); border: 0; border-radius: var(--r-control); }
+button:hover, .button:hover { background: var(--varden); color: var(--white); }
+input[type="search"], input[type="date"], select { background: var(--paper-2); color: var(--cosmos); border: 0; border-radius: var(--r-control); color-scheme: light; }
 input::placeholder { color: #4e6a7b; }
-h3 { letter-spacing: 0; text-transform: none; font-size: 15px; color: var(--ink); }
-/* light surfaces: panels, the search results, popups, the legend, the enlarged picture */
-.sheet, .sat-panel, .results, .legend, .lightbox-inner, .maplibregl-popup-content {
-  --ink: var(--cosmos); --muted: #3f5d6e; --field: rgba(0, 48, 73, .08); --line: rgba(0, 48, 73, .26); --accent: var(--cosmos); --on-accent: var(--white); --focus: var(--crimson);
-  color: var(--ink); }
+h3 { letter-spacing: 0; text-transform: none; font-size: 14px; color: var(--muted); margin: 4px 0 0; }
 
-/* ---- the lobes ---- */
-.lobe { position: fixed; transition: width var(--swell), height var(--swell), transform var(--swell), border-radius var(--swell),
-                                     left var(--swell), right var(--swell), top var(--swell), bottom var(--swell), opacity .3s; }
-.lobe-map { z-index: 1; right: -7vw; top: calc(var(--sw) + 2vh); width: calc(107vw - var(--left-col) - 20px); height: 110vh; overflow: hidden; background: var(--marble);
-            border-radius: 40% 60% 34% 66% / 34% 42% 58% 66%; cursor: pointer; }
+/* white surfaces: cards, panels, popups, the legend, the time bar, the enlarged picture */
+.card, .sheet, .sat-panel, .results, .legend, .timeline, .actions, .lightbox-inner, .maplibregl-popup-content {
+  background: var(--paper); color: var(--ink); border-radius: var(--r-panel); }
+
+/* ---- the Earth ---- */
+.lobe-map { position: fixed; z-index: 1; right: -7vw; top: calc(var(--sw) + 2vh); width: calc(107vw - var(--left-col) - 20px); height: 110vh;
+            overflow: hidden; background: var(--marble); border-radius: 40% 60% 34% 66% / 34% 42% 58% 66%;
+            transition: width .6s cubic-bezier(.3, .9, .3, 1), height .6s cubic-bezier(.3, .9, .3, 1), right .6s cubic-bezier(.3, .9, .3, 1),
+                        top .6s cubic-bezier(.3, .9, .3, 1), border-radius .6s cubic-bezier(.3, .9, .3, 1); }
 #map { position: absolute; inset: 0; }
-.cross { position: absolute; left: 50%; top: 46%; width: 24px; height: 24px; margin: -12px 0 0 -12px; pointer-events: none; z-index: 2;
+.cross { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; pointer-events: none; z-index: 2;
          border-radius: 50%; background: var(--crimson); border: 3px solid var(--white); }
-
-.lobe-near { z-index: 6; left: 24px; bottom: 24px; width: 410px; height: 262px; overflow: hidden; padding: 24px 30px; background: var(--crimson);
-             border-radius: 58px 76px 64px 90px / 70px 60px 84px 58px; display: grid; gap: 10px; align-content: start; }
-.lobe-near h2 { font-size: 23px; line-height: 1.08; letter-spacing: -.03em; text-wrap: balance; }
-.lobe-near .sub { font-size: 14.5px; }
-.lobe-near .fires { overflow: auto; min-height: 0; }
-
-.lobe-wheel { z-index: 5; left: calc(var(--left-col) - 70px); bottom: 300px; width: 236px; height: 236px; padding: 14px; background: var(--gochujang);
-              border-radius: 50%; display: grid; place-items: center; }
-.lobe-wheel .grow { position: absolute; left: 50%; top: -14px; transform: translateX(-50%); z-index: 2; }
-.wheel { width: 100%; height: 100%; }
-.wheel svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.wheel .petal { cursor: pointer; transition: opacity .15s; }
-.wheel .petal:hover { opacity: .72; }
-.wheel text { font: 12px var(--font); fill: var(--white); }
-.wheel .yr { font-size: 44px; letter-spacing: -.06em; }
-.wheel-side { display: none; gap: 12px; align-content: center; }
-.stepper { display: flex; align-items: center; gap: 12px; }
-.stepper b { font-size: 34px; letter-spacing: -.05em; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
-
-/* the capsule that opens a lobe: a round chip rides its trailing edge and crosses over when live */
-.grow, .actions button { display: inline-flex; align-items: center; gap: 10px; padding: 6px 8px 6px 16px; min-height: 40px; justify-self: start; }
-.grow::after, .actions button::after { content: ""; width: 26px; height: 26px; border-radius: 50%; background: var(--chip, var(--crimson)); flex: none; }
-.grow[aria-expanded="true"], .actions button[aria-expanded="true"] { flex-direction: row-reverse; padding: 6px 16px 6px 8px; background: var(--cosmos); color: var(--white); }
-.lobe-near .grow { --chip: var(--gochujang); }
-.lobe-wheel .grow { --chip: var(--marble); }
-
-/* swollen states */
-body[data-open="near"] .lobe-near { width: min(600px, 44vw); height: calc(100vh - var(--sw) - 48px); border-radius: 84px 110px 96px 130px / 100px 90px 120px 86px; }
-body[data-open="near"] .lobe-wheel { transform: translate(280px, 60px) scale(.7); }
-body[data-open="near"] .lobe-map { transform: translateX(14vw); border-radius: 46% 54% 40% 60% / 46% 40% 60% 54%; }
-body[data-open="wheel"] .lobe-wheel { left: 50px; bottom: 50px; width: min(1060px, 78vw); height: min(640px, calc(100vh - var(--sw) - 140px)); padding: 30px 60px 30px 40px;
-                                      border-radius: 320px 240px 300px 260px / 300px 320px 280px 320px; grid-template-columns: minmax(0, 560px) minmax(0, 1fr); gap: 30px; place-items: stretch; }
-body[data-open="wheel"] .lobe-wheel .grow { left: 90px; top: 22px; transform: none; }
-body[data-open="wheel"] .wheel-side { display: grid; }
-body[data-open="wheel"] .lobe-near { transform: translateY(120%); }
-body[data-open="wheel"] .lobe-map { transform: translateX(26vw); border-radius: 52% 48% 44% 56% / 44% 50% 50% 56%; }
-body:not([data-open="near"]) .lobe-near .fires { display: none; }
-
-/* ---- name, search and the capsules along the coast ---- */
-.bar { position: fixed; z-index: 4; left: 28px; top: calc(var(--sw) + 24px); width: calc(var(--left-col) - 28px); display: grid; gap: 12px; }
-.brand { font-size: clamp(52px, 5.4vw, 82px); line-height: .92; letter-spacing: -.06em; }
-.bar label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.bar .search input { font-size: 17px; padding: 12px 20px; min-height: 48px; }
-.bar .dates select { min-height: 44px; padding-left: 18px; }
-
-/* ---- danger sign: five capsules, the live one swells ---- */
-.sign { display: flex; gap: 5px; align-items: center; height: 40px; }
-.sign span { flex: 1; height: 16px; border-radius: 999px; background: var(--c); border: 2px solid var(--white); font-size: 0; display: grid; place-items: center;
-             transition: flex var(--swell), height var(--swell); color: #111; }
-.sign span.on { flex: 3.4; height: 38px; font-size: 14.5px; }
-
-.fire { background: none; color: inherit; border-radius: 0; border-bottom: 2px solid var(--line); padding: 10px 0; }
-.fire:hover { background: rgba(255, 255, 255, .14); color: inherit; }
-.fire .badge { border: 2px solid var(--white); border-radius: 999px; }
-.sheet .fire .badge, .sat-panel .fire .badge { border-color: var(--cosmos); }
-
-/* ---- time: a red capsule along the bottom ---- */
-.timeline { position: fixed; z-index: 4; left: 456px; right: 24px; bottom: 20px; background: var(--varden); border-radius: 44px; padding: 14px 26px 6px; display: grid; gap: 6px;
-            --muted: rgba(255, 255, 255, .86); --line: rgba(255, 255, 255, .45); }
-#tlPlay { min-width: 84px; }
-#tlPlay[aria-pressed="true"] { background: var(--cosmos); color: var(--white); }
-body[data-open="wheel"] .timeline { transform: translateY(140%); }
-body[data-open="near"] .timeline { left: calc(min(600px, 44vw) + 48px); }
-
-.legend-note { display: none; }
-.legend { position: fixed; z-index: 3; right: 24px; top: calc(var(--sw) + 128px); width: 270px; padding: 16px 20px; background: var(--white); border-radius: 30px 38px 30px 44px; }
-
-/* ---- panels: a white lobe over the left side ---- */
-.sheet, .sat-panel { position: fixed; z-index: 30; left: 22px; top: calc(var(--sw) + 22px); bottom: 22px; width: min(440px, calc(100vw - 44px)); overflow: auto;
-                     padding: 30px 30px 34px; background: var(--white); border-radius: 54px 70px 58px 84px / 70px 58px 80px 60px;
-                     display: grid; gap: 12px; align-content: start; animation: swell .45s cubic-bezier(.34, 1.56, .64, 1); scrollbar-width: thin; }
-@keyframes swell { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
-.sheet button, .sat-panel button, .sheet select, .sat-panel select, .sheet .button { background: #e3edf3; color: var(--cosmos); }
-.sheet button:hover, .sat-panel button:hover { background: var(--marble); }
-.sheet button[aria-pressed="true"], .sat-panel button[aria-pressed="true"], .sheet button[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
-.choices label { border: 2px solid var(--line); border-radius: 26px; }
-.choices label:has(input:checked) { border-color: var(--cosmos); background: #e3edf3; box-shadow: none; }
-.panel .chart { background: var(--cosmos); border-radius: 24px; padding: 10px; }
-.sat-hero { margin: -30px -30px 0; }
-.sat-image { border-radius: 0; }
-.lightbox-inner { border-radius: 50px; padding: 30px; }
-.maplibregl-popup-content { border: 0; border-radius: 26px 30px 26px 34px; }
-
-/* ---- the satellite bubble: a window of night sky in the top-left of the Earth lobe ---- */
-#satBack { display: none !important; }
-#satPanel:has(#satCard:not([hidden])) {
-  left: calc(var(--left-col) + 190px); top: calc(var(--sw) + 92px); bottom: auto; width: 350px; max-height: calc(100vh - var(--sw) - 220px);
-  padding: 22px 24px 24px; background: var(--cosmos); border-radius: 120px 150px 130px 160px / 110px 120px 150px 130px;
-  --ink: var(--white); --muted: rgba(255, 255, 255, .8); --line: rgba(255, 255, 255, .3); --field: rgba(255, 255, 255, .12); --focus: var(--white);
-  color: var(--ink); scrollbar-width: none; }
-#satCard .sat-facts { font-variant-numeric: normal; }
-#satCard .sat-id { order: -2; grid-template-columns: 96px 1fr; padding: 0 0 8px; border-top: 0; border-color: var(--line); }
-#satCard .sat-id canvas { width: 96px; height: 66px; }
-#satCard .sat-id h2 { font-size: 30px; letter-spacing: -.04em; }
-#satCard .sat-hero { order: -1; margin: 0; }
-#satCard .sat-image { border-radius: 26px; min-height: 140px; }
-#satCard .sat-enlarge { right: 10px; bottom: 10px; width: 40px; height: 40px; min-height: 0; padding: 0; display: grid; place-items: center;
-                        background: var(--white); color: var(--cosmos); border-radius: 50%; }
-#satCard .sat-enlarge svg { width: 20px; height: 20px; }
-#satCard .sat-what b { font-size: 16px; }
-#satCard h3 { color: var(--muted); }
-#satCard #satPassesOne button { background: var(--field); color: var(--ink); }
-.sat-close { position: absolute; top: 18px; right: 22px; width: 36px; height: 36px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-items: center;
-             background: var(--white) !important; color: var(--cosmos) !important; z-index: 2; }
-.sat-close svg { width: 18px; height: 18px; }
-.sat-label { background: var(--cosmos); }
+.sat-label { z-index: 2; background: var(--cosmos); border-radius: 6px; }
 .maplibregl-ctrl-attrib { display: none !important; }       /* the credits are at the foot of the settings */
 
 /* ---- 1. intro: the name, the Earth under a white veil, play; the report below the name ---- */
+.bar { position: fixed; z-index: 4; left: 28px; top: calc(var(--sw) + 24px); width: calc(var(--left-col) - 28px); display: grid; gap: 12px;
+       transition: opacity .3s, transform .45s; }
+.brand { font-size: clamp(52px, 5.4vw, 82px); line-height: .92; letter-spacing: -.06em; color: var(--white); }
+.bar label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.results { color: var(--ink); }
+
 .veil { position: absolute; inset: 0; z-index: 8; display: grid; place-content: center; justify-items: center; gap: 16px;
         padding: 0 7vw 12vh 0; background: rgba(255, 255, 255, .58); cursor: pointer; transition: opacity .35s; }
 .veil p { color: var(--cosmos); font-size: 19px; letter-spacing: -.01em; }
@@ -170,23 +70,22 @@ body[data-open="near"] .timeline { left: calc(min(600px, 44vw) + 48px); }
          background: var(--white); color: var(--crimson); box-shadow: 0 0 0 14px rgba(255, 255, 255, .45);
          transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), box-shadow .3s; }
 .begin svg { width: 62px; height: 62px; margin-left: 8px; }
-.veil:hover .begin { transform: scale(1.07); box-shadow: 0 0 0 22px rgba(255, 255, 255, .4); background: var(--white); color: var(--crimson); }
+.begin:hover, .veil:hover .begin { transform: scale(1.07); box-shadow: 0 0 0 22px rgba(255, 255, 255, .4); background: var(--white); color: var(--crimson); }
 .begin:focus-visible { outline: 4px solid var(--cosmos); outline-offset: 18px; }
 
 .intro-report { position: fixed; z-index: 4; left: 28px; bottom: 28px; width: calc(var(--left-col) - 8px); display: grid; gap: 10px;
-                transition: opacity .3s, transform var(--swell); }
+                transition: opacity .3s, transform .45s; }
 .intro-report h2 { font-size: 26px; letter-spacing: -.03em; }
-.intro-report p { color: var(--muted); font-size: 14.5px; line-height: 1.4; }
+.intro-report p { color: rgba(255, 255, 255, .82); font-size: 14.5px; line-height: 1.4; }
 .include { display: flex; flex-wrap: wrap; gap: 6px; }
 .include label { position: relative; cursor: pointer; }
 .include input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.include span { display: block; padding: 5px 12px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, .5); font-size: 13px; line-height: 1.25; }
+.include span { display: block; padding: 5px 11px; border-radius: 8px; border: 2px solid rgba(255, 255, 255, .5); font-size: 13px; line-height: 1.25; }
 .include input:checked + span { background: var(--white); color: var(--cosmos); border-color: var(--white); }
 .include input:focus-visible + span { outline: 3px solid var(--marble); outline-offset: 2px; }
-.intro-report .get { justify-self: start; min-height: 46px; padding: 0 24px; background: var(--crimson); color: var(--white); font-size: 16px; }
-.intro-report .get:hover { background: var(--varden); color: var(--white); }
+.intro-report .get { justify-self: start; min-height: 46px; padding: 0 24px; font-size: 16px; }
 
-body:not([data-stage="live"]) :is(.bar .field, .tools, .lobe-near, .lobe-wheel, .timeline, .legend) { opacity: 0; pointer-events: none; visibility: hidden; }
+body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { opacity: 0; pointer-events: none; visibility: hidden; }
 body[data-stage="intro"] .maplibregl-ctrl-bottom-right { display: none; }
 
 /* ---- 2. opening: the veil lifts, the Earth goes to the centre as a round globe ---- */
@@ -196,85 +95,142 @@ body:not([data-stage="intro"]) .intro-report { opacity: 0; transform: translateY
 body[data-stage="opening"] .bar { opacity: 0; transform: translateX(-40px); }
 
 /* ---- 3. live: the blue fills the window and the tools come in around the Earth ---- */
-body[data-stage="live"] .lobe-map { right: 0; top: var(--sw); width: 100vw; height: calc(100vh - var(--sw)); border-radius: 0; transform: none !important; cursor: grab; }
-body[data-stage="live"] :is(.bar, .tools, .lobe-near, .lobe-wheel, .timeline, .legend) { animation: arrive .5s .25s both cubic-bezier(.2, .8, .2, 1); }
+body[data-stage="live"] .lobe-map { right: 0; top: var(--sw); width: 100vw; height: calc(100vh - var(--sw)); border-radius: 0; }
+body[data-stage="live"] :is(.bar, .tools, .rail, .timeline, .legend) { animation: arrive .5s .25s both cubic-bezier(.2, .8, .2, 1); }
 @keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
-body[data-stage="live"] .bar { left: 24px; top: calc(var(--sw) + 18px); width: auto; display: flex; align-items: center; gap: 10px; }
-body[data-stage="live"] .brand { font-size: 30px; line-height: 1; letter-spacing: -.04em; white-space: nowrap; margin-right: 8px; }
+body[data-stage="live"] .bar { left: var(--gap); top: calc(var(--sw) + 16px); width: auto; display: flex; align-items: center; gap: 14px; }
+body[data-stage="live"] .brand { font-size: 30px; line-height: 1; letter-spacing: -.04em; white-space: nowrap; text-shadow: 0 1px 8px rgba(0, 30, 50, .55); }
 body[data-stage="live"] .brand br { display: none; }
 body[data-stage="live"] .bar .search { width: 300px; }
-body[data-stage="live"] .bar .search input { min-height: 44px; padding: 10px 18px; font-size: 16px; }
+.bar .search input { min-height: 44px; padding: 10px 16px; font-size: 16px; background: var(--paper); }
 
-.tools { position: fixed; z-index: 20; right: 24px; top: calc(var(--sw) + 18px); display: flex; gap: 8px; align-items: center; }
-.tools > button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px 0 14px; }
+/* top right: exit, my location, settings */
+.tools { position: fixed; z-index: 20; right: var(--gap); top: calc(var(--sw) + 16px); display: flex; gap: 8px; align-items: center; }
+.tools > button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 12px; background: var(--paper); color: var(--cosmos); }
+.tools > button:hover { background: var(--paper-2); color: var(--cosmos); }
 .tools > button svg { width: 20px; height: 20px; flex: none; }
-.tools .locate { min-height: 36px; padding: 0 14px 0 10px; font-size: 14px; }
-.tools .locate svg { width: 17px; height: 17px; }
+.tools .exit { background: var(--crimson); color: var(--white); font-size: 16px; }
+.tools .exit:hover { background: var(--varden); color: var(--white); }
 .tools .gear svg { transition: transform .5s cubic-bezier(.34, 1.56, .64, 1); }
 .tools .gear[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
 .tools .gear[aria-expanded="true"] svg { transform: rotate(90deg); }
-.actions { position: absolute; right: 0; top: calc(100% + 10px); width: 290px; padding: 14px; display: grid; gap: 6px;
-           background: var(--white); border-radius: 34px 40px 34px 46px; animation: swell .35s cubic-bezier(.34, 1.56, .64, 1); transform-origin: top right;
-           --ink: var(--cosmos); --muted: #3f5d6e; color: var(--ink); }
+.actions { position: absolute; right: 0; top: calc(100% + 8px); width: 280px; padding: 10px; display: grid; gap: 6px;
+           box-shadow: 0 14px 40px -12px rgba(0, 20, 35, .5); }
 .actions[hidden] { display: none; }
-.actions button { width: 100%; justify-content: space-between; background: #e3edf3; min-height: 46px; font-size: 16px; }
-.actions button:hover { background: var(--marble); }
-.actions button:nth-of-type(1) { --chip: var(--crimson); }
-.actions button:nth-of-type(2) { --chip: var(--cosmos); }
-.actions button:nth-of-type(3) { --chip: var(--varden); }
-.actions button:nth-of-type(4) { --chip: var(--gochujang); }
-.actions button:nth-of-type(5) { --chip: var(--marble); }
-.actions button[aria-expanded="true"] { background: var(--crimson); color: var(--white); }
-.actions button[aria-expanded="true"]::after { background: var(--white); }
-.credits { font-size: 11.5px; line-height: 1.35; color: var(--muted); padding: 6px 8px 2px; }
+.actions button { width: 100%; text-align: left; min-height: 44px; font-size: 16px; padding: 0 14px; }
+.actions button[aria-expanded="true"] { background: var(--cosmos); }
+.credits { font-size: 11.5px; line-height: 1.35; color: var(--muted); padding: 4px 6px 2px; }
 .credits:empty { display: none; }
 
-body[data-stage="live"] .legend { top: calc(var(--sw) + 80px); width: 250px; padding: 14px 18px; }
+/* right: the legend */
+.legend { position: fixed; z-index: 3; right: var(--gap); top: calc(var(--sw) + 76px); width: 260px; padding: 14px 16px; }
+.legend-note { display: none; }
 
-/* the fires and the year: a stack of lobes on the left, each folds down to a capsule */
+/* bottom: time, beside the column */
+.timeline { position: fixed; z-index: 4; left: calc(var(--gap) * 2 + var(--rail)); right: var(--gap); bottom: var(--gap); padding: 12px 18px 4px; display: grid; gap: 6px; }
+.timeline button { min-height: 38px; padding: 0 14px; }
+#tlPlay { min-width: 80px; }
+#tlPlay[aria-pressed="true"] { background: var(--cosmos); }
+.tl-more[aria-expanded="true"] { background: var(--cosmos); }
+.tl-date select { min-height: 38px; }
+
+/* ---- the left column: cards stack, never on top of each other ---- */
+.rail { position: fixed; z-index: 8; left: var(--gap); top: calc(var(--sw) + 76px); bottom: var(--gap); width: var(--rail);
+        display: flex; flex-direction: column; gap: 12px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, .5) transparent; padding-right: 2px; }
+.rail > * { flex: none; }
+.card, .rail > .sheet, .rail > .sat-panel { position: relative; width: auto; padding: 18px 20px 20px; display: grid; gap: 10px; align-content: start;
+        animation: drop .3s cubic-bezier(.2, .8, .2, 1); }
+.rail > [hidden] { display: none !important; }
+@keyframes drop { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
+.card .hint, .rail .hint { font-size: 13.5px; line-height: 1.4; color: var(--muted); }
+.rail .panel-head h2 { font-size: 22px; }
+.rail .sheet button, .rail .sat-panel button { white-space: normal; }
+.rail select { min-height: 38px; }
+.choices label { border: 2px solid var(--line); border-radius: var(--r-control); }
+.choices label:has(input:checked) { border-color: var(--crimson); background: #fbecee; box-shadow: none; }
+.panel .chart { background: var(--cosmos); border-radius: var(--r-control); padding: 10px; }
+
 .lobe-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.lobe-head h2 { font-size: 40px; line-height: 1; letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
-.mini { width: 34px; height: 34px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.lobe-head h2, .mini-label { font-size: 21px; line-height: 1.15; letter-spacing: -.02em; }
+.mini, .mini[aria-expanded] { width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 8px; display: grid; place-items: center; flex: none; background: var(--paper-2); color: var(--cosmos); }
+.mini:hover { background: var(--marble); color: var(--cosmos); }
 .mini svg { width: 16px; height: 16px; }
-.mini-label { display: none; }
-body[data-stage="live"] .lobe-near { width: 300px; height: auto; max-height: calc(100vh - var(--sw) - 120px); padding: 20px 22px 18px 26px; }
-body[data-stage="live"] .lobe-wheel { left: 58px; bottom: 310px; width: 220px; height: 220px; }
-.lobe-wheel .lobe-head { position: absolute; right: -6px; top: 12px; z-index: 3; }
-.lobe.min { height: auto !important; width: auto !important; padding: 6px 6px 6px 22px !important; border-radius: 999px !important; }
+.lobe.min { padding-top: 12px; padding-bottom: 12px; }
 .lobe.min > :not(.lobe-head) { display: none !important; }
-.lobe-near.min .lobe-head h2 { font-size: 22px; }
-.lobe-wheel.min { place-items: initial; }
-.lobe-wheel.min .lobe-head { position: static; }
-.lobe-wheel.min .mini-label { display: block; font-size: 16px; }
+.quiet-btn { justify-self: start; background: var(--paper-2); color: var(--cosmos); min-height: 38px; padding: 0 14px; }
+.quiet-btn:hover { background: var(--marble); color: var(--cosmos); }
 
-/* time: a red capsule in the centre at the bottom */
-body[data-stage="live"] .timeline { left: 0; right: 0; margin: 0 auto; width: min(780px, calc(100vw - 720px)); }
-body[data-stage="live"][data-open="near"] .timeline { left: calc(min(600px, 44vw) + 48px); right: 24px; width: auto; margin: 0; }
-body[data-stage="live"][data-open="near"] .lobe-near { height: calc(100vh - var(--sw) - 110px); width: min(600px, 44vw); }
+/* the fires around the red dot */
+.year-line { display: flex; align-items: baseline; gap: 12px; margin-top: 2px; }
+.year-line b { font-size: 46px; line-height: 1; letter-spacing: -.05em; color: var(--crimson); font-variant-numeric: tabular-nums; }
+.year-line span { font-size: 15px; color: var(--muted); }
+.lobe-near .sub { font-size: 15px; line-height: 1.4; }
+.near-where { display: flex; gap: 6px; }
+.near-where button { flex: 1; min-height: 40px; padding: 0 10px; }
+.near-where button[aria-pressed="true"] { background: var(--cosmos); }
+.near-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.near-filters label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.sign { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.sign span { display: grid; gap: 4px; font-size: 11.5px; line-height: 1.15; color: var(--muted); text-align: center; padding: 4px 2px 5px; border-radius: 8px; border: 2px solid transparent; }
+.sign i { height: 10px; border-radius: 4px; background: var(--c); }
+.sign span.on { border-color: var(--cosmos); color: var(--cosmos); }
+.sign span.on i { height: 16px; }
+.count { font-size: 15px; }
+.fire { background: var(--paper-2); color: var(--ink); border-radius: var(--r-control); border: 0; padding: 10px 12px; }
+.fire:hover { background: #dde8ee; color: var(--ink); }
+.fire .badge { border-radius: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: -1px; }
 
-body[data-stage="live"] #satPanel:has(#satCard:not([hidden])) { left: 24px; top: calc(var(--sw) + 84px); }
+/* the year wheel */
+.lobe-wheel .grow[aria-expanded="false"] { justify-self: start; background: var(--paper-2); color: var(--cosmos); min-height: 38px; padding: 0 14px; }
+.lobe-wheel .grow[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
+.wheel { width: 100%; max-width: 320px; justify-self: center; aspect-ratio: 1; }
+.wheel svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.wheel .petal { cursor: pointer; transition: opacity .15s; }
+.wheel .petal:hover { opacity: .7; }
+.wheel text { font: 15px var(--font); fill: var(--muted); }
+.wheel .yr { font-size: 46px; letter-spacing: -.05em; fill: var(--cosmos); }
+.wheel-side { display: grid; gap: 10px; }
+.wheel-side .hint { display: none; }
+body[data-open="wheel"] .wheel-side .hint { display: block; }
+.lobe-wheel > .grow { order: 5; }
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper button { min-height: 36px; padding: 0 12px; }
+.stepper b { font-size: 26px; letter-spacing: -.04em; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
 
-/* ---- smaller screens: the page scrolls, lobes stack ---- */
+/* ---- the satellite card, at the top of the column ---- */
+#satBack { display: none !important; }
+#satCard .sat-facts { font-variant-numeric: normal; }
+#satCard .sat-id { order: -2; grid-template-columns: 96px 1fr; padding: 0 44px 8px 0; border-top: 0; }
+#satCard .sat-id canvas { width: 96px; height: 66px; }
+#satCard .sat-id h2 { font-size: 28px; letter-spacing: -.03em; }
+#satCard .sat-hero { order: -1; margin: 0; }
+#satCard .sat-image { border-radius: var(--r-control); min-height: 160px; }
+#satCard .sat-enlarge { right: 8px; bottom: 8px; width: 40px; height: 40px; min-height: 0; padding: 0; display: grid; place-items: center;
+                        background: var(--white); color: var(--cosmos); border-radius: 8px; }
+#satCard .sat-enlarge svg { width: 20px; height: 20px; }
+#satCard .sat-what b { font-size: 16px; }
+#satCard #satPassesOne button, #satList button, #satPasses button { background: var(--paper-2); color: var(--ink); }
+.sat-close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; min-height: 0; padding: 0; border-radius: 8px; display: grid; place-items: center;
+             background: var(--paper-2) !important; color: var(--cosmos) !important; z-index: 2; }
+.sat-close svg { width: 18px; height: 18px; }
+.lightbox-inner { padding: 24px; }
+.maplibregl-popup-content { border: 0; }
+
+/* ---- smaller screens: the page scrolls, everything stacks ---- */
 @media (max-width: 1180px) {
   html, body { height: auto; }
   body { overflow: auto; padding-bottom: 30px; }
-  .lobe, .bar, .timeline, .legend, .intro-report { position: static; width: auto; height: auto; transform: none !important; margin: 16px; }
+  .bar, .timeline, .legend, .intro-report, .rail, .tools { position: static; width: auto; margin: 16px; transform: none !important; }
   .brand { font-size: clamp(48px, 13vw, 84px); }
-  .lobe-map { position: relative; height: 62vh; margin: 16px -6vw 16px 16px; }
+  .lobe-map { position: relative; right: auto; top: auto; width: auto; height: 62vh; margin: 16px; }
   body[data-stage="intro"] .veil { padding: 0; }
-  body:not([data-stage="intro"]) .lobe-map { margin: 16px; border-radius: 40px; }
+  body:not([data-stage="intro"]) .lobe-map { width: auto; height: 62vh; border-radius: var(--r-panel); }
   body:not([data-stage="intro"]) .intro-report { display: none; }
-  body:not([data-stage="live"]) :is(.bar .field, .tools, .lobe-near, .lobe-wheel, .timeline, .legend) { display: none; }
-  .tools { position: static; margin: 16px; flex-wrap: wrap; }
+  body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { display: none; }
+  .tools { flex-wrap: wrap; }
   .tools .actions { left: 0; right: auto; }
   body[data-stage="live"] .bar { flex-wrap: wrap; }
-  body[data-stage="live"] .timeline { width: auto; margin: 16px; }
-  .lobe-near { padding: 24px; }
-  body .lobe-near .fires { display: grid !important; max-height: 60vh; }
-  .lobe-wheel { border-radius: 60px; padding: 24px; display: grid; gap: 16px; }
-  .lobe-wheel .grow, .lobe-near .grow { display: none; }
-  .wheel { max-width: 440px; margin: 0 auto; aspect-ratio: 1; }
-  .wheel-side { display: grid; }
-  .timeline { border-radius: 34px; padding: 14px 18px 6px; }
-  .sheet, .sat-panel, #satPanel:has(#satCard:not([hidden])) { position: fixed; left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; max-height: 76vh; }
+  .rail { overflow: visible; }
 }
