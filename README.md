@@ -2,6 +2,15 @@
 
 NASA Space Apps Challenge 2026, "MODIS and VIIRS hot spots".
 
+<p align="center">
+  <a href="https://youtu.be/9uPJrPJp4v0" title="Watch the 30-second presentation on YouTube">
+    <img src=".github/readme-video.jpg" alt="A Head Full of Dreams: 30-second presentation of Burning Calendar (click to play)" width="100%">
+  </a>
+  <br>
+  <b><a href="https://youtu.be/9uPJrPJp4v0">Watch the 30-second presentation on YouTube</a></b>
+  &middot; <a href="web/media/tutorial-30s.mp4">download the MP4 (1080p, 60 fps)</a>
+</p>
+
 A burning calendar for the United States (contiguous states and Hawaii): weekly
 fire activity seen by satellite since 2002, in one comparable unit, with unusual
 weeks, record weeks and the usual fire season marked for every state.
