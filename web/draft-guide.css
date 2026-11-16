@@ -97,9 +97,11 @@ body:not([data-stage="live"]) .cross, body:has(.lobe-near.min) .cross { display:
 .intro-report .get { justify-self: start; min-height: 46px; padding: 0 24px; font-size: 16px; }
 
 /* the cover scrolls: the name, the Earth and the report go up, and the tutorial comes in below */
-body[data-stage="intro"] { overflow-y: auto; position: relative; }
+body[data-stage="intro"] { overflow: visible; height: auto; min-height: 100%; position: relative; display: flow-root; }   /* flow-root: the tutorial margin must not push the cover down */
+html:has(body[data-stage="intro"]) { overflow-x: hidden; overflow-y: auto; }
 body.scrolled .sat-label { display: none !important; }       /* the name tags float over the page; not over the tutorial */
 body[data-stage="intro"] :is(.lobe-map, .bar, .intro-report) { position: absolute; }
+body[data-stage="intro"] .intro-report { top: calc(100vh - 28px); bottom: auto; translate: 0 -100%; }   /* on the first screen, not the page bottom */
 body:not([data-stage="intro"]) :is(.tutorial, .scroll-cue) { display: none; }
 .scroll-cue { position: absolute; z-index: 9; left: 71vw; top: calc(100vh - 64px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px;
               padding: 8px 16px; border-radius: var(--r-control); background: var(--paper); color: var(--cosmos); text-decoration: none; font-size: 15px; font-weight: 700; }
@@ -283,6 +285,9 @@ body[data-open="wheel"] .wheel-side .hint { display: block; }
   body:not([data-stage="intro"]) .lobe-map { width: auto; height: 62vh; border-radius: var(--r-panel); }
   body:not([data-stage="intro"]) .intro-report { display: none; }
   .tutorial { margin-top: 0; }
+  body[data-stage="intro"] :is(.bar, .intro-report) { position: static; }
+  body[data-stage="intro"] .intro-report { translate: none; }
+  body[data-stage="intro"] .lobe-map { position: relative; }
   .scroll-cue { display: none; }
   body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { display: none; }
   .tools { flex-wrap: wrap; }
