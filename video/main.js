@@ -86,10 +86,9 @@ async function loadAll() {
   const featNames = ['f0_open', 'f1_empty', 'f1_t1', 'f1_t2', 'f1_t3', 'f1_t4', 'f1_t5', 'f1_t6', 'f1_typing', 'f1_result', 'f2_set', ...Array.from({ length: 12 }, (_, i) => `f2_play${i}`), 'f3_fire', 'f3_landsat'];   // real app screens (tools/capture_features.mjs)
   const featImgs = await Promise.all(featNames.map(n => loadImg(`assets/web/${n}.png`)));
   const feat = Object.fromEntries(featNames.map((n, k) => [n, featImgs[k]]));
-  const logo = await loadImg('assets/nasa_spaceapps.png');
   const people = await Promise.all(PEOPLE.map(async (_, i) => (await loadImg(`assets/people/persona${i + 1}.png`)) || (await loadImg(`assets/people/persona${i + 1}.jpg`))));
   await fontsP; await document.fonts.ready;
-  return { land, firesCA, firesUS, mosaics, mosImgs, patches, weekly, people, feat, logo };
+  return { land, firesCA, firesUS, mosaics, mosImgs, patches, weekly, people, feat };
 }
 
 // ------------------------------------------------------------------ backgrounds
@@ -755,11 +754,6 @@ function seekScene(t) {
   if (chalkScene) {
     const Rg = globeR(t);
     const fade = 1 - E.inQuad(prog(t, 9.55, 10.0));
-    if (A.logo && fade > 0) { // NASA Space Apps Challenge logo, top of the first page
-      const lw = 430, lh = (lw * A.logo.height) / A.logo.width, pop = E.outBack(prog(t, 0.0, 0.55));
-      phx.save(); phx.globalAlpha = fade * clamp(prog(t, 0, 0.3)); phx.translate(CX, 150); phx.scale(pop, pop);
-      phx.drawImage(A.logo, -lw / 2, -lh / 2, lw, lh); phx.restore();
-    }
     if (t < 10.3) {
       const punch = WORDS.reduce((s, w) => s + 0.02 * Math.exp(-(((t - w[1]) / 0.12) ** 2)), 0);
       const drift = 1 + 0.04 * prog(t, 0, 9.6) + punch - 0.04 * E.inOutCubic(prog(t, 9.5, 10.2));
@@ -1240,7 +1234,6 @@ function drawExit(t) {
     g.save(); g.translate(jit(5, 1) * 22 * impact, jit(6, 2) * 22 * impact);
     const ring = prog(u, 1.3, 1.9); // shockwave
     if (ring > 0 && ring < 1) { g.strokeStyle = `rgba(255,200,120,${0.8 * (1 - ring)})`; g.lineWidth = 10 * (1 - ring) + 1; g.beginPath(); g.arc(CX, 560, 80 + ring * 1100, 0, 7); g.stroke(); }
-    if (A.logo) { const lw = 430, lh = (lw * A.logo.height) / A.logo.width, la = clamp(prog(u, 1.4, 1.75)); g.globalAlpha = la; g.drawImage(A.logo, CX - lw / 2, 210 - lh / 2 + (1 - la) * -30, lw, lh); g.globalAlpha = 1; }
     g.save(); g.translate(CX, 560); const sc = lerp(3.2, 1, slam); g.scale(sc, sc); g.translate(-CX, -560);
     rainbowTitle(g, 'A HEAD FULL OF DREAMS', CX, 560, 150, 1, t, clamp(prog(u, 1.05, 1.15)));
     g.restore();

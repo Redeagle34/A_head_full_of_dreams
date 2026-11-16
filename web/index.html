@@ -42,15 +42,73 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
 
 <section class="tutorial" id="tutorial" aria-labelledby="tutorialTitle">
-  <h2 id="tutorialTitle">How it works, in 37 seconds</h2>
-  <p>Why fires need watching, who we are, and a walk through this page: press play, the Earth opens on the United States,
-    zoom out to see the satellites, pick one, and open the fire history of any area.</p>
-  <video controls preload="metadata" playsinline poster="media/tutorial-poster.jpg" width="1280" height="720">
-    <source src="media/tutorial.mp4" type="video/mp4">
-    Your browser cannot play this video. <a href="media/tutorial.mp4">Download it (MP4)</a>.
+  <h2 id="tutorialTitle">How it works, in 30 seconds</h2>
+  <p>Why fires need watching, who we are, the data and algorithms behind the page, and the page at work:
+    search a place, replay a period, and see a fire before and after.</p>
+  <video controls preload="metadata" playsinline poster="media/tutorial-30s-poster.jpg" width="1280" height="720">
+    <source src="media/tutorial-30s.mp4" type="video/mp4">
+    Your browser cannot play this video. <a href="media/tutorial-30s.mp4">Download it (MP4)</a>.
   </video>
-  <p class="fine">Earth texture: NASA Blue Marble. 3D satellites: NASA 3D Resources. Fire detections: NASA FIRMS. Map imagery: Esri World Imagery.</p>
+  <a class="watch-yt" href="https://youtu.be/9uPJrPJp4v0" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.8 31 31 0 0 0-.5-4.8z" fill="currentColor"/><path d="M9.8 15.1V8.9l5.4 3.1z" fill="#fff"/></svg>
+    Watch it on YouTube</a>
+  <p class="fine">Earth texture: NASA Blue Marble. 3D satellites: NASA 3D Resources. Fire detections: NASA FIRMS. Landsat imagery: USGS/NASA via Google Earth Engine. Map imagery: Esri World Imagery. Music and sound effects: made for this video.</p>
 </section>
+
+<section class="science" id="science" aria-labelledby="scienceTitle">
+  <h2 id="scienceTitle">The science behind it</h2>
+  <p class="lede">Every number on this page comes from a published method. These are the papers we built on, and what each one does in our pipeline.</p>
+  <ol class="steps">
+    <li>
+      <h3>Seeing the fires</h3>
+      <p>The raw material is every active-fire detection over the United States since 2000: 13.4 million of them. MODIS on Terra and Aqua finds fires in 1 km pixels with the Collection 6 algorithm [<a href="#ref1">1</a>]; VIIRS on Suomi NPP and NOAA-20 finds them in 375 m pixels [<a href="#ref2">2</a>]. We count only detections flagged as vegetation fires.</p>
+    </li>
+    <li>
+      <h3>Making MODIS and VIIRS comparable</h3>
+      <p>VIIRS has smaller pixels and reports about four times more detections than MODIS for the same fires, so a record that switches sensors shows a jump that is not real. We re-implemented the fire-radiative-power observation operator of Sofiev and Kouznetsov [<a href="#ref3">3</a>]: a sensor detects a fire when its radiative power exceeds a limit that grows with pixel area. For every VIIRS fire we compute the probability that MODIS on Aqua would have seen it, which turns VIIRS into MODIS-equivalent units. Fire radiative power itself follows Wooster et al. [<a href="#ref4">4</a>], and the MODIS pixel size, which grows away from nadir, follows Ichoku and Kaufman [<a href="#ref5">5</a>]. On withheld years (2021&ndash;2025) the error against real Aqua counts falls from 3.06 to 0.27.</p>
+    </li>
+    <li>
+      <h3>From detections to fires</h3>
+      <p>We group detections into single fires with the rule of FIRED [<a href="#ref6">6</a>], first written for burned-area maps: pixels that touch in space and follow in time belong to one fire. Applied to MODIS and VIIRS detections on cells of about 1 km, at most 5 days apart, it gives 2,035,833 fires between 2000 and 2025. The MODIS burned-area product MCD64A1 [<a href="#ref7">7</a>] gives an independent second measure of each fire's area.</p>
+    </li>
+    <li>
+      <h3>Rating the danger of each fire</h3>
+      <p>The danger level is the chance that a fire reaches 1,000 acres, judged after two days of satellite passes. It comes from gradient-boosted decision trees (LightGBM [<a href="#ref8">8</a>]) trained on what the satellites saw on days 1 and 2, the weather and fuel dryness of gridMET [<a href="#ref9">9</a>], terrain, vegetation, fire regime and population. The scores are turned into true probabilities with isotonic calibration [<a href="#ref10">10</a>]. On 2022&ndash;2025, years the model never saw, it ranks fires with an AUC of 0.936.</p>
+    </li>
+    <li>
+      <h3>Before and after a fire</h3>
+      <p>For each fire we blend cloud-free Landsat pictures from the weeks before and after it and measure the drop in the normalized burn ratio (dNBR). Following the FIREMON landscape-assessment method [<a href="#ref11">11</a>], a drop of 0.27 or more marks moderate or high burn severity.</p>
+    </li>
+    <li>
+      <h3>Where prevention helps most</h3>
+      <p>To suggest where fuel treatments would cut the spread of fire the most, we use the critical-node formulation of Yemshanov et al. [<a href="#ref12">12</a>], which builds on the network model of Matsypura et al. [<a href="#ref13">13</a>]. The landscape is a network of cells; how likely fire is to jump from one cell to the next comes from the cellular-automaton spread model of Alexandridis et al. [<a href="#ref14">14</a>], run thousands of times.</p>
+    </li>
+  </ol>
+  <h3 class="refs-title">References</h3>
+  <ol class="refs">
+    <li id="ref1">Giglio, L., Schroeder, W., &amp; Justice, C. O. (2016). The collection 6 MODIS active fire detection algorithm and fire products. <i>Remote Sensing of Environment, 178</i>, 31&ndash;41. <a href="https://doi.org/10.1016/j.rse.2016.02.054" target="_blank" rel="noopener">https://doi.org/10.1016/j.rse.2016.02.054</a></li>
+    <li id="ref2">Schroeder, W., Oliva, P., Giglio, L., &amp; Csiszar, I. A. (2014). The New VIIRS 375 m active fire detection data product: Algorithm description and initial assessment. <i>Remote Sensing of Environment, 143</i>, 85&ndash;96. <a href="https://doi.org/10.1016/j.rse.2013.12.008" target="_blank" rel="noopener">https://doi.org/10.1016/j.rse.2013.12.008</a></li>
+    <li id="ref3">Sofiev, M., &amp; Kouznetsov, R. (2026). Observation operator and detection limits for MODIS and VIIRS Fire Radiative Power products. <i>Geoscientific Model Development, 19</i>(20), 10123&ndash;10142. <a href="https://doi.org/10.5194/gmd-19-10123-2026" target="_blank" rel="noopener">https://doi.org/10.5194/gmd-19-10123-2026</a></li>
+    <li id="ref4">Wooster, M. J., Roberts, G., Perry, G. L. W., &amp; Kaufman, Y. J. (2005). Retrieval of biomass combustion rates and totals from fire radiative power observations: FRP derivation and calibration relationships between biomass consumption and fire radiative energy release. <i>Journal of Geophysical Research: Atmospheres, 110</i>(D24). <a href="https://doi.org/10.1029/2005JD006318" target="_blank" rel="noopener">https://doi.org/10.1029/2005JD006318</a></li>
+    <li id="ref5">Ichoku, C., &amp; Kaufman, Y. J. (2005). A method to derive smoke emission rates from MODIS fire radiative energy measurements. <i>IEEE Transactions on Geoscience and Remote Sensing, 43</i>(11), 2636&ndash;2649. <a href="https://doi.org/10.1109/TGRS.2005.857328" target="_blank" rel="noopener">https://doi.org/10.1109/TGRS.2005.857328</a></li>
+    <li id="ref6">Balch, J. K., St. Denis, L. A., Mahood, A. L., Mietkiewicz, N. P., Williams, T. M., McGlinchy, J., &amp; Cook, M. C. (2020). FIRED (Fire Events Delineation): An open, flexible algorithm and database of US fire events derived from the MODIS burned area product (2001&ndash;2019). <i>Remote Sensing, 12</i>(21), 3498. <a href="https://doi.org/10.3390/rs12213498" target="_blank" rel="noopener">https://doi.org/10.3390/rs12213498</a></li>
+    <li id="ref7">Giglio, L., Boschetti, L., Roy, D. P., Humber, M. L., &amp; Justice, C. O. (2018). The Collection 6 MODIS burned area mapping algorithm and product. <i>Remote Sensing of Environment, 217</i>, 72&ndash;85. <a href="https://doi.org/10.1016/j.rse.2018.08.005" target="_blank" rel="noopener">https://doi.org/10.1016/j.rse.2018.08.005</a></li>
+    <li id="ref8">Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q., &amp; Liu, T.-Y. (2017). LightGBM: A highly efficient gradient boosting decision tree. In <i>Advances in Neural Information Processing Systems 30</i> (NeurIPS 2017), 3146&ndash;3154.</li>
+    <li id="ref9">Abatzoglou, J. T. (2013). Development of gridded surface meteorological data for ecological applications and modelling. <i>International Journal of Climatology, 33</i>(1), 121&ndash;131. <a href="https://doi.org/10.1002/joc.3413" target="_blank" rel="noopener">https://doi.org/10.1002/joc.3413</a></li>
+    <li id="ref10">Zadrozny, B., &amp; Elkan, C. (2002). Transforming classifier scores into accurate multiclass probability estimates. In <i>Proceedings of the Eighth ACM SIGKDD International Conference on Knowledge Discovery and Data Mining</i>, 694&ndash;699. <a href="https://doi.org/10.1145/775047.775151" target="_blank" rel="noopener">https://doi.org/10.1145/775047.775151</a></li>
+    <li id="ref11">Key, C. H., &amp; Benson, N. C. (2006). Landscape assessment (LA): Sampling and analysis methods. In D. C. Lutes et al., <i>FIREMON: Fire effects monitoring and inventory system</i> (Gen. Tech. Rep. RMRS-GTR-164-CD). USDA Forest Service, Rocky Mountain Research Station.</li>
+    <li id="ref12">Yemshanov, D., Liu, N., Thompson, D. K., Parisien, M.-A., Barber, Q. E., Koch, F. H., &amp; Reimer, J. (2021). Detecting critical nodes in forest landscape networks to reduce wildfire spread. <i>PLOS ONE, 16</i>(10), e0258060. <a href="https://doi.org/10.1371/journal.pone.0258060" target="_blank" rel="noopener">https://doi.org/10.1371/journal.pone.0258060</a></li>
+    <li id="ref13">Matsypura, D., Prokopyev, O. A., &amp; Zahar, A. (2018). Wildfire fuel management: Network-based models and optimization of prescribed burning. <i>European Journal of Operational Research, 264</i>(2), 774&ndash;796. <a href="https://doi.org/10.1016/j.ejor.2017.06.050" target="_blank" rel="noopener">https://doi.org/10.1016/j.ejor.2017.06.050</a></li>
+    <li id="ref14">Alexandridis, A., Vakalis, D., Siettos, C. I., &amp; Bafas, G. V. (2008). A cellular automata model for forest fire spread prediction: The case of the wildfire that swept through Spetses Island in 1990. <i>Applied Mathematics and Computation, 204</i>(1), 191&ndash;201. <a href="https://doi.org/10.1016/j.amc.2008.06.046" target="_blank" rel="noopener">https://doi.org/10.1016/j.amc.2008.06.046</a></li>
+  </ol>
+</section>
+
+<footer class="site-foot">
+  <p>Burning Calendar &middot; team A Head Full of Dreams &middot; NASA Space Apps Challenge 2026</p>
+  <a class="gh" href="https://github.com/Redeagle34/A_head_full_of_dreams" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.2c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>
+    github.com/Redeagle34/A_head_full_of_dreams</a>
+</footer>
 
 <div class="tools">
   <button id="exitMap" class="exit" type="button">

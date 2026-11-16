@@ -102,7 +102,7 @@ html:has(body[data-stage="intro"]) { overflow-x: hidden; overflow-y: auto; }
 body.scrolled .sat-label { display: none !important; }       /* the name tags float over the page; not over the tutorial */
 body[data-stage="intro"] :is(.lobe-map, .bar, .intro-report) { position: absolute; }
 body[data-stage="intro"] .intro-report { top: calc(100vh - 28px); bottom: auto; translate: 0 -100%; }   /* on the first screen, not the page bottom */
-body:not([data-stage="intro"]) :is(.tutorial, .scroll-cue) { display: none; }
+body:not([data-stage="intro"]) :is(.tutorial, .scroll-cue, .science, .site-foot) { display: none; }
 .scroll-cue { position: absolute; z-index: 9; left: 71vw; top: calc(100vh - 64px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px;
               padding: 8px 16px; border-radius: var(--r-control); background: var(--paper); color: var(--cosmos); text-decoration: none; font-size: 15px; font-weight: 700; }
 .scroll-cue svg { width: 18px; height: 18px; }
@@ -112,6 +112,30 @@ body:not([data-stage="intro"]) :is(.tutorial, .scroll-cue) { display: none; }
 .tutorial > p { max-width: 62ch; color: rgba(255, 255, 255, .84); font-size: 17px; line-height: 1.5; }
 .tutorial video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin-top: 12px; border-radius: var(--r-panel); background: #000; }
 .tutorial .fine { font-size: 13px; color: rgba(255, 255, 255, .62); }
+.watch-yt, .site-foot .gh { display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: var(--r-control);
+  background: var(--paper); color: var(--cosmos); text-decoration: none; font-weight: 700; font-size: 16px; }
+.watch-yt svg { width: 26px; height: 26px; color: #ff0033; }
+.watch-yt:hover, .site-foot .gh:hover { background: var(--paper-2); }
+/* the science behind the page: one numbered step per method, then the references */
+.science { position: relative; z-index: 5; margin: 0 auto; padding: 24px 24px 56px; width: min(1000px, 100%); }
+.science h2 { font-size: clamp(30px, 3.4vw, 48px); letter-spacing: -.03em; text-align: center; }
+.science .lede { max-width: 62ch; margin: 12px auto 32px; text-align: center; color: rgba(255, 255, 255, .84); font-size: 17px; line-height: 1.5; }
+.science .steps { list-style: none; counter-reset: step; display: grid; gap: 14px; padding: 0; }
+.science .steps li { counter-increment: step; position: relative; padding: 20px 22px 20px 74px; border-radius: var(--r-panel);
+  background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); }
+.science .steps li::before { content: counter(step); position: absolute; left: 22px; top: 18px; width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--paper); color: var(--cosmos); font-weight: 700; }
+.science .steps h3 { font-size: 20px; margin-bottom: 6px; color: #fff; }
+.science .steps p { color: rgba(255, 255, 255, .84); line-height: 1.6; font-size: 16px; }
+.science .steps a, .science .refs a { color: inherit; }
+.science .refs-title { margin: 40px 0 12px; font-size: 22px; color: #fff; }
+.science .refs { padding-left: 2.8em; display: grid; gap: 8px; font-size: 14px; line-height: 1.55; color: rgba(255, 255, 255, .78); }
+.science .refs li::marker { content: "[" counter(list-item) "]  "; color: rgba(255, 255, 255, .6); }
+.science .refs a { word-break: break-all; }
+.science .refs li:target { background: rgba(255, 255, 255, .1); border-radius: 6px; }
+.site-foot { position: relative; z-index: 5; display: grid; justify-items: center; gap: 12px; padding: 36px 24px 48px;
+  border-top: 1px solid rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .7); font-size: 14px; text-align: center; }
+.site-foot .gh svg { width: 22px; height: 22px; }
 html { scroll-behavior: smooth; }
 
 body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { opacity: 0; pointer-events: none; visibility: hidden; }
