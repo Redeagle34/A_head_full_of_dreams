@@ -26,15 +26,22 @@
   --ink: var(--cosmos); --muted: #476576; --surface: var(--paper); --field: var(--paper-2); --line: rgba(0, 48, 73, .18);
   --accent: var(--crimson); --on-accent: var(--white); --focus: var(--crimson);
   --r-panel: 14px; --r-control: 10px; --r-track: 8px;
-  --font: "Schibsted Grotesk", system-ui, sans-serif; --font-display: var(--font);
+  --font: "Comfortaa", system-ui, sans-serif; --font-display: var(--font);
   --track: rgba(0, 48, 73, .1); --window: rgba(193, 18, 31, .16); --window-edge: var(--crimson);
   --left-col: 340px;                  /* intro: the name and the report */
   --rail: 380px;                      /* live: the left column */
   --gap: 20px;
+  /* the Earth area: the owner's drawn curve (intro), a round globe (opening), the whole window (live);
+     same number of points in each, so one morphs into the next (made by a small script, see git log) */
+  --shape-intro: polygon(25.25% 0.00%, 25.44% 5.45%, 25.79% 10.75%, 26.28% 15.93%, 26.91% 21.01%, 27.68% 26.01%, 28.58% 30.95%, 29.61% 35.86%, 30.76% 40.76%, 32.04% 45.66%, 33.43% 50.60%, 34.93% 55.59%, 36.54% 60.65%, 38.26% 65.81%, 40.07% 71.08%, 41.98% 76.50%, 43.99% 82.08%, 46.08% 87.84%, 48.25% 93.81%, 50.50% 100.00%, 62.88% 100.00%, 75.25% 100.00%, 87.62% 100.00%, 100.00% 100.00%, 100.00% 83.33%, 100.00% 66.67%, 100.00% 50.00%, 100.00% 33.33%, 100.00% 16.67%, 85.05% 0.00%, 70.10% 0.00%, 55.15% 0.00%, 40.20% 0.00%);
+  --shape-globe: polygon(calc(50% + -23.89vh) calc(50% + -30.83vh), calc(50% + -25.52vh) calc(50% + -29.49vh), calc(50% + -27.20vh) calc(50% + -27.94vh), calc(50% + -28.94vh) calc(50% + -26.14vh), calc(50% + -30.73vh) calc(50% + -24.02vh), calc(50% + -32.54vh) calc(50% + -21.49vh), calc(50% + -34.35vh) calc(50% + -18.47vh), calc(50% + -36.07vh) calc(50% + -14.83vh), calc(50% + -37.57vh) calc(50% + -10.45vh), calc(50% + -38.65vh) calc(50% + -5.24vh), calc(50% + -38.99vh) calc(50% + 0.76vh), calc(50% + -38.30vh) calc(50% + 7.36vh), calc(50% + -36.36vh) calc(50% + 14.10vh), calc(50% + -33.23vh) calc(50% + 20.41vh), calc(50% + -29.26vh) calc(50% + 25.78vh), calc(50% + -24.92vh) calc(50% + 30.00vh), calc(50% + -20.64vh) calc(50% + 33.09vh), calc(50% + -16.70vh) calc(50% + 35.25vh), calc(50% + -13.20vh) calc(50% + 36.70vh), calc(50% + -10.17vh) calc(50% + 37.65vh), calc(50% + -0.88vh) calc(50% + 38.99vh), calc(50% + 8.56vh) calc(50% + 38.05vh), calc(50% + 16.66vh) calc(50% + 35.26vh), calc(50% + 22.79vh) calc(50% + 31.65vh), calc(50% + 28.62vh) calc(50% + 26.50vh), calc(50% + 35.39vh) calc(50% + 16.38vh), calc(50% + 39.00vh) calc(50% + 0.00vh), calc(50% + 35.39vh) calc(50% + -16.38vh), calc(50% + 28.62vh) calc(50% + -26.50vh), calc(50% + 15.13vh) calc(50% + -35.94vh), calc(50% + 4.72vh) calc(50% + -38.71vh), calc(50% + -6.80vh) calc(50% + -38.40vh), calc(50% + -16.76vh) calc(50% + -35.21vh));
+  --shape-full: polygon(10.47% -1.00%, 5.87% -1.00%, 0.35% -1.00%, -1.00% 3.94%, -1.00% 10.14%, -1.00% 16.32%, -1.00% 22.58%, -1.00% 29.04%, -1.00% 35.82%, -1.00% 43.08%, -1.00% 51.00%, -1.00% 59.80%, -1.00% 69.78%, -1.00% 81.32%, -1.00% 94.94%, 7.63% 101.00%, 18.18% 101.00%, 25.84% 101.00%, 31.66% 101.00%, 36.23% 101.00%, 48.85% 101.00%, 61.47% 101.00%, 74.10% 101.00%, 86.72% 101.00%, 101.00% 97.22%, 101.00% 73.61%, 101.00% 50.00%, 101.00% 26.39%, 101.00% 2.78%, 71.47% -1.00%, 56.22% -1.00%, 40.97% -1.00%, 25.72% -1.00%);
 }
 html, body { height: 100%; }
 body { background: var(--cosmos); color: var(--white); overflow: hidden; padding-top: var(--sw); }
-body *, body *::before { font-weight: 500 !important; }            /* one face, one weight: size does the ranking */
+body { font-weight: 500; }
+:is(h1, h2, .brand, .year-line b, .stepper b, .wheel .yr, .count, button, .button, .sat-id h2) { font-weight: 700 !important; }
+:is(p, .hint, small, label, select, input, td, th, dd, dt, .sub, .credits) { font-weight: 500 !important; }
 button, .button { background: var(--crimson); color: var(--white); border: 0; border-radius: var(--r-control); }
 button:hover, .button:hover { background: var(--varden); color: var(--white); }
 input[type="search"], input[type="date"], select { background: var(--paper-2); color: var(--cosmos); border: 0; border-radius: var(--r-control); color-scheme: light; }
@@ -46,11 +53,10 @@ h3 { letter-spacing: 0; text-transform: none; font-size: 14px; color: var(--mute
   background: var(--paper); color: var(--ink); border-radius: var(--r-panel); }
 
 /* ---- the Earth ---- */
-.lobe-map { position: fixed; z-index: 1; right: -7vw; top: calc(var(--sw) + 2vh); width: calc(107vw - var(--left-col) - 20px); height: 110vh;
-            overflow: hidden; background: var(--marble); border-radius: 40% 60% 34% 66% / 34% 42% 58% 66%;
-            transition: width .6s cubic-bezier(.3, .9, .3, 1), height .6s cubic-bezier(.3, .9, .3, 1), right .6s cubic-bezier(.3, .9, .3, 1),
-                        top .6s cubic-bezier(.3, .9, .3, 1), border-radius .6s cubic-bezier(.3, .9, .3, 1); }
+.lobe-map { position: fixed; z-index: 1; left: 0; top: var(--sw); width: 100vw; height: calc(100vh - var(--sw)); overflow: hidden;
+            background: var(--marble); clip-path: var(--shape-intro); transition: clip-path .7s cubic-bezier(.3, .9, .3, 1); }
 #map { position: absolute; inset: 0; }
+body:not([data-stage="live"]) .cross { display: none; }
 .cross { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; pointer-events: none; z-index: 2;
          border-radius: 50%; background: var(--crimson); border: 3px solid var(--white); }
 .sat-label { z-index: 2; background: var(--cosmos); border-radius: 6px; }
@@ -59,19 +65,19 @@ h3 { letter-spacing: 0; text-transform: none; font-size: 14px; color: var(--mute
 /* ---- 1. intro: the name, the Earth under a white veil, play; the report below the name ---- */
 .bar { position: fixed; z-index: 4; left: 28px; top: calc(var(--sw) + 24px); width: calc(var(--left-col) - 28px); display: grid; gap: 12px;
        transition: opacity .3s, transform .45s; }
-.brand { font-size: clamp(52px, 5.4vw, 82px); line-height: .92; letter-spacing: -.06em; color: var(--white); }
+.brand { font-size: clamp(50px, 5vw, 78px); line-height: 1; letter-spacing: -.04em; color: var(--white); }
 .bar label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .results { color: var(--ink); }
 
 .veil { position: absolute; inset: 0; z-index: 8; display: grid; place-content: center; justify-items: center; gap: 16px;
-        padding: 0 7vw 12vh 0; background: rgba(255, 255, 255, .58); cursor: pointer; transition: opacity .35s; }
+        padding: 0 0 0 36vw; background: rgba(255, 255, 255, .55); cursor: pointer; transition: opacity .35s; }
 .veil p { color: var(--cosmos); font-size: 19px; letter-spacing: -.01em; }
-.begin { width: 132px; height: 132px; min-height: 0; padding: 0; border-radius: 50%; display: grid; place-items: center;
-         background: var(--white); color: var(--crimson); box-shadow: 0 0 0 14px rgba(255, 255, 255, .45);
-         transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), box-shadow .3s; }
-.begin svg { width: 62px; height: 62px; margin-left: 8px; }
-.begin:hover, .veil:hover .begin { transform: scale(1.07); box-shadow: 0 0 0 22px rgba(255, 255, 255, .4); background: var(--white); color: var(--crimson); }
-.begin:focus-visible { outline: 4px solid var(--cosmos); outline-offset: 18px; }
+/* play: a soft-cornered triangle, like the owner's sample */
+.begin, .begin:hover { width: 150px; height: 150px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 24px;
+         background: none; color: #231f20; transition: transform .3s cubic-bezier(.34, 1.56, .64, 1); }
+.begin svg { width: 128px; height: 128px; margin-left: 14px; overflow: visible; }
+.veil:hover .begin { transform: scale(1.08); }
+.begin:focus-visible { outline: 4px solid var(--cosmos); outline-offset: 6px; }
 
 .intro-report { position: fixed; z-index: 4; left: 28px; bottom: 28px; width: calc(var(--left-col) - 8px); display: grid; gap: 10px;
                 transition: opacity .3s, transform .45s; }
@@ -90,12 +96,12 @@ body[data-stage="intro"] .maplibregl-ctrl-bottom-right { display: none; }
 
 /* ---- 2. opening: the veil lifts, the Earth goes to the centre as a round globe ---- */
 body:not([data-stage="intro"]) .veil { opacity: 0; pointer-events: none; }
-body[data-stage="opening"] .lobe-map { right: calc(50vw - 39vh); top: calc(var(--sw) + 50vh - 39vh); width: 78vh; height: 78vh; border-radius: 50%; }
+body[data-stage="opening"] .lobe-map { clip-path: var(--shape-globe); }
 body:not([data-stage="intro"]) .intro-report { opacity: 0; transform: translateY(40px); pointer-events: none; }
 body[data-stage="opening"] .bar { opacity: 0; transform: translateX(-40px); }
 
 /* ---- 3. live: the blue fills the window and the tools come in around the Earth ---- */
-body[data-stage="live"] .lobe-map { right: 0; top: var(--sw); width: 100vw; height: calc(100vh - var(--sw)); border-radius: 0; }
+body[data-stage="live"] .lobe-map { clip-path: var(--shape-full); }
 body[data-stage="live"] :is(.bar, .tools, .rail, .timeline, .legend) { animation: arrive .5s .25s both cubic-bezier(.2, .8, .2, 1); }
 @keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
 body[data-stage="live"] .bar { left: var(--gap); top: calc(var(--sw) + 16px); width: auto; display: flex; align-items: center; gap: 14px; }
@@ -226,6 +232,7 @@ body[data-open="wheel"] .wheel-side .hint { display: block; }
   .brand { font-size: clamp(48px, 13vw, 84px); }
   .lobe-map { position: relative; right: auto; top: auto; width: auto; height: 62vh; margin: 16px; }
   body[data-stage="intro"] .veil { padding: 0; }
+  .lobe-map, body[data-stage] .lobe-map { clip-path: none; }
   body:not([data-stage="intro"]) .lobe-map { width: auto; height: 62vh; border-radius: var(--r-panel); }
   body:not([data-stage="intro"]) .intro-report { display: none; }
   body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { display: none; }

@@ -19,9 +19,18 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 
 // The page opens on the name, the Earth under a white veil and a play button. Play sends the
 // Earth to the centre, then its blue fills the window and the tools come in around it.
+// On the intro the globe sits in the middle of the blue area, right of the name; after that, in the middle.
+function frame(duration) {
+  const left = document.body.dataset.stage === "intro" && innerWidth > 1180 ? Math.round(innerWidth * 0.38) : 0;
+  map.easeTo({ padding: { left, top: 0, right: 0, bottom: 0 }, duration });
+}
+frame(0);
+addEventListener("resize", () => frame(0));
+
 async function begin() {
   if (document.body.dataset.stage !== "intro") return;
   document.body.dataset.stage = "opening";
+  frame(700);
   await wait(760);
   document.body.dataset.stage = "live";
   await wait(500);
@@ -33,6 +42,7 @@ async function leave() {
   document.body.dataset.stage = "opening";
   await wait(620);
   document.body.dataset.stage = "intro";
+  frame(700);
   el("begin").focus({ preventScroll: true });
 }
 el("veil").onclick = begin;
