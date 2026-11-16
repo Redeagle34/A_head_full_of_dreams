@@ -68,6 +68,7 @@ function closeAll() {
   showTools(false);
   window.satelliteView.toggle(false);
   window.fireView.toggle(false);
+  window.preventionView?.toggle?.(false);
   for (const [panel, button] of [["filters", "filtersBtn"], ["panel", "panelBtn"]])
     if (!el(panel).hidden) el(button).click();
 }
@@ -77,7 +78,7 @@ function closeAll() {
 // The satellite card and the panels of the settings join the column above the two cards, and
 // push them down; the column scrolls when it is full.
 const rail = el("rail");
-for (const id of ["panel", "filters", "firePanel", "satPanel"]) rail.prepend(el(id));
+for (const id of ["panel", "filters", "preventPanel", "firePanel", "satPanel"]) el(id) && rail.prepend(el(id));
 
 function open(which) {
   document.body.dataset.open = which;

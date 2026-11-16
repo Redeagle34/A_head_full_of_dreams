@@ -1,4 +1,4 @@
-"""Read-only access to data/fire.duckdb."""
+"""Read-only access to data/fire.duckdb, and a connection for reading the Parquet files."""
 import duckdb
 
 from .config import DB_PATH
@@ -18,3 +18,15 @@ def cursor():
             raise Missing(f"{DB_PATH} is missing. Run: python pipeline/build_db.py")
         _connection = duckdb.connect(str(DB_PATH), read_only=True)
     return _connection.cursor()
+
+
+_files = None
+
+
+def files():
+    """A cursor for queries on Parquet files (data/events/). One connection for the whole server:
+    opening a new one costs about 30 ms, more than most of these queries."""
+    global _files
+    if _files is None:
+        _files = duckdb.connect()
+    return _files.cursor()

@@ -1,35 +1,42 @@
-"""Vercel entry point: the same application as `uvicorn server.main:app`.
+"""Vercel entry point: the same application as `uvicorn server.main:app`, on the small copy of the data.
 
-Vercel refuses files above 100 MB, so data/fire.duckdb is uploaded in pieces
-(data/deploy/fire.duckdb.part*, made by pipeline/prepare_deploy.py) and joined
-here in /tmp when the function starts. /tmp is the only folder a Vercel function
-can write to, so the cache of satellite orbits goes there too.
+A Vercel function may hold 225 MB of code, packages and data, so it reads data/deploy/, written by
+pipeline/prepare_deploy.py: the observations as Parquet files and the small tables in fire.duckdb.
+When the function starts, that small database is copied to the temporary folder (the only one a
+function can write to) and the table `obs` is added to it as a view over the Parquet files. The rest
+of the server does not know the difference.
 
-Answers are compressed: a Vercel function may not answer with more than 4.5 MB.
+The cache of satellite orbits goes to the temporary folder too. Answers are compressed: a Vercel
+function may not answer with more than 4.5 MB (server/main.py).
+
+To try this start-up on your computer:  python -m uvicorn api.index:app --port 8791
 """
 import os
 import pathlib
 import shutil
 import sys
+import tempfile
+
+import duckdb
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+DEPLOY = ROOT / "data" / "deploy"
+TMP = pathlib.Path(tempfile.gettempdir())
 
-parts = sorted((ROOT / "data" / "deploy").glob("fire.duckdb.part*"))
-if parts:
-    target = pathlib.Path("/tmp/fire.duckdb")
+if (DEPLOY / "fire.duckdb").exists():
+    from pipeline.prepare_deploy import obs_view_sql
+
+    target = TMP / "fire.duckdb"
     if not target.exists():
-        tmp = target.with_suffix(".joining")
-        with open(tmp, "wb") as out:
-            for part in parts:
-                with open(part, "rb") as src:
-                    shutil.copyfileobj(src, out)
-        tmp.replace(target)
+        building = target.with_suffix(".building")
+        shutil.copyfile(DEPLOY / "fire.duckdb", building)
+        con = duckdb.connect(str(building))
+        con.execute(f"CREATE OR REPLACE VIEW obs AS {obs_view_sql(DEPLOY)}")
+        con.close()
+        building.replace(target)
     os.environ["FIRE_DB_PATH"] = str(target)
-os.environ.setdefault("TLE_CACHE_PATH", "/tmp/tle_cache.json")
+    os.environ["FIRE_EVENTS_DIR"] = str(DEPLOY / "events")
+os.environ.setdefault("TLE_CACHE_PATH", str(TMP / "tle_cache.json"))
 
-from fastapi.middleware.gzip import GZipMiddleware  # noqa: E402
-
-from server.main import app  # noqa: E402
-
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+from server.main import app  # noqa: E402,F401   (it compresses its answers itself)

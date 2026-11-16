@@ -437,3 +437,56 @@ Not done or not verified:
 - The area name passed from the map can be stale while the map is still moving.
 - Still open from the original plan: seven-day forecast, prevention layers,
   Hawaii volcano mask, Terra 2000-2002, 2026 data.
+
+### Report output check (2026-11-15)
+
+Checked with a headless browser: one picture per section, the report printed
+to PDF and rendered page by page, every CSV parsed, the JSON read.
+
+Found and fixed:
+- Print: sections refused to split, so pages were left almost empty (12 pages,
+  two nearly blank), and tables shrank to their content because the phone rule
+  also applied on paper. Now 8 pages, full-width tables, table headings repeat
+  on each page, no chart, row or tile is cut.
+- CSV: no byte-order mark, so Excel would show km2 headings wrongly; the flag
+  column had no heading; shares had no unit. Now with the mark, "Flag (1
+  unusual, 2 record)", and "(fraction)" on share columns.
+- Charts: the missed-fires axis did not say percent; two axis labels touched a
+  tick; dates wrapped inside table cells.
+
+Confirmed: all eight charts match their tables; the builder and the CSV links
+are not printed; each of the nine CSV files has the rows of its table; the JSON
+holds places, dates and the eleven sections.
+
+Not verified: printing from the browser's own print dialog (margins and paper
+size chosen there), and opening the CSV in Excel itself.
+
+## Public copy on Vercel updated (2026-11-15, src: user)
+
+The public copy now runs the current main: one Fires panel with danger levels,
+satellites, time bar, phone layout, scientific report.
+
+First try failed: Vercel reported a function of 342 MB against a limit of
+225 MB (the 500 MB assumed before was wrong, and the upload limit of 100 MB
+did not apply). `pipeline/prepare_deploy.py` was rewritten to write a smaller
+copy of the same data in `data/deploy/` (180 MB instead of 303 MB):
+observations as compressed Parquet, Aqua rows of the harmonized layer stored
+once, coordinates to 4 decimals, ratings to the digits shown. `api/index.py`
+makes the table `obs` a view over those files at start-up.
+
+Checked:
+- The script's own checks: every table and file keeps all its rows; the
+  harmonized layer adds up to the same total (within rounding).
+- The same start-up on this computer, against the normal local server, on 12
+  routes: same status, same answer sizes, same speed; report totals differ by
+  0.02% (7,677.7 against 7,679.2 active cell-days).
+- On Vercel, preview and public address: page, report page, scripts, 3D models
+  and every data route answer 200; the report for California, Oregon and a
+  Flint Hills box answers in under 1 s. First request after a pause: 4.3 s.
+
+Not done or not verified:
+- Landsat pictures are off on Vercel (503 with the reason).
+- The public page was checked by its routes, not looked at in a browser or on
+  a phone.
+- The estimate in `prepare_deploy.py` says 222 of 225 MB: little room for more
+  data on Vercel.

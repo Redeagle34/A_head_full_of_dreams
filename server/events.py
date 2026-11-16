@@ -15,13 +15,12 @@ import datetime
 import decimal
 import json
 import os
+import pathlib
 
-import duckdb
-
-from . import fires
+from . import db, fires
 from .config import EE_PROJECT, EE_SERVICE_ACCOUNT_JSON, EE_SERVICE_ACCOUNT_KEY, ROOT
 
-EVENTS = ROOT / "data" / "events"
+EVENTS = pathlib.Path(os.environ.get("FIRE_EVENTS_DIR", ROOT / "data" / "events"))     # api/index.py points it at the small copy
 DLAT, DLON = 0.01, 0.0125       # the grid of pipeline/fire_events.py
 MAX_EVENTS = 300
 MAX_RADIUS_KM = 500
@@ -48,7 +47,7 @@ def _file(name, script):
 
 
 def _rows(sql, params=()):
-    cur = duckdb.connect().execute(sql, params)
+    cur = db.files().execute(sql, params)
     names = [d[0] for d in cur.description]
     return [dict(zip(names, r)) for r in cur.fetchall()]
 

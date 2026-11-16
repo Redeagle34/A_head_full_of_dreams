@@ -42,7 +42,8 @@ function figure(chart, caption) {
   return el("figure", {}, chart, el("figcaption", { textContent: caption }));
 }
 
-// A table with a "CSV" link under it. columns: [key, heading, format?]
+// A table with a "CSV" link under it. columns: [key, heading, format?, heading in the CSV?]
+// The CSV holds the plain values, not the formatted ones: shares are fractions, dates are ISO dates.
 function table(rows, columns, name, footnote = "") {
   const head = el("tr", {}, ...columns.map(([, heading]) => el("th", { textContent: heading })));
   const body = rows.map(r => el("tr", {}, ...columns.map(([key, , format]) => {
@@ -52,7 +53,9 @@ function table(rows, columns, name, footnote = "") {
     return cell;
   })));
   const quote = v => `"${String(v ?? "").replaceAll('"', '""')}"`;
-  const csv = [columns.map(([, h]) => quote(h)).join(","), ...rows.map(r => columns.map(([k]) => quote(r[k])).join(","))].join("\n");
+  const heading = ([, h, format, inCsv]) => inCsv ?? (format === pct ? `${h} (fraction)` : h);
+  // ﻿: a byte-order mark, so that Excel reads the file as UTF-8 (km² in the headings)
+  const csv = "﻿" + [columns.map(c => quote(heading(c))).join(","), ...rows.map(r => columns.map(([k]) => quote(r[k])).join(","))].join("\r\n");
   const link = el("a", { textContent: "Download this table (CSV)", download: `${name}.csv`,
                          href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })) });
   return el("div", {}, el("table", {}, el("thead", {}, head), el("tbody", {}, ...body)),
@@ -204,7 +207,7 @@ const RENDER = {
     const tag = flag => el("span", { className: `tag ${flag === 2 ? "record" : ""}`, textContent: flag === 2 ? "record" : "unusual" });
     const out = [figure(chart, "Each week of the period (red line) against what is typical for that time of year (grey line: median; grey area: up to the 90th percentile). Dots: unusual weeks; large dark dots: records.")];
     out.push(d.flagged.length
-      ? table(d.flagged, [["week", "Week of", pretty], ["cell_days", "Active cell-days", num], ["typical", "Typical (median)", num], ["p90", "90th percentile", num], ["flag", "", tag]],
+      ? table(d.flagged, [["week", "Week of", pretty], ["cell_days", "Active cell-days", num], ["typical", "Typical (median)", num], ["p90", "90th percentile", num], ["flag", "", tag, "Flag (1 unusual, 2 record)"]],
               "unusual-weeks", `${d.flagged.length} of ${d.weeks_in_period} weeks`)
       : el("p", { textContent: `None of the ${d.weeks_in_period} weeks of the period was unusual for its time of year.` }));
     return out;
@@ -223,7 +226,7 @@ const RENDER = {
 
   danger(d) {
     if (!d.levels.length) return [];
-    const chart = plot({ height: 220, marginLeft: 90, x: { label: "fires", grid: true }, y: { label: null, domain: d.levels.map(l => l.level) }, marks: [
+    const chart = plot({ height: 236, marginLeft: 90, marginBottom: 44, x: { label: "fires", labelAnchor: "center", grid: true }, y: { label: null, domain: d.levels.map(l => l.level) }, marks: [
       Plot.barX(d.levels, { y: "level", x: "fires", fill: l => LEVEL_COLOR[l.level], title: l => `${l.level}: ${int(l.fires)} fires` }), Plot.ruleX([0])] });
     const name = v => el("span", {}, el("span", { className: "dot", style: `background:${LEVEL_COLOR[v]}` }), v);
     return [figure(chart, "Fires of the period by danger level. The level is the chance of reaching 1,000 acres, judged after two days of VIIRS passes."),
@@ -237,7 +240,7 @@ const RENDER = {
   vegetation(d) {
     if (!d.classes.length) return d.note ? [] : [el("p", { textContent: "No fire of 10 km² or more with a mapped burn in these places and dates." })];
     const rows = d.classes.filter(c => c.share >= 0.005);
-    const chart = plot({ height: 40 + 26 * rows.length, marginLeft: 220, x: { label: "km² burned", grid: true }, y: { label: null, domain: rows.map(c => c.name) }, marks: [
+    const chart = plot({ height: 56 + 26 * rows.length, marginLeft: 220, marginBottom: 44, x: { label: "km² burned", labelAnchor: "center", grid: true }, y: { label: null, domain: rows.map(c => c.name) }, marks: [
       Plot.barX(rows, { y: "name", x: "km2", fill: "#5f8f4e", title: c => `${c.name}: ${num(c.km2)} km²` }), Plot.ruleX([0])] });
     return [figure(chart, "Land cover the year before the fire (MODIS MCD12Q1), inside the burned-area map (MODIS MCD64A1)."),
       table(d.classes, [["name", "Land cover"], ["km2", "Burned, km²", num], ["share", "Share", pct]], "vegetation-burned"),
@@ -247,7 +250,7 @@ const RENDER = {
   missed(d) {
     if (!d.by_size.length) return [];
     const rows = d.by_size.map(r => ({ ...r, missed: 1 - r.seen_either }));
-    const chart = plot({ height: 230, marginBottom: 40, x: { label: "final size of the reported fire, acres", domain: rows.map(r => r.size) }, y: { label: "seen by a satellite", grid: true, percent: true, domain: [0, 100] }, marks: [
+    const chart = plot({ height: 230, marginBottom: 40, x: { label: "final size of the reported fire, acres", domain: rows.map(r => r.size) }, y: { label: "seen by a satellite, % of reports", grid: true, percent: true, domain: [0, 100] }, marks: [
       Plot.barY(rows, { x: "size", y: "seen_either", fill: FIRE, title: r => `${r.size}: ${pct(r.seen_either)} of ${int(r.reports)} reports` }), Plot.ruleY([0])] });
     return [figure(chart, "Share of agency-reported wildfires that MODIS or VIIRS detected within 2 km, from 1 day before to 3 days after the report."),
       table(rows, [["size", "Final size, acres"], ["reports", "Reports", int], ["seen_viirs", "Seen by VIIRS", pct], ["seen_modis", "Seen by MODIS", pct], ["seen_either", "Seen by either", pct], ["missed", "Missed", pct]], "reported-fires-seen",

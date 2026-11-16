@@ -170,6 +170,45 @@ Added on the branch `fire-events-satellite-globe`. Method, sources and measured 
 | `GET /api/report/sections` | the sections a report can hold |
 | `POST /api/report` | the report as data. Body: `states` (two-letter codes), `boxes` (`name`, `bbox`), `start`, `end`, `sections` |
 
+## Prevention: cells to treat with prescribed burns
+
+The **Prevention** button on the map. For the area on screen it finds the cells where a
+prescribed burn cuts the most likely routes a wildfire would spread along. Plan and sources:
+[CriticalNode.md](CriticalNode.md) (Yemshanov et al. 2021; Alexandridis et al. 2008).
+
+Cell size follows the zoom: the finest of about 1, 2, 4 or 10 km that keeps the area under 2,500
+cells that can burn. 1 km (0.01° x 0.0125°) is the grid the fires are recorded on
+(`pipeline/fire_events.py`), so it is the finest size the fire record supports.
+
+1. **Simulated fires** (Monte Carlo, 2,000-20,000): each starts in a cell drawn by how many fires
+   started there in 2000-2025, and jumps to each of the 8 neighbours with
+   `p_h x (1 + p_veg) x (1 + p_den) x p_wind x p_slope`: land cover (MCD12Q1), tree cover in forests
+   (MOD44B), the wind of the burning cell, and the height difference between cells (SRTM). Each
+   cell's usual wind is its mean gridMET wind on its high fire-danger days, 2012-2025 (energy
+   release component in its own top 10%): speed as the mean speed, direction as the vector mean.
+   The panel can set one wind for the whole area instead. `p_h` is set so the simulated
+   fires have the mean size of the real fires that started in the area.
+2. **Weights:** `p_ij` = share of simulated fires that started in cell `i` and reached cell `j`.
+3. **Search:** treat, one at a time, the cell that lowers the sum of `p_ij` over pairs still
+   connected the most per km², until the chosen number of cells (up to 60) is treated (greedy, as
+   in the plan; good, not necessarily optimal).
+
+The panel shows the burn probability of every cell, the cells to treat in order, how much each
+lowers the connected routes, and two checks: simulated against real mean fire size, and the rank
+correlation between simulated burn probability and how many real fires touched each cell.
+
+Data: `python pipeline/critical_landscape.py` (Earth Engine, about 15 minutes) writes
+`data/events/landscape_1.parquet`, `_2`, `_4` and `_10`, one row per cell. Land cover, tree cover,
+height and wind come from Earth Engine in 8° tiles, kept in `data/raw/ee/critical/`. Search:
+`server/critical.py`, pure Python so it also runs on Vercel; a few seconds. Check:
+`python -m server.critical`. The Vercel copy carries only the 10 km cells (the finer files do not
+fit next to the rest), so on Vercel every search uses 10 km cells.
+
+Limits: fires stop at the edge of the screen; built-up land, water, snow and barren land do not
+burn; the usual wind is an average and the wind on a fire's day can differ; Hawaii has no gridMET
+wind (3 m/s from the west, or the wind chosen in the panel); no fuel moisture or season. Ignitions include agricultural burning, so in farm valleys (for example the Sacramento
+Valley) cropland cells can rank first.
+
 ## Repository structure
 
 ```
@@ -183,6 +222,7 @@ pipeline/               builds the data, in this order
   danger_inputs.py      weather and place inputs per fire, from Google Earth Engine
   danger_model.py       train the danger model, rate every fire, store it in the database
   fire_events.py        group MODIS and VIIRS detections into the fires the page lists
+  critical_landscape.py the cells of the Prevention search at 1, 2, 4, 10 km: ignitions, land cover, height, wind
   check_keys.py         test the keys in .env (FIRMS, Earth Engine)
 server/                 FastAPI application
   main.py               routes and input checks only
@@ -191,6 +231,7 @@ server/                 FastAPI application
   stats.py              typical range, unusual and record weeks
   events.py             the fires: in a map view, around a point, one by one; reported fires
   report.py             the scientific report: places, sections, fixed text
+  critical.py           Prevention: fire spread simulation and the cells to treat (CriticalNode.md)
   fires.py              the danger rating in words: level names, exposure, conditions
   db.py                 read-only DuckDB connection
   config.py             paths, limits, .env loading
@@ -199,6 +240,8 @@ web/
   style.css             map page: appearance
   app.js                map page: behaviour (sections are listed at the top)
   fires.js              map page: the Fires panel, fire markers and the search around a point
+  prevention.js         map page: the Prevention panel and its layers
+  tour.js               map page: the first-visit tour of the tools (the ? button starts it again)
   report.html, report.css, report.js   scientific report page
   states.html           state overview page
   data/                 calendar.json, states.geojson (generated, committed)
@@ -222,6 +265,8 @@ requirements-pipeline.txt  extra packages for the danger pipeline
 | `GET /api/calendar?layer&bbox` | weekly history of the area, with flags |
 | `GET /api/detections.csv?layer&bbox&start&end` | observations behind the layer |
 | `GET /api/danger/levels` | what each level meant in 2022-2025 |
+| `GET /api/critical/size?bbox` | Prevention: the cell size a search would use for the view |
+| `GET /api/critical?bbox&budget_km2&wind_ms&wind_from&runs&seed` | Prevention: burn probability per cell and the cells to treat; without `wind_ms`, `wind_from` each cell keeps its usual wind |
 
 `layer` is `viirs`, `modis` or `both`; `bbox` is `west,south,east,north`;
 `metric` is `intensity`, `days` or `unusual`. Interactive documentation is at
@@ -391,6 +436,10 @@ python pipeline/danger_model.py
 not have to be trained again after it.
 
 ```bash
+python pipeline/critical_landscape.py
+```
+
+```bash
 python -m uvicorn server.main:app --port 8780
 ```
 
@@ -400,17 +449,17 @@ is needed.
 
 ## Deploy to Vercel
 
-The copy on Vercel is the same application, started by `api/index.py`.
+The copy on Vercel is the same application, started by `api/index.py`, on a smaller copy
+of the data.
 
-1. Build the data (see Run), then stop the local server and cut the database in pieces:
+1. Build the data (see Run), then make the small copy:
 
 ```bash
 python pipeline/prepare_deploy.py
 ```
 
-It writes `data/deploy/fire.duckdb.part*` and prints the size of the upload and of the
-function against Vercel's limits. Run it again after every `build_db.py` or
-`danger_model.py`.
+It writes `data/deploy/` and prints its size against Vercel's limit. Run it again after
+every `build_db.py`, `fire_events.py` or `danger_model.py`.
 
 2. Publish:
 
@@ -419,23 +468,27 @@ vercel deploy --prod
 ```
 
 What goes up (`.vercelignore`): `server/`, `api/`, `web/`, `data/deploy/` and
-`data/events/`. Not the raw data, the pipeline or `.env`.
+`pipeline/prepare_deploy.py`. Not the raw data, the rest of the pipeline or `.env`.
 
 How it differs from the local server:
 
-- **Database:** Vercel refuses files above 100 MB, so the function joins the pieces
-  into `/tmp/fire.duckdb` at its first start. The first request after a pause is slow.
-- **Upload size:** the upload is above 100 MB. The Vercel documentation allows that on
-  the Pro plan only (1 GB); on Hobby the deploy may be refused.
+- **Data:** a Vercel function may hold 225 MB of code, packages and data; the data as
+  built is about 300 MB. `prepare_deploy.py` stores the same rows smaller (180 MB):
+  observations as compressed Parquet instead of inside the database, the Aqua
+  observations of the harmonized layer stored once, coordinates to 4 decimals (about
+  10 m), radiative power to 0.1 MW. Numbers differ from the local server by up to 0.1%.
+  When the function starts, `api/index.py` copies the small database to the temporary
+  folder and adds the observations to it as a view over the Parquet files.
+- **First request after a pause** takes a few seconds.
 - **3D models:** `web/` is served by Vercel as static files and `web/models/` is left
   out of the function to keep it small.
 - **Answers** are compressed, because a function may not answer with more than 4.5 MB.
-- **Landsat pictures** (`/api/events/{id}/sharp`) are off unless Earth Engine is set
-  up: add `earthengine-api` to `requirements.txt`, and set `EE_PROJECT` and
-  `EE_SERVICE_ACCOUNT_JSON` (the whole text of a service-account key) in the Vercel
-  project. Without them the route answers 503 with the reason and the rest works.
+- **Landsat pictures** (`/api/events/{id}/sharp`) are off: Earth Engine does not fit in
+  the function next to the data. The route answers 503 with the reason and the rest works.
 - **Missing data:** a part of the page whose file was not built says which script to
   run; nothing else fails.
+
+To try the Vercel start-up on your computer: `python -m uvicorn api.index:app --port 8791`.
 
 ## Known limits
 
