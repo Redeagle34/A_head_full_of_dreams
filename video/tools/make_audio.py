@@ -17,7 +17,7 @@ rng = np.random.default_rng(7)
 
 # --- same remap as main.js: [video, story]
 REMAP = [[0, 0], [3.19, 4.0], [4.46, 6.0], [6.29, 8.0], [7.5, 9.6], [8.6, 11.0], [9.95, 12.6], [11.1, 13.7],
-         [13.6, 18.0], [15.0, 19.9], [18.7, 22.8], [21.0, 25.8], [27.4, 34.45], [30, 37.8]]
+         [13.6, 18.0], [15.0, 19.9], [18.7, 22.8], [21.0, 25.8], [23.75, 29.15], [25.25, 31.95], [27.4, 34.45], [30, 37.8]]
 
 
 def vt(story):
@@ -304,12 +304,16 @@ whoosh(vt(T_FEAT), 0.55, 3000, 400, 0.2, pan=0.6)
 # features: caption swishes, typing, clicks, zooms, Play
 for ts in (TFS + 1.9, TFS + 4.8, TFS + 7.6):
     whoosh(vt(ts), 0.35, 1500, 6000, 0.12)
-for k in range(9):
-    key(vt(TFS + 1.95) + k * 0.055 + rng.uniform(0, 0.01))
-for ts in (TFS + 2.5, TFS + 4.95, TFS + 8.15):
+ks = vt(TFS + 2.15); ke = vt(TFS + 2.8)
+for k in range(14):                                   # typing "Paradise, California"
+    key(ks + k * (ke - ks) / 14 + rng.uniform(0, 0.008))
+key(vt(TFS + 2.9), 0.3)                               # Enter
+for ts in (TFS + 2.08, TFS + 4.95, TFS + 8.15):
     click(vt(ts), 0.28)
-for ts, d in ((TFS + 3.45, 0.5), (TFS + 8.6, 0.5)):
+whoosh(vt(TFS + 3.0), vt(TFS + 3.45) - vt(TFS + 3.0), 300, 5000, 0.22)   # fly to Paradise
+for ts, d in ((TFS + 3.6, 0.45), (TFS + 8.6, 0.5)):
     whoosh(vt(ts), vt(ts + d) - vt(ts), 400, 3000, 0.14)
+pop(vt(TFS + 3.85), 1100, 0.18)                       # card highlight
 for i in range(12):
     tick(vt(TFS + 5.3 + i * 0.19), 0.07, 1800, pan=0.2)
 # exit: fling, fire roar with crackle, flash, slam, embers

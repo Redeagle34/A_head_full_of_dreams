@@ -43,6 +43,31 @@ async function setDates(a, b) { // the app's own timeline API, so both ends are 
 async function closeResults() { await page.keyboard.press('Escape'); await page.evaluate(() => { const r = document.getElementById('results'); if (r) r.hidden = true; document.activeElement?.blur(); }); await wait(500); }
 async function zoomOut(n) { for (let i = 0; i < n; i++) { await page.locator('.maplibregl-ctrl-zoom-out').first().click().catch(() => {}); await wait(900); } await idle(3500); }
 
+if (step === 'f1b') { // the search, step by step: empty box, typing, suggestions, the map flying there, the result
+  await setDates('2018-01-01', '2018-12-31');
+  const box = page.locator('#place');
+  await box.click(); await box.fill(''); await wait(600);
+  const rect = async sel => page.locator(sel).first().boundingBox().catch(() => null);
+  const boxes = { place: await rect('#place') };
+  await shot('f1_empty');
+  const text = 'Paradise, California';
+  let typed = 0;
+  for (const [k, n] of [[1, 2], [2, 5], [3, 8], [4, 12], [5, 16], [6, text.length]]) {
+    await box.type(text.slice(typed, n), { delay: 45 }); typed = n; await wait(k === 6 ? 700 : 500);
+    await shot(`f1_t${k}`);
+  }
+  await box.press('Enter'); await page.locator('#results li').first().waitFor({ state: 'visible', timeout: 20000 }).catch(() => {}); await wait(800);
+  boxes.first = await rect('#results li');
+  await shot('f1_suggest');
+  await page.locator('#results li').first().click();
+  await wait(350); await shot('f1_fly1');
+  await wait(700); await shot('f1_fly2');
+  await idle(6000); await closeResults(); await zoomOut(2);
+  boxes.card = await rect('#nearFires .fire');
+  await shot('f1_result');
+  fs.writeFileSync(path.join(OUT, 'f1_boxes.json'), JSON.stringify(boxes, null, 1));
+  console.log(JSON.stringify(boxes));
+}
 if (step === 'all' || step === 'f1') {
   typingName = 'f1';
   await setDates('2018-01-01', '2018-12-31');

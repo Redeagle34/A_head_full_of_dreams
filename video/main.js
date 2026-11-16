@@ -21,7 +21,7 @@ const DURATION = 30;
 // "Our solution is an interactive..." 11.5 s, "MODIS / VIIRS" 15.3-18.1 s.
 // After the proposal: "Our solution ... all the fires that are active" over OUR WEBPAGE + the live map (to 15.3 s),
 // "detected by MODIS or by VIIRS" over DATASETS (15.3-18.8 s); ALGORITHMS 18.7-21 s; features 21.2-27.4 s; exit to 30 s.
-const REMAP = [[0, 0], [3.19, 4.0], [4.46, 6.0], [6.29, 8.0], [7.5, 9.6], [8.6, 11.0], [9.95, 12.6], [11.1, 13.7], [13.6, 18.0], [15.0, 19.9], [18.7, 22.8], [21.0, 25.8], [27.4, 34.45], [30, 37.8]];
+const REMAP = [[0, 0], [3.19, 4.0], [4.46, 6.0], [6.29, 8.0], [7.5, 9.6], [8.6, 11.0], [9.95, 12.6], [11.1, 13.7], [13.6, 18.0], [15.0, 19.9], [18.7, 22.8], [21.0, 25.8], [23.75, 29.15], [25.25, 31.95], [27.4, 34.45], [30, 37.8]];
 function storyTime(v) {
   for (let k = 1; k < REMAP.length; k++) { const [v0, s0] = REMAP[k - 1], [v1, s1] = REMAP[k]; if (v <= v1) return s0 + ((v - v0) / (v1 - v0)) * (s1 - s0); }
   return REMAP[REMAP.length - 1][1];
@@ -83,7 +83,7 @@ async function loadAll() {
     loadJSON('assets/land-110m.json'), loadJSON('data/fires_ca_20200908.json'), loadJSON('data/fires_us_sep2020.json'),
     loadJSON('data/mosaics.json'), loadJSON('data/patches.json'), loadJSON('data/weekly_ca_2020.json')]);
   const mosImgs = await Promise.all(mosaics.map(m => loadImg(m.src)));
-  const featNames = ['f0_open', 'f1_typing', 'f1_result', 'f2_set', ...Array.from({ length: 12 }, (_, i) => `f2_play${i}`), 'f3_fire', 'f3_landsat'];   // real app screens (tools/capture_features.mjs)
+  const featNames = ['f0_open', 'f1_empty', 'f1_t1', 'f1_t2', 'f1_t3', 'f1_t4', 'f1_t5', 'f1_t6', 'f1_typing', 'f1_result', 'f2_set', ...Array.from({ length: 12 }, (_, i) => `f2_play${i}`), 'f3_fire', 'f3_landsat'];   // real app screens (tools/capture_features.mjs)
   const featImgs = await Promise.all(featNames.map(n => loadImg(`assets/web/${n}.png`)));
   const feat = Object.fromEntries(featNames.map((n, k) => [n, featImgs[k]]));
   const logo = await loadImg('assets/nasa_spaceapps.png');
@@ -1058,17 +1058,41 @@ function captureFreeze() {
 }
 const SHOTS = [ // what the laptop screen shows: start time, screenshot, optional zoom keyframes [t, zoom, focusX, focusY]
   { t: TF + 1.9, img: 'f0_open' },                                     // the map, while DATASETS / ALGORITHMS play
-  { t: TFS + 1.9, img: 'f1_typing' },                                   // search a city
-  { t: TFS + 3.2, img: 'f1_result', zoom: [[TFS + 3.45, 1, CX, CY], [TFS + 3.95, 2.0, 330, 600], [TFS + 4.55, 2.0, 330, 600], [TFS + 4.8, 1, CX, CY]] },
+  // search a city: zoom on the box, real typing frames, Enter, fly to Paradise, zoom on its fire card
+  { t: TFS + 1.9, img: 'f1_empty', zoom: [[TFS + 1.95, 1, CX, CY], [TFS + 2.15, 2.2, 500, 245]] },
+  ...[1, 2, 3, 4, 5, 6].map(k => ({ t: TFS + 2.03 + k * 0.12, img: `f1_t${k}`, cut: true, zoom: k < 6 ? [[0, 2.2, 500, 245]] : [[TFS + 3.0, 2.2, 500, 245], [TFS + 3.4, 5.0, 600, 470]] })),
+  { t: TFS + 3.15, img: 'f1_result', zoom: [[TFS + 3.15, 1.6, 1160, 504], [TFS + 3.45, 1, CX, CY], [TFS + 3.6, 1, CX, CY], [TFS + 4.05, 1.9, 330, 690], [TFS + 4.8, 1.9, 330, 690]] },
   { t: TFS + 4.8, img: 'f2_set' },                                      // a period, then Play
   ...Array.from({ length: 12 }, (_, i) => ({ t: TFS + 5.3 + i * 0.19, img: `f2_play${i}`, cut: true })),
   { t: TFS + 7.6, img: 'f3_fire' },                                     // one fire, then its Landsat pictures
   { t: TFS + 8.4, img: 'f3_landsat', zoom: [[TFS + 8.6, 1, CX, CY], [TFS + 9.1, 2.4, 400, 790], [TFS + 10.6, 2.55, 400, 790]] },
 ];
 const CURSOR = [ // [t, x, y, click] in screenshot pixels
-  [TFS + 2.0, 980, 640], [TFS + 2.5, 300, 34, true], [TFS + 3.3, 760, 560],
+  [TFS + 1.95, 980, 640], [TFS + 2.08, 446, 38, true], [TFS + 2.7, 650, 150], [TFS + 3.6, 700, 560],
   [TFS + 4.95, 476, 982, true], [TFS + 7.0, 900, 700], [TFS + 8.15, 207, 544, true], [TFS + 9.0, 600, 760],
 ];
+const CALLOUTS = [ // [from, to, text, label x, y, highlight rect x, y, w, h] (rects from assets/web/f1_boxes.json)
+  [TFS + 2.0, TFS + 2.95, 'Type any place', 640, 38, 296, 16, 300, 44],
+  [TFS + 2.8, TFS + 3.05, 'Enter', 640, 38, 296, 16, 300, 44],
+  [TFS + 3.85, TFS + 4.8, 'Its fires, ranked by danger', 400, 720, 40, 659, 340, 123],
+];
+function drawCallouts(g, t, z) {
+  CALLOUTS.forEach(([t0, t1, text, x, y, rx, ry, rw, rh]) => {
+    const a = clamp(prog(t, t0, t0 + 0.15)) * (1 - prog(t, t1 - 0.1, t1)); if (a <= 0) return;
+    const pulse = 1 + 0.06 * Math.sin(t * 18);
+    g.save(); g.globalAlpha = a;
+    g.strokeStyle = '#ff8a2a'; g.lineWidth = 5 / z; g.shadowColor = 'rgba(255,138,42,0.8)'; g.shadowBlur = 14 / z;
+    g.beginPath(); g.roundRect(rx - 6 / z * pulse, ry - 6 / z * pulse, rw + 12 / z * pulse, rh + 12 / z * pulse, 12 / z); g.stroke();
+    g.shadowColor = 'transparent';
+    const fs = 30 / z; g.font = `700 ${fs}px "Space Grotesk"`; g.textBaseline = 'middle';
+    const tw = g.measureText(text).width, pad = 14 / z, h = fs * 1.6, e = E.outBack(clamp(prog(t, t0, t0 + 0.3)));
+    g.translate(x, y); g.scale(e, e);
+    g.fillStyle = '#ff7a2f'; g.beginPath(); g.roundRect(0, -h / 2, tw + pad * 2, h, h / 2); g.fill();
+    g.beginPath(); g.moveTo(0, -h * 0.22); g.lineTo(-12 / z, 0); g.lineTo(0, h * 0.22); g.fill();
+    g.fillStyle = '#fff'; g.fillText(text, pad, 0);
+    g.restore();
+  });
+}
 function zoomOf(shot, t) {
   const k = shot.zoom; if (!k) return [1, CX, CY];
   if (t <= k[0][0]) return k[0].slice(1);
@@ -1113,6 +1137,8 @@ function drawScreen(t) {
       CURSOR.forEach(([tc, x, y, click]) => { if (!click) return; press += Math.exp(-(((t - tc) / 0.07) ** 2)); const r = prog(t, tc, tc + 0.5); if (r > 0 && r < 1) { g.strokeStyle = `rgba(255,170,60,${1 - r})`; g.lineWidth = 4 / z; g.beginPath(); g.arc(x, y, (10 + r * 46) / z, 0, 7); g.stroke(); } });
       drawCursor(g, px, py, (2.1 / z) * (1 - 0.18 * press), ca);
       g.restore();
+    }
+    { const [z, fx, fy] = view; g.save(); g.translate(CX, CY); g.scale(z, z); g.translate(-fx, -fy); drawCallouts(g, t, z); g.restore();
     }
   }
   const sh = prog(t, TF + 0.8, TF + 1.9) * 0.9; // glass sheen once it is a real screen

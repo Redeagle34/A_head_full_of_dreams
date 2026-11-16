@@ -16,7 +16,7 @@ ffmpeg -v error -y -i voice_raw.mp4 -filter_complex \
 ffmpeg -v error -y -i voice2_raw.mp4 -af "$CLEAN" -ar 48000 -ac 2 voice2_clean.wav
 line() { echo "[1:a]atrim=$1:$2,asetpts=PTS-STARTPTS,afade=t=in:d=0.03,afade=t=out:st=$(python -c "print(round($2-$1-0.1,3))"):d=0.1,adelay=$3|$3[$4];"; }
 ffmpeg -v error -y -i voice_clean.wav -i voice2_clean.wav -filter_complex \
- "$(line 1.90 4.50 18950 s1)$(line 5.00 6.60 21200 s2)$(line 6.70 8.60 23250 s3)$(line 8.88 11.60 25100 s4)$(line 12.58 13.75 28600 s5)[0:a]apad=whole_dur=30[b];[b][s1][s2][s3][s4][s5]amix=inputs=6:normalize=0:duration=first" \
+ "$(line 1.90 4.50 18950 s1)$(line 5.00 6.60 21350 s2)$(line 6.70 8.60 23700 s3)$(line 8.88 11.60 25250 s4)$(line 12.58 13.75 28600 s5)[0:a]apad=whole_dur=30[b];[b][s1][s2][s3][s4][s5]amix=inputs=6:normalize=0:duration=first" \
  -t 30 -ar 48000 -ac 2 voice_full.wav
 
 # 3) final mix: music ducks under the voice
