@@ -19,18 +19,33 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 
 // The page opens on the name, the Earth under a white veil and a play button. Play sends the
 // Earth to the centre, then its blue fills the window and the tools come in around it.
-// On the intro the globe sits in the middle of the blue area, right of the name; after that, in the middle.
-function frame(duration) {
-  const left = document.body.dataset.stage === "intro" && innerWidth > 1180 ? Math.round(innerWidth * 0.38) : 0;
-  map.easeTo({ padding: { left, top: 0, right: 0, bottom: 0 }, duration });
+// The middle of the map is the middle of the free space: on the intro, the blue area right of
+// the name; live, the space right of the column and above the time bar. The red dot sits there.
+function padding(stage = document.body.dataset.stage) {
+  if (innerWidth <= 1180) return { left: 0, top: 0, right: 0, bottom: 0 };
+  if (stage === "intro") return { left: Math.round(innerWidth * 0.42), top: 0, right: 0, bottom: 0 };
+  return { left: el("rail").offsetWidth + 20, top: 70, right: 0, bottom: 140 };
 }
-frame(0);
+function placeDot(p) {
+  const box = el("lobeMap");
+  el("lobeMap").querySelector(".cross").style.cssText =
+    `left:${p.left + (box.clientWidth - p.left - p.right) / 2}px; top:${p.top + (box.clientHeight - p.top - p.bottom) / 2}px`;
+}
+function frame(duration) { const p = padding(); placeDot(p); map.easeTo({ padding: p, duration }); }
+// The intro shows the whole globe; play flies to the United States.
+map.jumpTo({ center: [-100, 38], zoom: 1.6, padding: padding("intro") });
 addEventListener("resize", () => frame(0));
+function toUnitedStates() {
+  const p = padding("live"), free = el("lobeMap").clientWidth - p.left - p.right;
+  const zoom = Math.max(2.2, Math.min(4.2, Math.log2(360 * free / (512 * 62))));
+  placeDot(p);
+  map.flyTo({ center: [-97.5, 38.5], zoom, padding: p, duration: 1600, essential: true });
+}
 
 async function begin() {
   if (document.body.dataset.stage !== "intro") return;
   document.body.dataset.stage = "opening";
-  frame(700);
+  toUnitedStates();
   await wait(760);
   document.body.dataset.stage = "live";
   await wait(500);
@@ -42,7 +57,7 @@ async function leave() {
   document.body.dataset.stage = "opening";
   await wait(620);
   document.body.dataset.stage = "intro";
-  frame(700);
+  map.easeTo({ center: [-100, 38], zoom: 1.6, padding: padding("intro"), duration: 900 });
   el("begin").focus({ preventScroll: true });
 }
 el("veil").onclick = begin;
@@ -148,7 +163,7 @@ Satellites.options.keepOthers = true;
 Satellites.options.onSelect = sat => {
   rail.scrollTo({ top: 0, behavior: "smooth" });
   if (!sat?.here) return;
-  map.flyTo({ center: [sat.here.lon, sat.here.lat], zoom: Math.min(map.getZoom(), 2.3), duration: 1800, offset: [200, 20], essential: true });
+  map.flyTo({ center: [sat.here.lon, sat.here.lat], zoom: Math.min(map.getZoom(), 2.3), duration: 1800, essential: true });
 };
 
 // ---------- 5. Fires card ----------
@@ -173,6 +188,25 @@ function drawNear() {
 Draft.watchNearby(() => +el("nearRadius").value, n => { near = n; drawNear(); });
 for (const id of ["nearLevel", "nearSize"]) el(id).onchange = () => { showAll = false; drawNear(); };
 el("nearAll").onclick = () => { showAll = !showAll; drawNear(); };
+
+// The red dot is the centre this card counts around; a dashed ring on the Earth shows the distance.
+// Both show only while the card is open.
+const EMPTY = { type: "FeatureCollection", features: [] };
+map.addSource("near-ring", { type: "geojson", data: EMPTY });
+map.addLayer({ id: "near-ring", type: "line", source: "near-ring",
+               paint: { "line-color": "#ffffff", "line-width": 2.5, "line-dasharray": [2, 1.5], "line-opacity": .95 } });
+function drawRing() {
+  const on = document.body.dataset.stage === "live" && !el("lobeNear").classList.contains("min");
+  if (!on) return map.getSource("near-ring").setData(EMPTY);
+  const c = map.getCenter(), km = +el("nearRadius").value;
+  const dLat = km / 111.32, dLon = dLat / Math.cos(c.lat * Math.PI / 180);
+  const ring = d3.range(0, 65).map(i => [c.lng + dLon * Math.cos(i * Math.PI / 32), c.lat + dLat * Math.sin(i * Math.PI / 32)]);
+  map.getSource("near-ring").setData({ type: "Feature", geometry: { type: "Polygon", coordinates: [ring] } });
+}
+map.on("move", drawRing);
+el("nearRadius").addEventListener("change", drawRing);
+new MutationObserver(drawRing).observe(document.body, { attributes: true, attributeFilter: ["data-stage"] });
+new MutationObserver(drawRing).observe(el("lobeNear"), { attributes: true, attributeFilter: ["class"] });
 
 // Where the red dot is: my location, or a point picked on the Earth.
 el("nearMine").onclick = () => {

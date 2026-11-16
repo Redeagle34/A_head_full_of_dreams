@@ -23,6 +23,7 @@
 :root {
   --cosmos: #003049; --marble: #669bbc; --crimson: #c1121f; --varden: #ae1f23; --gochujang: #780000; --white: #ffffff;
   --paper: #ffffff; --paper-2: #eef3f6;
+  --act: #751505; --act-hover: #5a0f03;          /* main actions: Play, Exit the map, Get the report, … (owner, 2026-11-15) */
   --ink: var(--cosmos); --muted: #476576; --surface: var(--paper); --field: var(--paper-2); --line: rgba(0, 48, 73, .18);
   --accent: var(--crimson); --on-accent: var(--white); --focus: var(--crimson);
   --r-panel: 14px; --r-control: 10px; --r-track: 8px;
@@ -33,17 +34,17 @@
   --gap: 20px;
   /* the Earth area: the owner's drawn curve (intro), a round globe (opening), the whole window (live);
      same number of points in each, so one morphs into the next (made by a small script, see git log) */
-  --shape-intro: polygon(25.25% 0.00%, 25.44% 5.45%, 25.79% 10.75%, 26.28% 15.93%, 26.91% 21.01%, 27.68% 26.01%, 28.58% 30.95%, 29.61% 35.86%, 30.76% 40.76%, 32.04% 45.66%, 33.43% 50.60%, 34.93% 55.59%, 36.54% 60.65%, 38.26% 65.81%, 40.07% 71.08%, 41.98% 76.50%, 43.99% 82.08%, 46.08% 87.84%, 48.25% 93.81%, 50.50% 100.00%, 62.88% 100.00%, 75.25% 100.00%, 87.62% 100.00%, 100.00% 100.00%, 100.00% 83.33%, 100.00% 66.67%, 100.00% 50.00%, 100.00% 33.33%, 100.00% 16.67%, 85.05% 0.00%, 70.10% 0.00%, 55.15% 0.00%, 40.20% 0.00%);
-  --shape-globe: polygon(calc(50% + -23.89vh) calc(50% + -30.83vh), calc(50% + -25.52vh) calc(50% + -29.49vh), calc(50% + -27.20vh) calc(50% + -27.94vh), calc(50% + -28.94vh) calc(50% + -26.14vh), calc(50% + -30.73vh) calc(50% + -24.02vh), calc(50% + -32.54vh) calc(50% + -21.49vh), calc(50% + -34.35vh) calc(50% + -18.47vh), calc(50% + -36.07vh) calc(50% + -14.83vh), calc(50% + -37.57vh) calc(50% + -10.45vh), calc(50% + -38.65vh) calc(50% + -5.24vh), calc(50% + -38.99vh) calc(50% + 0.76vh), calc(50% + -38.30vh) calc(50% + 7.36vh), calc(50% + -36.36vh) calc(50% + 14.10vh), calc(50% + -33.23vh) calc(50% + 20.41vh), calc(50% + -29.26vh) calc(50% + 25.78vh), calc(50% + -24.92vh) calc(50% + 30.00vh), calc(50% + -20.64vh) calc(50% + 33.09vh), calc(50% + -16.70vh) calc(50% + 35.25vh), calc(50% + -13.20vh) calc(50% + 36.70vh), calc(50% + -10.17vh) calc(50% + 37.65vh), calc(50% + -0.88vh) calc(50% + 38.99vh), calc(50% + 8.56vh) calc(50% + 38.05vh), calc(50% + 16.66vh) calc(50% + 35.26vh), calc(50% + 22.79vh) calc(50% + 31.65vh), calc(50% + 28.62vh) calc(50% + 26.50vh), calc(50% + 35.39vh) calc(50% + 16.38vh), calc(50% + 39.00vh) calc(50% + 0.00vh), calc(50% + 35.39vh) calc(50% + -16.38vh), calc(50% + 28.62vh) calc(50% + -26.50vh), calc(50% + 15.13vh) calc(50% + -35.94vh), calc(50% + 4.72vh) calc(50% + -38.71vh), calc(50% + -6.80vh) calc(50% + -38.40vh), calc(50% + -16.76vh) calc(50% + -35.21vh));
-  --shape-full: polygon(10.47% -1.00%, 5.87% -1.00%, 0.35% -1.00%, -1.00% 3.94%, -1.00% 10.14%, -1.00% 16.32%, -1.00% 22.58%, -1.00% 29.04%, -1.00% 35.82%, -1.00% 43.08%, -1.00% 51.00%, -1.00% 59.80%, -1.00% 69.78%, -1.00% 81.32%, -1.00% 94.94%, 7.63% 101.00%, 18.18% 101.00%, 25.84% 101.00%, 31.66% 101.00%, 36.23% 101.00%, 48.85% 101.00%, 61.47% 101.00%, 74.10% 101.00%, 86.72% 101.00%, 101.00% 97.22%, 101.00% 73.61%, 101.00% 50.00%, 101.00% 26.39%, 101.00% 2.78%, 71.47% -1.00%, 56.22% -1.00%, 40.97% -1.00%, 25.72% -1.00%);
+  --shape-intro: polygon(30.00% 0.00%, 30.39% 5.41%, 30.92% 10.60%, 31.59% 15.61%, 32.40% 20.48%, 33.33% 25.24%, 34.38% 29.93%, 35.55% 34.58%, 36.83% 39.22%, 38.21% 43.89%, 39.69% 48.63%, 41.26% 53.47%, 42.92% 58.44%, 44.66% 63.59%, 46.48% 68.94%, 48.37% 74.53%, 50.32% 80.40%, 52.33% 86.57%, 54.39% 93.10%, 56.50% 100.00%, 67.38% 100.00%, 78.25% 100.00%, 89.12% 100.00%, 100.00% 100.00%, 100.00% 83.33%, 100.00% 66.67%, 100.00% 50.00%, 100.00% 33.33%, 100.00% 16.67%, 100.00% 0.00%, 86.00% 0.00%, 72.00% 0.00%, 58.00% 0.00%, 44.00% 0.00%);
+  --shape-globe: polygon(calc(50% + -23.60vh) calc(50% + -31.05vh), calc(50% + -25.14vh) calc(50% + -29.81vh), calc(50% + -26.73vh) calc(50% + -28.40vh), calc(50% + -28.35vh) calc(50% + -26.78vh), calc(50% + -30.02vh) calc(50% + -24.89vh), calc(50% + -31.74vh) calc(50% + -22.66vh), calc(50% + -33.49vh) calc(50% + -19.99vh), calc(50% + -35.22vh) calc(50% + -16.74vh), calc(50% + -36.86vh) calc(50% + -12.75vh), calc(50% + -38.21vh) calc(50% + -7.83vh), calc(50% + -38.95vh) calc(50% + -1.89vh), calc(50% + -38.68vh) calc(50% + 5.02vh), calc(50% + -36.96vh) calc(50% + 12.44vh), calc(50% + -33.70vh) calc(50% + 19.62vh), calc(50% + -29.28vh) calc(50% + 25.77vh), calc(50% + -24.37vh) calc(50% + 30.45vh), calc(50% + -19.61vh) calc(50% + 33.71vh), calc(50% + -15.36vh) calc(50% + 35.85vh), calc(50% + -11.74vh) calc(50% + 37.19vh), calc(50% + -8.74vh) calc(50% + 38.01vh), calc(50% + -0.49vh) calc(50% + 39.00vh), calc(50% + 7.83vh) calc(50% + 38.21vh), calc(50% + 15.18vh) calc(50% + 35.93vh), calc(50% + 21.02vh) calc(50% + 32.85vh), calc(50% + 27.01vh) calc(50% + 28.13vh), calc(50% + 34.59vh) calc(50% + 18.02vh), calc(50% + 39.00vh) calc(50% + 0.00vh), calc(50% + 34.59vh) calc(50% + -18.02vh), calc(50% + 27.01vh) calc(50% + -28.13vh), calc(50% + 21.02vh) calc(50% + -32.85vh), calc(50% + 13.21vh) calc(50% + -36.69vh), calc(50% + 3.11vh) calc(50% + -38.88vh), calc(50% + -7.65vh) calc(50% + -38.24vh), calc(50% + -16.88vh) calc(50% + -35.16vh));
+  --shape-full: polygon(11.24% -1.00%, 6.99% -1.00%, 2.01% -1.00%, -1.00% 1.83%, -1.00% 7.72%, -1.00% 13.58%, -1.00% 19.55%, -1.00% 25.76%, -1.00% 32.36%, -1.00% 39.54%, -1.00% 47.53%, -1.00% 56.62%, -1.00% 67.17%, -1.00% 79.69%, -1.00% 94.88%, 9.18% 101.00%, 20.33% 101.00%, 28.15% 101.00%, 33.89% 101.00%, 38.27% 101.00%, 49.36% 101.00%, 60.45% 101.00%, 71.55% 101.00%, 82.64% 101.00%, 98.96% 101.00%, 101.00% 76.56%, 101.00% 50.00%, 101.00% 23.44%, 98.96% -1.00%, 82.64% -1.00%, 68.36% -1.00%, 54.08% -1.00%, 39.80% -1.00%, 25.52% -1.00%);
 }
 html, body { height: 100%; }
 body { background: var(--cosmos); color: var(--white); overflow: hidden; padding-top: var(--sw); }
 body { font-weight: 500; }
 :is(h1, h2, .brand, .year-line b, .stepper b, .wheel .yr, .count, button, .button, .sat-id h2) { font-weight: 700 !important; }
 :is(p, .hint, small, label, select, input, td, th, dd, dt, .sub, .credits) { font-weight: 500 !important; }
-button, .button { background: var(--crimson); color: var(--white); border: 0; border-radius: var(--r-control); }
-button:hover, .button:hover { background: var(--varden); color: var(--white); }
+button, .button { background: var(--act); color: var(--white); border: 0; border-radius: var(--r-control); }
+button:hover, .button:hover { background: var(--act-hover); color: var(--white); }
 input[type="search"], input[type="date"], select { background: var(--paper-2); color: var(--cosmos); border: 0; border-radius: var(--r-control); color-scheme: light; }
 input::placeholder { color: #4e6a7b; }
 h3 { letter-spacing: 0; text-transform: none; font-size: 14px; color: var(--muted); margin: 4px 0 0; }
@@ -56,11 +57,15 @@ h3 { letter-spacing: 0; text-transform: none; font-size: 14px; color: var(--mute
 .lobe-map { position: fixed; z-index: 1; left: 0; top: var(--sw); width: 100vw; height: calc(100vh - var(--sw)); overflow: hidden;
             background: var(--marble); clip-path: var(--shape-intro); transition: clip-path .7s cubic-bezier(.3, .9, .3, 1); }
 #map { position: absolute; inset: 0; }
-body:not([data-stage="live"]) .cross { display: none; }
+body:not([data-stage="live"]) .cross, body:has(.lobe-near.min) .cross { display: none; }
 .cross { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; pointer-events: none; z-index: 2;
          border-radius: 50%; background: var(--crimson); border: 3px solid var(--white); }
 .sat-label { z-index: 2; background: var(--cosmos); border-radius: 6px; }
-.maplibregl-ctrl-attrib { display: none !important; }       /* the credits are at the foot of the settings */
+.maplibregl-ctrl-attrib { display: none !important; }
+.maplibregl-ctrl-bottom-right { bottom: 152px; right: var(--gap); }
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { margin: 0; border-radius: var(--r-control); overflow: hidden; box-shadow: none; }
+.maplibregl-ctrl-group button { width: 40px; height: 40px; background: var(--paper); border-radius: 0; }
+.maplibregl-ctrl-group button:hover { background: var(--paper-2); }       /* the credits are at the foot of the settings */
 
 /* ---- 1. intro: the name, the Earth under a white veil, play; the report below the name ---- */
 .bar { position: fixed; z-index: 4; left: 28px; top: calc(var(--sw) + 24px); width: calc(var(--left-col) - 28px); display: grid; gap: 12px;
@@ -70,7 +75,7 @@ body:not([data-stage="live"]) .cross { display: none; }
 .results { color: var(--ink); }
 
 .veil { position: absolute; inset: 0; z-index: 8; display: grid; place-content: center; justify-items: center; gap: 16px;
-        padding: 0 0 0 36vw; background: rgba(255, 255, 255, .55); cursor: pointer; transition: opacity .35s; }
+        padding: 0 0 0 42vw; background: rgba(255, 255, 255, .55); cursor: pointer; transition: opacity .35s; }
 .veil p { color: var(--cosmos); font-size: 19px; letter-spacing: -.01em; }
 /* play: a soft-cornered triangle, like the owner's sample */
 .begin, .begin:hover { width: 150px; height: 150px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 24px;
@@ -115,16 +120,17 @@ body[data-stage="live"] .bar .search { width: 300px; }
 .tools > button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 12px; background: var(--paper); color: var(--cosmos); }
 .tools > button:hover { background: var(--paper-2); color: var(--cosmos); }
 .tools > button svg { width: 20px; height: 20px; flex: none; }
-.tools .exit { background: var(--crimson); color: var(--white); font-size: 16px; }
-.tools .exit:hover { background: var(--varden); color: var(--white); }
+.tools .exit { background: var(--act); color: var(--white); font-size: 16px; }
+.tools .exit:hover { background: var(--act-hover); color: var(--white); }
 .tools .gear svg { transition: transform .5s cubic-bezier(.34, 1.56, .64, 1); }
 .tools .gear[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
 .tools .gear[aria-expanded="true"] svg { transform: rotate(90deg); }
 .actions { position: absolute; right: 0; top: calc(100% + 8px); width: 280px; padding: 10px; display: grid; gap: 6px;
            box-shadow: 0 14px 40px -12px rgba(0, 20, 35, .5); }
 .actions[hidden] { display: none; }
-.actions button { width: 100%; text-align: left; min-height: 44px; font-size: 16px; padding: 0 14px; }
-.actions button[aria-expanded="true"] { background: var(--cosmos); }
+.actions button, .actions button[aria-expanded] { width: 100%; text-align: left; min-height: 44px; font-size: 16px; padding: 0 14px; background: var(--paper-2); color: var(--cosmos); }
+.actions button:hover { background: #dde8ee; color: var(--cosmos); }
+.actions button[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
 .credits { font-size: 11.5px; line-height: 1.35; color: var(--muted); padding: 4px 6px 2px; }
 .credits:empty { display: none; }
 
@@ -137,13 +143,15 @@ body[data-stage="live"] .bar .search { width: 300px; }
 .timeline button { min-height: 38px; padding: 0 14px; }
 #tlPlay { min-width: 80px; }
 #tlPlay[aria-pressed="true"] { background: var(--cosmos); }
-.tl-more[aria-expanded="true"] { background: var(--cosmos); }
+.tl-more, .timeline .tl-extra button { background: var(--paper-2); color: var(--cosmos); }
+.tl-more:hover, .timeline .tl-extra button:hover { background: #dde8ee; color: var(--cosmos); }
+.tl-more[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
 .tl-date select { min-height: 38px; }
 
 /* ---- the left column: cards stack, never on top of each other ---- */
 .rail { position: fixed; z-index: 8; left: var(--gap); top: calc(var(--sw) + 76px); bottom: var(--gap); width: var(--rail);
         display: flex; flex-direction: column; gap: 12px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
-        scrollbar-color: rgba(255, 255, 255, .5) transparent; padding-right: 2px; }
+        scrollbar-color: rgba(255, 255, 255, .5) transparent; border-radius: var(--r-panel); }
 .rail > * { flex: none; }
 .card, .rail > .sheet, .rail > .sat-panel { position: relative; width: auto; padding: 18px 20px 20px; display: grid; gap: 10px; align-content: start;
         animation: drop .3s cubic-bezier(.2, .8, .2, 1); }
@@ -154,7 +162,7 @@ body[data-stage="live"] .bar .search { width: 300px; }
 .rail .sheet button, .rail .sat-panel button { white-space: normal; }
 .rail select { min-height: 38px; }
 .choices label { border: 2px solid var(--line); border-radius: var(--r-control); }
-.choices label:has(input:checked) { border-color: var(--crimson); background: #fbecee; box-shadow: none; }
+.choices label:has(input:checked) { border-color: var(--act); background: #f6ecea; box-shadow: none; }
 .panel .chart { background: var(--cosmos); border-radius: var(--r-control); padding: 10px; }
 
 .lobe-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -174,7 +182,8 @@ body[data-stage="live"] .bar .search { width: 300px; }
 .lobe-near .sub { font-size: 15px; line-height: 1.4; }
 .near-where { display: flex; gap: 6px; }
 .near-where button { flex: 1; min-height: 40px; padding: 0 10px; }
-.near-where button[aria-pressed="true"] { background: var(--cosmos); }
+.near-where button + button { background: var(--paper-2); color: var(--cosmos); }
+.near-where button[aria-pressed="true"] { background: var(--cosmos); color: var(--white); }
 .near-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .near-filters label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
 .sign { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
@@ -202,7 +211,8 @@ body[data-stage="live"] .bar .search { width: 300px; }
 body[data-open="wheel"] .wheel-side .hint { display: block; }
 .lobe-wheel > .grow { order: 5; }
 .stepper { display: flex; align-items: center; gap: 10px; }
-.stepper button { min-height: 36px; padding: 0 12px; }
+.stepper button { min-height: 36px; padding: 0 12px; background: var(--paper-2); color: var(--cosmos); }
+.stepper button:hover { background: #dde8ee; color: var(--cosmos); }
 .stepper b { font-size: 26px; letter-spacing: -.04em; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
 
 /* ---- the satellite card, at the top of the column ---- */
@@ -213,6 +223,7 @@ body[data-open="wheel"] .wheel-side .hint { display: block; }
 #satCard .sat-id h2 { font-size: 28px; letter-spacing: -.03em; }
 #satCard .sat-hero { order: -1; margin: 0; }
 #satCard .sat-image { border-radius: var(--r-control); min-height: 160px; }
+#satCard .sat-image.empty { background: var(--paper-2); cursor: default; }
 #satCard .sat-enlarge { right: 8px; bottom: 8px; width: 40px; height: 40px; min-height: 0; padding: 0; display: grid; place-items: center;
                         background: var(--white); color: var(--cosmos); border-radius: 8px; }
 #satCard .sat-enlarge svg { width: 20px; height: 20px; }
