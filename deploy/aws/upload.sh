@@ -32,6 +32,10 @@ if [ -f .env ]; then
   grep -E '^(FIRMS_MAP_KEY|EE_PROJECT)=.' .env > "$TMP/env" || true
   KEY_PATH="$(grep -E '^EE_SERVICE_ACCOUNT_KEY=.' .env | cut -d= -f2- || true)"
   [ -n "${KEY_PATH:-}" ] && [ -f "$KEY_PATH" ] && cp "$KEY_PATH" "$TMP/ee-key.json"
+  # When service-account keys are blocked: an Earth Engine user sign-in limited to the
+  # earthengine scope (see README). Copied to the server user's ~/.config/earthengine.
+  CRED_PATH="$(grep -E '^EE_USER_CREDENTIALS=.' .env | cut -d= -f2- || true)"
+  [ -n "${CRED_PATH:-}" ] && [ -f "$CRED_PATH" ] && cp "$CRED_PATH" "$TMP/ee-user-credentials"
 fi
 DATA=(fire.duckdb)
 if [ -d data/events ]; then DATA+=(events); else echo "data/events is missing: the Fires panel will be empty."; fi
@@ -43,7 +47,7 @@ tar -C data -chf - "${DATA[@]}" | on_machine "tar -C /tmp/fire-upload/data -xf -
 on_machine "sudo bash /tmp/fire-upload/server.sh"
 
 # Answers are kept by the https address for a day: empty it so the new version shows.
-if aws lightsail get-distributions --distribution-name "$NAME" >/dev/null 2>&1; then
-  aws lightsail reset-distribution-cache --distribution-name "$NAME" >/dev/null
+if aws lightsail --region "$CDN_REGION" get-distributions --distribution-name "$NAME" >/dev/null 2>&1; then
+  aws lightsail --region "$CDN_REGION" reset-distribution-cache --distribution-name "$NAME" >/dev/null
   echo "https address emptied of old answers"
 fi

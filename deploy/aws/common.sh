@@ -1,11 +1,15 @@
 # Shared by the scripts in this folder: names, region and how to reach the machine.
 #
 # Change here: NAME, REGION, ZONE, BUNDLE (machine size), KEY_FILE.
-# The account this was written for may use Lightsail and S3 in us-east-1 only; EC2,
-# Lambda, ECS, App Runner and SSM are blocked by its organisation.
+# The account's organisation (policy AdvancedModeRegionRestrictionSecurityControlPolicy) allows
+# creating machines in us-east-2 only; us-east-1 is limited to global services. Lightsail https
+# addresses (distributions) are managed from us-east-1, which that policy allows.
 NAME=fire-map
-REGION=us-east-1
-ZONE=us-east-1a
+REGION=us-east-2
+ZONE=us-east-2a
+KEY_NAME="$NAME-key"           # Lightsail names must be unique across resource types in a region
+IP_NAME="$NAME-ip"
+CDN_REGION=us-east-1            # Lightsail distributions are always managed from here
 BLUEPRINT=ubuntu_24_04
 BUNDLE=small_3_0                # 2 GB memory, 2 CPUs, 60 GB disk, 12 USD a month
 CDN_BUNDLE=small_1_0            # 50 GB of traffic a month, 2.50 USD a month

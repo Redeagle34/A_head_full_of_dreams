@@ -32,6 +32,10 @@ if [ -f "$UPLOAD/ee-key.json" ]; then
   install -m 600 "$UPLOAD/ee-key.json" "$HOME_DIR/ee-key.json"
   echo "EE_SERVICE_ACCOUNT_KEY=$HOME_DIR/ee-key.json" >> "$APP/.env"
 fi
+if [ -f "$UPLOAD/ee-user-credentials" ]; then
+  install -d -m 700 "$HOME_DIR/.config" "$HOME_DIR/.config/earthengine"
+  install -m 600 "$UPLOAD/ee-user-credentials" "$HOME_DIR/.config/earthengine/credentials"
+fi
 rm -rf "$UPLOAD"
 
 # 2. packages

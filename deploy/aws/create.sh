@@ -23,26 +23,26 @@ cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 exists() { "$@" >/dev/null 2>&1; }
 
 echo "1/5 key pair"
-if [ ! -f "$KEY_FILE" ]; then
-  exists aws lightsail get-key-pair --key-pair-name "$NAME" && {
-    echo "Key pair $NAME exists in AWS but $KEY_FILE is not on this computer. Run deploy/aws/delete.sh first."; exit 1; }
+if [ ! -s "$KEY_FILE" ]; then
+  exists aws lightsail get-key-pair --key-pair-name "$KEY_NAME" && {
+    echo "Key pair $KEY_NAME exists in AWS but $KEY_FILE is not on this computer. Run deploy/aws/delete.sh first."; exit 1; }
   mkdir -p -m 700 "$HOME/.ssh"
-  (umask 077; aws lightsail create-key-pair --key-pair-name "$NAME" --query privateKeyBase64 --output text > "$KEY_FILE")
+  (umask 077; aws lightsail create-key-pair --key-pair-name "$KEY_NAME" --query privateKeyBase64 --output text > "$KEY_FILE") || { rm -f "$KEY_FILE"; exit 1; }
 fi
 
 echo "2/5 machine"
 if ! exists aws lightsail get-instance --instance-name "$NAME"; then
   aws lightsail create-instances --instance-names "$NAME" --availability-zone "$ZONE" \
-    --blueprint-id "$BLUEPRINT" --bundle-id "$BUNDLE" --key-pair-name "$NAME" >/dev/null
+    --blueprint-id "$BLUEPRINT" --bundle-id "$BUNDLE" --key-pair-name "$KEY_NAME" >/dev/null
 fi
 until [ "$(aws lightsail get-instance-state --instance-name "$NAME" --query state.name --output text)" = running ]; do sleep 5; done
 
 echo "3/5 fixed address and ports"
-if ! exists aws lightsail get-static-ip --static-ip-name "$NAME"; then
-  aws lightsail allocate-static-ip --static-ip-name "$NAME" >/dev/null
+if ! exists aws lightsail get-static-ip --static-ip-name "$IP_NAME"; then
+  aws lightsail allocate-static-ip --static-ip-name "$IP_NAME" >/dev/null
 fi
-if [ "$(aws lightsail get-static-ip --static-ip-name "$NAME" --query staticIp.isAttached --output text)" != True ]; then
-  aws lightsail attach-static-ip --static-ip-name "$NAME" --instance-name "$NAME" >/dev/null
+if [ "$(aws lightsail get-static-ip --static-ip-name "$IP_NAME" --query staticIp.isAttached --output text)" != True ]; then
+  aws lightsail attach-static-ip --static-ip-name "$IP_NAME" --instance-name "$NAME" >/dev/null
   rm -f "$KNOWN_HOSTS"
 fi
 # 22: to copy files and look at logs. 80: the server; the https address reads from it.
@@ -58,20 +58,20 @@ deploy/aws/upload.sh
 echo "5/5 https address"
 # The page, the 3D models and the answers of /api are kept for a day (an answer depends only
 # on its query and the data changes only with upload.sh). Orbit data changes during the day.
-if ! exists aws lightsail get-distributions --distribution-name "$NAME"; then
-  aws lightsail create-distribution --distribution-name "$NAME" --bundle-id "$CDN_BUNDLE" \
+if ! exists aws lightsail --region "$CDN_REGION" get-distributions --distribution-name "$NAME"; then
+  aws lightsail --region "$CDN_REGION" create-distribution --distribution-name "$NAME" --bundle-id "$CDN_BUNDLE" \
     --origin "name=$NAME,regionName=$REGION,protocolPolicy=http-only" \
     --default-cache-behavior behavior=cache \
     --cache-behavior-settings '{
       "defaultTTL": 86400, "minimumTTL": 0, "maximumTTL": 86400,
-      "allowedHTTPMethods": "GET,HEAD,OPTIONS", "cachedHTTPMethods": "GET,HEAD",
+      "allowedHTTPMethods": "GET,HEAD,OPTIONS,PUT,PATCH,POST,DELETE", "cachedHTTPMethods": "GET,HEAD",
       "forwardedCookies": {"option": "none"},
-      "forwardedHeaders": {"option": "none"},
+      "forwardedHeaders": {"option": "default"},
       "forwardedQueryStrings": {"option": true}
     }' \
-    --cache-behaviors path=api/tle,behavior=dont-cache >/dev/null
+    --cache-behaviors path=api/tle,behavior=dont-cache path=api/report,behavior=dont-cache >/dev/null
 fi
-DOMAIN="$(aws lightsail get-distributions --distribution-name "$NAME" --query 'distributions[0].domainName' --output text)"
+DOMAIN="$(aws lightsail --region "$CDN_REGION" get-distributions --distribution-name "$NAME" --query 'distributions[0].domainName' --output text)"
 
 echo
 echo "Machine:  http://$IP   (works now)"
