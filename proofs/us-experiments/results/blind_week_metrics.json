@@ -1,0 +1,73 @@
+{
+ "window_local_days": [
+  "2026-11-09",
+  "2026-11-11"
+ ],
+ "n_reports": 263,
+ "n_wildfire": 172,
+ "n_prescribed": 91,
+ "wildfire": {
+  "n": 172,
+  "seen_polar_2km": 0.099,
+  "seen_polar_5km": 0.14,
+  "seen_landsat_2km": 0.023,
+  "cloud_known_n": 172,
+  "cloudy_share": 0.634,
+  "seen_if_clear": 0.127,
+  "n_clear": 63,
+  "seen_if_cloudy": 0.083,
+  "n_cloudy": 109,
+  "under_smoke": 0.75,
+  "unseen_n": 155,
+  "unseen_and_cloudy_n": 100,
+  "unseen_under_smoke_n": 114
+ },
+ "prescribed": {
+  "n": 91,
+  "seen_polar_2km": 0.374,
+  "seen_polar_5km": 0.407,
+  "seen_landsat_2km": 0.066,
+  "cloud_known_n": 91,
+  "cloudy_share": 0.813,
+  "seen_if_clear": 0.588,
+  "n_clear": 17,
+  "seen_if_cloudy": 0.324,
+  "n_cloudy": 74,
+  "under_smoke": 0.681,
+  "unseen_n": 57,
+  "unseen_and_cloudy_n": 50,
+  "unseen_under_smoke_n": 36
+ },
+ "wildfire_ge10ac": {
+  "n": 20,
+  "seen_polar_2km": 0.45,
+  "seen_polar_5km": 0.55,
+  "seen_landsat_2km": 0.05,
+  "cloud_known_n": 20,
+  "cloudy_share": 0.35,
+  "seen_if_clear": 0.462,
+  "n_clear": 13,
+  "seen_if_cloudy": 0.429,
+  "n_cloudy": 7,
+  "under_smoke": 0.65,
+  "unseen_n": 11,
+  "unseen_and_cloudy_n": 4,
+  "unseen_under_smoke_n": 6
+ },
+ "wildfire_ge100ac": {
+  "n": 2,
+  "seen_polar_2km": 0.5,
+  "seen_polar_5km": 1.0,
+  "seen_landsat_2km": 0.0,
+  "cloud_known_n": 2,
+  "cloudy_share": 0.5,
+  "seen_if_clear": 0.0,
+  "n_clear": 1,
+  "seen_if_cloudy": 1.0,
+  "n_cloudy": 1,
+  "under_smoke": 1.0,
+  "unseen_n": 1,
+  "unseen_and_cloudy_n": 0,
+  "unseen_under_smoke_n": 1
+ }
+}

@@ -1,0 +1,99 @@
+{
+ "flashes_in_box": 545100,
+ "hours": 72,
+ "fires": {
+  "Natural": 328,
+  "Undetermined": 192,
+  "Human": 79
+ },
+ "tests": {
+  "5km_24h": {
+   "Human": {
+    "n": 79,
+    "flash_before": 0.089,
+    "median_lead_h": 18.1
+   },
+   "Natural": {
+    "n": 328,
+    "flash_before": 0.835,
+    "median_lead_h": 9.5
+   },
+   "Undetermined": {
+    "n": 192,
+    "flash_before": 0.38,
+    "median_lead_h": 10.9
+   },
+   "Random point": {
+    "n": 3000,
+    "flash_before": 0.229,
+    "median_lead_h": 17.0
+   }
+  },
+  "10km_24h": {
+   "Human": {
+    "n": 79,
+    "flash_before": 0.177,
+    "median_lead_h": 19.7
+   },
+   "Natural": {
+    "n": 328,
+    "flash_before": 0.927,
+    "median_lead_h": 13.3
+   },
+   "Undetermined": {
+    "n": 192,
+    "flash_before": 0.443,
+    "median_lead_h": 15.7
+   },
+   "Random point": {
+    "n": 3000,
+    "flash_before": 0.325,
+    "median_lead_h": 17.7
+   }
+  },
+  "10km_48h": {
+   "Human": {
+    "n": 45,
+    "flash_before": 0.289,
+    "median_lead_h": 42.9
+   },
+   "Natural": {
+    "n": 164,
+    "flash_before": 0.963,
+    "median_lead_h": 26.3
+   },
+   "Undetermined": {
+    "n": 90,
+    "flash_before": 0.378,
+    "median_lead_h": 30.0
+   },
+   "Random point": {
+    "n": 1479,
+    "flash_before": 0.45,
+    "median_lead_h": 29.1
+   }
+  },
+  "20km_48h": {
+   "Human": {
+    "n": 45,
+    "flash_before": 0.6,
+    "median_lead_h": 26.8
+   },
+   "Natural": {
+    "n": 164,
+    "flash_before": 0.988,
+    "median_lead_h": 34.2
+   },
+   "Undetermined": {
+    "n": 90,
+    "flash_before": 0.378,
+    "median_lead_h": 41.6
+   },
+   "Random point": {
+    "n": 1479,
+    "flash_before": 0.539,
+    "median_lead_h": 36.4
+   }
+  }
+ }
+}

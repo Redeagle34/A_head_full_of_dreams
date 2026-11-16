@@ -1,0 +1,56 @@
+{
+ "A_ignition": {
+  "today_and_yesterday": {
+   "AUC": 0.893,
+   "PR_AUC": 0.92
+  },
+  "yesterday_only": {
+   "AUC": 0.885,
+   "PR_AUC": 0.915
+  },
+  "slow_only_30day": {
+   "AUC": 0.879,
+   "PR_AUC": 0.912
+  },
+  "place_and_season_only": {
+   "AUC": 0.86,
+   "PR_AUC": 0.9
+  }
+ },
+ "B_large100": {
+  "today_and_yesterday": {
+   "AUC": 0.788,
+   "PR_AUC": 0.303
+  },
+  "yesterday_only": {
+   "AUC": 0.775,
+   "PR_AUC": 0.289
+  },
+  "slow_only_30day": {
+   "AUC": 0.76,
+   "PR_AUC": 0.278
+  },
+  "place_and_season_only": {
+   "AUC": 0.75,
+   "PR_AUC": 0.271
+  }
+ },
+ "B_large1000": {
+  "today_and_yesterday": {
+   "AUC": 0.81,
+   "PR_AUC": 0.123
+  },
+  "yesterday_only": {
+   "AUC": 0.798,
+   "PR_AUC": 0.107
+  },
+  "slow_only_30day": {
+   "AUC": 0.781,
+   "PR_AUC": 0.108
+  },
+  "place_and_season_only": {
+   "AUC": 0.771,
+   "PR_AUC": 0.102
+  }
+ }
+}
