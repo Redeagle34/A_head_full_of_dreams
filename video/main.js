@@ -12,7 +12,7 @@ import { geoOrthographic, geoPath, geoGraticule10, geoDistance } from 'https://c
 import { feature } from 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm';
 
 const W = 1920, H = 1080, CX = W / 2, CY = H / 2;
-const DURATION = 27;
+const DURATION = 37;
 window.__duration = DURATION;
 const RENDER = new URLSearchParams(location.search).has('render');
 const F = CY / Math.tan(THREE.MathUtils.degToRad(15)); // focal length in px for fov 30
@@ -22,12 +22,14 @@ const TF = T_FREEZE;
 
 // ------------------------------------------------------------------ people (placeholders)
 // Put photos in assets/people/persona1.png ... persona5.png (or .jpg) and change the names.
-const PEOPLE = [ // img: assets/people/personaN.png (background removed); s: scale so every head is ~100 px wide
-  { img: 3, x: 170, s: 0.42, from: 'left', t: 11.1 },   // arm up to the right -> left side
-  { img: 1, x: 470, s: 0.93, from: 'left', t: 11.35 },  // both hands to the right -> left side
-  { img: 2, x: 1480, s: 0.7, from: 'right', t: 11.6 },  // points up-left -> right side
-  { img: 4, x: 960, s: 0.585, from: 'bottom', t: 11.85 }, // arms up -> centre, holding the Earth
-];
+const PEOPLE = [ // drawn back to front. Mirrored 2-1-2 layout: everyone points in at the Earth; entrances alternate L/R.
+  // img: assets/people/personaN.png (background removed); s: scale so faces match (~75 px wide)
+  { img: 3, x: 175, s: 0.42, dy: 28, from: 'left', t: 11.1 },    // outer left, arm up to the right
+  { img: 2, x: 1772, s: 0.7, dy: 185, from: 'right', t: 11.3 },   // outer right, points up-left
+  { img: 1, x: 480, s: 0.93, dy: 28, from: 'left', t: 11.5 },    // inner left, both hands to the right
+  { img: 5, x: 1418, s: 0.2, from: 'right', t: 11.7 },   // inner right, both hands to the left
+  { img: 4, x: 960, s: 0.585, from: 'bottom', t: 11.9 }, // centre, arms up holding the Earth
+]
 
 // ------------------------------------------------------------------ math
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -317,7 +319,7 @@ function chalkGlobe(ctx, t, cx, cy, R, alpha, flameAlpha = 1) {
 }
 
 // ------------------------------------------------------------------ scene 1 data
-const TITLE = { text: 'CADA VEZ MÁS INCENDIOS', y: 520, size: 150 };
+const TITLE = { text: 'MORE AND MORE FIRES', y: 520, size: 160 };
 const titleC = document.createElement('canvas'); titleC.width = W; titleC.height = H; const ttx = titleC.getContext('2d');
 let TITLE_W = 1600;
 function drawTitle(ctx, reveal, alpha) { // textured chalk letters: warm gradient, hatch texture, chalk outline
@@ -352,15 +354,16 @@ const FL = [ // flames standing on the letters: x, size, tEnter, palette
 ];
 const FLAME_BASE = TITLE.y - TITLE.size * 0.36;
 const WORDS = [ // text, t, x, color, icon
-  ['PREDECIR', 4.0, 420, CH.blue, 'chart'], ['PREVENIR', 6.0, 960, CH.green, 'shield'], ['ACTUAR', 8.0, 1500, CH.orange, 'bolt'],
+  ['PREDICT', 4.0, 420, CH.blue, 'chart'], ['PREVENT', 6.0, 960, CH.green, 'shield'], ['TAKE ACTION', 8.0, 1500, CH.orange, 'bolt'],
 ];
 function scene1(ctx, t, alpha, titleXf) {
   if (alpha > 0) FL.forEach(([x, s, te, pal], i) => {
     const p = prog(t, te, te + 0.55); if (p <= 0) return;
     const e = E.outBack(p), breathe = 1 + Math.sin(t * 2.3 + i) * 0.04;
     const sc = s * lerp(0.1, 1, e) * breathe;
-    drawFlame(ctx, x, FLAME_BASE + 6, sc, t + i * 0.7, i + 1, alpha, pal);
-    drawSparks(ctx, x, FLAME_BASE + 6, sc, t, i + 1, alpha * clamp(p * 2 - 1));
+    const fx = CX + (x - CX) * (TITLE_W / 1790); // flame positions follow the title's width
+    drawFlame(ctx, fx, FLAME_BASE + 6, sc, t + i * 0.7, i + 1, alpha, pal);
+    drawSparks(ctx, fx, FLAME_BASE + 6, sc, t, i + 1, alpha * clamp(p * 2 - 1));
   });
   ctx.save(); if (titleXf) titleXf(ctx);
   drawTitle(ctx, E.inOutSine(prog(t, 0.6, 2.0)), titleXf ? 1 : alpha);
@@ -393,7 +396,7 @@ function personPos(P, i, t, img) {
   const pin = E.outBack(prog(t, P.t, P.t + 0.7));
   const pout = E.inCubic(prog(t, 14.0 + i * 0.06, 14.5 + i * 0.06));
   const w = img.width * P.s, h = img.height * P.s;
-  const y = H + 10 - h / 2;
+  const y = H + 10 - h / 2 + (P.dy || 0); // dy pushes a figure down (body continues below the frame) so heads line up
   let x0 = P.x, y0 = y;
   if (P.from === 'right') x0 = W + w / 2 + HALO_PAD; else if (P.from === 'left') x0 = -w / 2 - HALO_PAD; else y0 = H + h / 2 + HALO_PAD;
   const k = pin * (1 - pout);
@@ -764,7 +767,7 @@ function seekScene(t) {
     if (t >= 11 && t < 14.8) {
       const out = 1 - prog(t, 14.0, 14.45);
       rainbowTitle(stx, 'A HEAD FULL OF DREAMS', CX, 112, 104, E.inOutSine(prog(t, 11.6, 12.6)), t, out);
-      chalkText(stx, 'esta es nuestra propuesta', CX, 198, { font: '"Gochi Hand"', weight: 400, size: 54, color: CH.orange, reveal: E.inOutSine(prog(t, 13.0, 13.6)), seed: 4, alpha: out });
+      chalkText(stx, 'this is our proposal', CX, 198, { font: '"Gochi Hand"', weight: 400, size: 54, color: CH.orange, reveal: E.inOutSine(prog(t, 13.0, 13.6)), seed: 4, alpha: out });
       [[330, 92, 16, 12.3], [1590, 86, 20, 12.4], [420, 168, 10, 12.5], [1500, 170, 12, 12.6], [250, 150, 9, 12.7], [1680, 150, 9, 12.8]].forEach(([x, y, r, ts], i) => {
         const p = E.outBack(prog(t, ts, ts + 0.4)); if (p <= 0) return;
         const tw = 1 + Math.sin(t * 6 + i) * 0.12;
@@ -1058,17 +1061,22 @@ function finalScene(t) {
   // normal, so the screen stays parallel to the frame; ends with the screen ~2/3 of the frame, slightly low for the title
   const d0 = LAP.SH / 2 / Math.tan(THREE.MathUtils.degToRad(15));
   const e = E.inOutCubic(prog(t, TF + 0.45, TF + 1.9));
-  const push = E.inOutSine(prog(t, TF + 1.9, DURATION));
-  const dist = lerp(d0, lerp(4.45, 4.05, push), e);
-  const lift = lerp(0, 0.15, e);
-  const look = LAP.center.clone().add(LAP.up.clone().multiplyScalar(lift));
+  const push = E.inOutSine(prog(t, TF + 1.9, TF + 7.0));
+  const back = E.inOutCubic(prog(t, T_DATA, T_DATA + 0.8));           // step back to make room for the panels
+  const dist = lerp(lerp(d0, lerp(4.45, 4.05, push), e), 6.1, back);
+  const lift = lerp(0, 0.15, e) - 0.12 * back;
+  // laptop slides right for DATASETS, then left (past the centre) for ALGORITHMS
+  const shiftPx = 370 * E.inOutCubic(prog(t, T_DATA, T_DATA + 0.8)) - 1000 * E.inOutCubic(prog(t, T_ALGO, T_ALGO + 1.2));
+  const right = new THREE.Vector3().crossVectors(LAP.up, LAP.normal).normalize();
+  const worldPerPx = (2 * dist * Math.tan(THREE.MathUtils.degToRad(15))) / H;
+  const look = LAP.center.clone().add(LAP.up.clone().multiplyScalar(lift)).add(right.clone().multiplyScalar(-shiftPx * worldPerPx));
   lapCam.position.copy(look.clone().add(LAP.normal.clone().multiplyScalar(dist)));
   lapCam.up.copy(LAP.up);
   lapCam.lookAt(look);
   gl.render(lapScene, lapCam);
   // OUR WEBPAGE
-  const pop = E.outBack(prog(t, TF, TF + 0.45)), mv = E.inOutCubic(prog(t, TF + 0.55, TF + 1.9));
-  if (pop > 0) {
+  const pop = E.outBack(prog(t, TF, TF + 0.45)) * (1 - E.inCubic(prog(t, T_DATA, T_DATA + 0.5))), mv = E.inOutCubic(prog(t, TF + 0.55, TF + 1.9));
+  if (pop > 0.001) {
     const size = lerp(176, 80, mv), y = lerp(CY, 70, mv);
     stx.save(); stx.translate(CX, y); stx.scale(pop, pop);
     stx.font = `700 ${size}px "Space Grotesk"`; stx.textAlign = 'center'; stx.textBaseline = 'middle';
@@ -1078,13 +1086,70 @@ function finalScene(t) {
     stx.fillStyle = gr; stx.fillText('OUR WEBPAGE', 0, 0);
     stx.restore();
   }
+  // DATASETS: in from the left, out the same way
+  const dIn = E.outBack(prog(t, T_DATA + 0.3, T_DATA + 1.0)), dOut = E.inCubic(prog(t, T_ALGO, T_ALGO + 0.7));
+  if (dIn > 0 && dOut < 1) drawPanel(stx, lerp(-900, 60, dIn) - 1000 * dOut, 70, 800, 940, 'DATASETS', DATASETS, T_DATA + 0.8, t, 0.27);
+  // ALGORITHMS: in from the right, to the centre
+  const aIn = E.outBack(prog(t, T_ALGO + 0.45, T_ALGO + 1.3));
+  if (aIn > 0) drawPanel(stx, lerp(W + 100, CX - 470, aIn), 110, 940, 860, 'ALGORITHMS', ALGORITHMS, T_ALGO + 1.2, t, 0.3);
   chx.clearRect(0, 0, W, H); chx.drawImage(strokeC, 0, 0);
+}
+const T_DATA = TF + 7.2, T_ALGO = TF + 12.2;
+const DATASETS = [ // name, detail (what each one is used for in the project)
+  ['NASA FIRMS · MODIS C6.1', 'Terra + Aqua fire detections, 2000–2025'],
+  ['NASA FIRMS · VIIRS 375 m', 'Suomi NPP + NOAA-20 detections, 2012–2025'],
+  ['gridMET', 'daily weather and fuel dryness'],
+  ['LANDFIRE', 'fire regime: frequency and severity'],
+  ['MODIS MCD64A1 · MCD12Q1 · MOD44B', 'burned area, land cover, tree cover'],
+  ['SRTM · GPW v4.11 · GHSL', 'terrain, population, built-up surface'],
+  ['Landsat 5 – 9', 'before / after pictures, burn severity'],
+  ['NIFC WFIGS', 'agency-reported wildfires'],
+  ['CelesTrak · U.S. Census', 'satellite orbits, state borders'],
+];
+const ALGORITHMS = [
+  ['Active cell-days on a 0.1° grid', 'one fire counts once per cell per day'],
+  ['FRP observation operator (IS4FIRES)', 'VIIRS → MODIS-equivalent: error 0.27 vs 3.06 raw'],
+  ['Graph connected components', 'detections → 2.0 M individual fires'],
+  ['LightGBM gradient-boosted trees', 'chance a fire reaches 1,000 acres · AUC 0.936'],
+  ['Isotonic calibration', 'five danger levels, from low to extreme'],
+  ['Climatology percentiles', 'unusual (> p90) and record weeks, usual season'],
+  ['SGP4 orbit propagation', 'where each satellite is and when it passes'],
+  ['Normalized Burn Ratio (Landsat)', 'burn severity before vs after'],
+];
+function drawPanel(g, x, y, w, h, title, items, tItems, t, step) {
+  g.save();
+  g.shadowColor = 'rgba(0,0,0,0.55)'; g.shadowBlur = 50; g.shadowOffsetY = 18;
+  g.beginPath(); g.roundRect(x, y, w, h, 30); g.fillStyle = 'rgba(9,12,20,0.86)'; g.fill();
+  g.shadowColor = 'transparent';
+  const bd = g.createLinearGradient(x, y, x + w, y + h);
+  ['#ff5e8a', '#ff9f43', '#ffd93d', '#5ee08f', '#4dabf7', '#a78bfa'].forEach((c, k, a) => bd.addColorStop(k / (a.length - 1), c));
+  g.lineWidth = 3; g.strokeStyle = bd; g.stroke();
+  g.font = '700 68px "Space Grotesk"'; g.textBaseline = 'middle'; g.textAlign = 'left';
+  if ('letterSpacing' in g) g.letterSpacing = '3px';
+  const tg = g.createLinearGradient(0, y + 50, 0, y + 120); tg.addColorStop(0, '#ffe08a'); tg.addColorStop(0.55, '#ff9a3d'); tg.addColorStop(1, '#ff5a3a');
+  g.fillStyle = tg; g.fillText(title, x + 48, y + 86);
+  if ('letterSpacing' in g) g.letterSpacing = '0px';
+  g.fillStyle = bd; g.fillRect(x + 48, y + 132, 120, 5);
+  const top = y + 178, rowH = (h - 210) / items.length;
+  items.forEach(([name, detail], i) => {
+    const a = E.outCubic(prog(t, tItems + i * step, tItems + i * step + 0.35));
+    if (a <= 0) return;
+    const ry = top + i * rowH, dx = (1 - a) * 40;
+    g.globalAlpha = a;
+    g.fillStyle = `hsl(${(i * 360) / items.length + 10} 85% 66%)`;
+    g.beginPath(); g.roundRect(x + 50 + dx, ry + 8, 14, 14, 4); g.fill();
+    g.fillStyle = '#f4f6fa'; g.font = '600 31px "Space Grotesk"'; g.fillText(name, x + 84 + dx, ry + 15);
+    g.fillStyle = 'rgba(222,230,240,0.66)'; g.font = '400 22px "Space Grotesk"'; g.fillText(detail, x + 84 + dx, ry + 52);
+    g.globalAlpha = 1;
+  });
+  g.restore();
 }
 
 // ------------------------------------------------------------------ boot
 async function boot() {
   A = await loadAll();
   LAND = feature(A.land, A.land.objects.land); GRAT = geoGraticule10();
+  ttx.font = `700 ${TITLE.size}px "Cabin Sketch"`; TITLE_W = ttx.measureText(TITLE.text).width;
   WEEKLY = A.weekly;
   BOARD = makeBoard(); SPACE = makeSpace(); GRAIN = makeGrain(); grainPat = stx.createPattern(GRAIN, 'repeat');
   prepMap(A);

@@ -1,4 +1,4 @@
-# Video A Head Full of Dreams (27 s, 1920×1080, 60 fps)
+# Video A Head Full of Dreams (37 s, 1920×1080, 60 fps)
 
 La animación es una página web donde cada fotograma depende solo del tiempo (`window.seek(t)`), y se renderiza a MP4 con Chrome sin ventana + ffmpeg.
 
