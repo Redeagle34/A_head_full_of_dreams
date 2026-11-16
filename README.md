@@ -2,10 +2,13 @@
 
 NASA Space Apps Challenge 2026, "MODIS and VIIRS hot spots".
 
-https://github.com/user-attachments/assets/69c317cc-3924-4f1d-89c3-f48e7fa9cb65
-
 <p align="center">
-  <b>30-second presentation</b> &middot; <a href="web/media/tutorial-30s.mp4">download the MP4 (1080p, 60 fps)</a>
+  <a href="https://youtu.be/9uPJrPJp4v0" title="Watch the 30-second presentation on YouTube">
+    <img src=".github/readme-video.jpg" alt="A Head Full of Dreams: 30-second presentation of Burning Calendar (click to play)" width="100%">
+  </a>
+  <br>
+  <b><a href="https://youtu.be/9uPJrPJp4v0">Watch the 30-second presentation on YouTube</a></b>
+  &middot; <a href="web/media/tutorial-30s.mp4">download the MP4 (1080p, 60 fps)</a>
 </p>
 
 A burning calendar for the United States (contiguous states and Hawaii): weekly
