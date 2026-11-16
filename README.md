@@ -241,6 +241,7 @@ web/
   app.js                map page: behaviour (sections are listed at the top)
   fires.js              map page: the Fires panel, fire markers and the search around a point
   prevention.js         map page: the Prevention panel and its layers
+  tour.js               map page: the first-visit tour of the tools (the ? button starts it again)
   report.html, report.css, report.js   scientific report page
   states.html           state overview page
   data/                 calendar.json, states.geojson (generated, committed)

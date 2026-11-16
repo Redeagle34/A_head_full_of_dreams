@@ -317,3 +317,23 @@ button[aria-pressed="true"] { background: var(--accent); color: #1a1205; border-
   .actions { width: auto; flex: 1 1 55%; min-width: 0; }
   .filters, .panel, .sat-panel { top: calc(var(--bar-end) + 6px); bottom: 0; max-height: none; }
 }
+
+/* ---- first-visit tour (tour.js) ---- */
+.tour-spot { position: fixed; z-index: 20; border-radius: 12px; pointer-events: none;
+             box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(0, 0, 0, 0.55);
+             transition: left .25s, top .25s, width .25s, height .25s; }
+.tour-card { position: fixed; z-index: 21; width: min(340px, calc(100vw - 24px)); padding: 16px; display: grid; gap: 10px;
+             transition: left .25s, top .25s; }
+.tour-card[hidden], .tour-spot[hidden] { display: none; }
+.tour-card.welcome { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 24px));
+                     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55); }
+.tour-card h2 { font-size: 17px; text-transform: none; letter-spacing: -.01em; color: var(--ink); }
+.tour-card p { margin: 0; color: var(--muted); }
+.tour-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.tour-card .primary { background: var(--accent); color: #1a1205; border-color: var(--accent); font-weight: 600; }
+.tour-card .quiet-button { background: none; border-color: transparent; color: var(--muted); margin-right: auto; }
+.tour-try { justify-self: start; border-color: var(--accent); color: var(--accent); }
+.tour-dots { display: flex; gap: 5px; }
+.tour-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.tour-dots i.on { background: var(--accent); width: 16px; border-radius: 3px; }
+@media (prefers-reduced-motion: reduce) { .tour-spot, .tour-card { transition: none; } }
