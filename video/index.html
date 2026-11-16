@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Head Full of Dreams · Video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cabin+Sketch:wght@400;700&family=Gochi+Hand&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=block" rel="stylesheet">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+  :root { --modis: #ff7a2f; --viirs: #ffd84a; --ink: #eef3f7; --glass: rgba(10, 16, 24, 0.62); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #000; height: 100%; overflow: hidden; color: var(--ink); font-family: "Space Grotesk", system-ui, sans-serif; }
+  #wrap { position: fixed; inset: 0; display: grid; place-items: center; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #000; transform-origin: 50% 50%; flex: none; }
+  #stage canvas, #stage .layer { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+  .layer { pointer-events: none; }
+
+  /* ---------- App UI (map scene) ---------- */
+  #ui { opacity: 0; }
+  .topbar { position: absolute; left: 40px; right: 40px; top: 32px; height: 72px; display: flex; align-items: center; gap: 18px; }
+  .pill { height: 60px; display: flex; align-items: center; gap: 14px; padding: 0 24px; border-radius: 18px;
+          background: var(--glass); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(14px);
+          box-shadow: 0 10px 40px rgba(0,0,0,0.35); font-size: 24px; font-weight: 500; white-space: nowrap; }
+  .brand { font-weight: 700; font-size: 26px; letter-spacing: -0.01em; }
+  .brand svg { width: 30px; height: 30px; }
+  .search { flex: 1; color: rgba(238,243,247,0.9); }
+  .search svg { width: 24px; height: 24px; opacity: 0.7; }
+  .date { font-family: "JetBrains Mono", monospace; font-size: 22px; }
+  .chip { gap: 10px; font-size: 22px; }
+  .dot { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  .dot.modis { border: 3px solid var(--modis); background: rgba(255,122,47,0.3); }
+  .dot.viirs { background: var(--viirs); box-shadow: 0 0 12px var(--viirs); }
+
+  .timebar { position: absolute; left: 40px; right: 40px; bottom: 32px; height: 104px; border-radius: 18px;
+             background: var(--glass); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(14px);
+             padding: 14px 26px 12px; display: grid; grid-template-columns: 220px 1fr; gap: 26px; align-items: center; }
+  .tb-count b { display: block; font-size: 38px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .tb-count span { font-size: 17px; opacity: 0.7; }
+  .tb-chart { position: relative; height: 76px; }
+  .tb-chart canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+  .attrib { position: absolute; right: 48px; bottom: 142px; font-size: 14px; opacity: 0.6; text-shadow: 0 1px 4px #000; }
+
+  /* split labels */
+  .slabel { position: absolute; top: 132px; opacity: 0; padding: 22px 30px 26px; border-radius: 24px; background: rgba(6,10,16,0.62);
+            border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(12px); box-shadow: 0 18px 50px rgba(0,0,0,0.45); }
+  .slabel.left { left: 48px; }
+  .slabel.right { right: 48px; text-align: right; }
+  .slabel h2 { font-size: 112px; line-height: 0.9; font-weight: 700; letter-spacing: -0.04em; }
+  .slabel.left h2 { color: var(--modis); text-shadow: 0 0 40px rgba(255,122,47,0.45), 0 4px 18px rgba(0,0,0,0.7); }
+  .slabel.right h2 { color: var(--viirs); text-shadow: 0 0 40px rgba(255,216,74,0.45), 0 4px 18px rgba(0,0,0,0.7); }
+  .slabel p { font-size: 34px; font-weight: 500; margin-top: 14px; text-shadow: 0 2px 10px rgba(0,0,0,0.85); }
+  .slabel .px { display: inline-flex; align-items: center; gap: 12px; margin-top: 16px; padding: 10px 18px; border-radius: 12px;
+                background: var(--glass); border: 1px solid rgba(255,255,255,0.14); font-family: "JetBrains Mono", monospace; font-size: 24px; }
+  .divider { position: absolute; left: 958px; top: 0; width: 4px; height: 1080px; background: linear-gradient(#fff, #fff);
+             box-shadow: 0 0 18px #fff, 0 0 44px rgba(255,200,120,0.7); transform-origin: 50% 0; transform: scaleY(0); }
+
+  /* ---------- preview controls ---------- */
+  #controls { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center;
+              background: rgba(20,20,24,0.85); padding: 8px 14px; border-radius: 12px; font: 14px "JetBrains Mono", monospace; z-index: 10; }
+  #controls button { background: #ff7a2f; color: #000; border: 0; border-radius: 8px; padding: 6px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+  #controls input { width: min(60vw, 720px); }
+  body.render #controls { display: none; }
+  body.render #wrap { position: static; display: block; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="bg"></canvas>
+    <canvas id="map"></canvas>
+    <canvas id="gl"></canvas>
+    <canvas id="photo"></canvas>
+    <canvas id="chalk"></canvas>
+    <canvas id="gltop"></canvas>
+    <div id="ui" class="layer">
+      <div class="topbar">
+        <div class="pill brand">
+          <svg viewBox="0 0 24 24"><path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3-1-3 0-6 1-9.5z" fill="#ff7a2f"/><path d="M12 12c.6 1.8 2.5 2.6 2.5 4.6a2.5 2.5 0 0 1-5 0c0-1.2.8-2 1.4-2.6.1 1 .6 1.5 1.1 1.5-.5-1.3-.3-2.4 0-3.5z" fill="#ffd84a"/></svg>
+          Burning Calendar
+        </div>
+        <div class="pill search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <span id="searchText"></span>
+        </div>
+        <div class="pill chip"><i class="dot modis"></i>MODIS</div>
+        <div class="pill chip"><i class="dot viirs"></i>VIIRS</div>
+        <div class="pill date">08 SEP 2020</div>
+      </div>
+      <div class="timebar">
+        <div class="tb-count"><b id="count">0</b><span>detecciones · 8 sep 2020</span></div>
+        <div class="tb-chart"><canvas id="tb" width="1530" height="76"></canvas></div>
+      </div>
+      <div class="attrib">Imagen: Esri, Maxar, Earthstar Geographics · Detecciones: NASA FIRMS</div>
+      <div class="divider" id="divider"></div>
+      <div class="slabel left" id="labL">
+        <h2>MODIS</h2>
+        <p>Terra · Aqua</p>
+        <div class="px"><i class="dot modis"></i>píxel ≈ 1 km</div>
+      </div>
+      <div class="slabel right" id="labR">
+        <h2>VIIRS</h2>
+        <p>Suomi NPP · NOAA-20</p>
+        <div class="px">píxel ≈ 375 m<i class="dot viirs"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="controls">
+  <button id="play">▶ Play</button>
+  <input id="scrub" type="range" min="0" max="37" step="0.01" value="0">
+  <span id="time">0.00 s</span>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>

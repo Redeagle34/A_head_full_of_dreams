@@ -1,0 +1,16 @@
+[
+ {
+  "src": "assets/tiles/patch_z5_westna.png",
+  "lon0": -157.5,
+  "lon1": -67.5,
+  "lat0": 11.178401873711794,
+  "lat1": 66.51326044311186
+ },
+ {
+  "src": "assets/tiles/patch_z7_california.png",
+  "lon0": -129.375,
+  "lon1": -109.6875,
+  "lat0": 29.535229562948455,
+  "lat1": 45.08903556483102
+ }
+]

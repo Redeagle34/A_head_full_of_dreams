@@ -1,0 +1,115 @@
+/* Draft 1, "Field guide".
+
+   The page is laid out like the folded map-and-guide handed out at a park gate: a black band
+   with the name across the top, a column of plain words beside the map, and a second black
+   band across the bottom that holds the whole burning calendar, week by week, year by year.
+   The calendar is the time control: pick a week and the map goes there.
+
+   Change here
+     tokens (first block)      colors, corner radius, faces
+     .bar / .spread / .band    the three bands of the page and their heights
+     .cal                      the calendar in the bottom band (drawn by draft-park.js)
+*/
+:root {
+  --paper: #f3f5f1; --ink: #14171a; --muted: #565d63; --surface: #ffffff; --field: #e6e9e4; --line: #c6cbc5;
+  --accent: #0d6b50; --on-accent: #ffffff; --focus: #e0a800;
+  --band: #0b0c0d; --band-ink: #ffffff; --band-muted: #a9b0b5; --band-line: #34393d;
+  --r-panel: 2px; --r-control: 2px; --r-track: 2px;
+  --font: "Public Sans", "Helvetica Neue", Arial, sans-serif; --font-display: var(--font);
+  --track: #23272b; --window: rgba(255, 210, 63, .28); --window-edge: #ffd23f;
+  --bar-h: 92px; --band-h: 300px; --col-w: clamp(340px, 31vw, 470px);
+}
+html, body { height: 100%; }
+body { background: var(--paper); display: grid; grid-template-rows: var(--bar-h) minmax(0, 1fr) var(--band-h); overflow: hidden; padding-top: var(--sw); }
+
+/* ---- top band ---- */
+.bar { background: var(--band); color: var(--band-ink); display: flex; align-items: center; gap: 22px; padding: 0 26px; }
+.title { margin-right: auto; }
+.brand { font: 800 clamp(24px, 2.6vw, 38px)/1 var(--font-display); letter-spacing: -.035em; white-space: nowrap; }
+.title p { font-size: 13.5px; color: var(--band-muted); margin-top: 6px; white-space: nowrap; }
+.bar .field { display: grid; gap: 4px; }
+.bar label { font-size: 12px; color: var(--band-muted); }
+.bar input, .bar select { background: #1b1f22; border-color: var(--band-line); color: var(--band-ink); color-scheme: dark; }
+.bar .search { width: clamp(200px, 22vw, 320px); }
+.bar .results { color: var(--ink); }
+.actions { display: flex; gap: 0; align-self: stretch; align-items: stretch; }
+.actions button { background: none; border: 0; border-left: 1px solid var(--band-line); border-radius: 0; color: var(--band-ink);
+                  padding: 0 16px; font-weight: 600; }
+.actions button:hover { background: #1b1f22; }
+.actions button[aria-expanded="true"] { background: var(--paper); color: var(--ink); }
+
+/* ---- middle: words beside the map ---- */
+.spread { display: grid; grid-template-columns: var(--col-w) minmax(0, 1fr); min-height: 0; }
+.column { overflow: auto; padding: 26px 26px 30px; display: grid; gap: 14px; align-content: start; border-right: 1px solid var(--ink); }
+.headline { font: 800 clamp(24px, 2.3vw, 34px)/1.1 var(--font-display); letter-spacing: -.025em; text-wrap: balance; }
+.lede { font-size: 16.5px; line-height: 1.45; max-width: 46ch; }
+.column h3 { margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--ink); color: var(--ink); }
+.plate { position: relative; min-width: 0; }
+#map { position: absolute; inset: 0; }
+.cross { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; pointer-events: none; z-index: 2;
+         background: linear-gradient(#fff, #fff) 50% 0 / 2px 100% no-repeat, linear-gradient(#fff, #fff) 0 50% / 100% 2px no-repeat;
+         filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 1px #000); }
+.legend { position: absolute; left: 14px; bottom: 14px; z-index: 3; width: min(300px, calc(100% - 28px)); padding: 12px 14px;
+          background: var(--surface); border: 1px solid var(--ink); }
+
+/* the danger sign: five plates, the highest level near the cross stands up */
+.sign { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; align-items: end; height: 62px; }
+.sign span { display: grid; place-items: center; height: 34px; font-size: 12px; font-weight: 600; color: var(--ink);
+             background: color-mix(in srgb, var(--c) 30%, var(--paper)); transition: height .45s cubic-bezier(.2, .9, .2, 1), background-color .3s; }
+.sign span.on { height: 62px; background: var(--c); color: #111; font-size: 13.5px; font-weight: 800; }
+
+/* fire rows as ruled list entries, not cards */
+.fire { background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 10px 2px; }
+.fire:hover { background: var(--field); }
+.fire .badge { border-radius: 0; }
+
+/* ---- panels: a page laid over the words column ---- */
+.sheet, .sat-panel { position: fixed; z-index: 20; left: 0; top: calc(var(--sw) + var(--bar-h)); bottom: var(--band-h); width: var(--col-w); overflow: auto;
+                     padding: 22px 26px 26px; background: var(--surface); border-right: 1px solid var(--ink);
+                     display: grid; gap: 12px; align-content: start; animation: turn .32s cubic-bezier(.2, .8, .2, 1); }
+@keyframes turn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.sat-hero { margin: -22px -26px 0; }
+.sat-image { border-radius: 0; }
+.panel .chart { background: var(--band); padding: 8px; }
+
+/* ---- bottom band: the calendar and the time bar ---- */
+.band { background: var(--band); color: var(--band-ink); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px; padding: 14px 26px 10px;
+        --ink: #ffffff; --muted: var(--band-muted); --line: var(--band-line); --field: #1b1f22; }
+.band-head { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.band-head h2 { font: 800 17px/1.2 var(--font-display); letter-spacing: -.01em; }
+.band-head p { font-size: 13.5px; color: var(--band-muted); }
+.cal { min-height: 0; position: relative; }
+.cal svg { display: block; width: 100%; height: 100%; }
+.cal .wk { cursor: pointer; }
+.cal .wk:hover { stroke: #fff; stroke-width: 1.5; }
+.cal text { fill: var(--band-muted); font: 11px var(--font); }
+.cal .tip { position: absolute; z-index: 5; pointer-events: none; background: #fff; color: #14171a; padding: 6px 9px; font-size: 12.5px;
+            line-height: 1.3; white-space: nowrap; transform: translate(-50%, -112%); box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .6); }
+.band .timeline { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 18px; }
+.band .tl-row button, .band input, .band select { background: #1b1f22; border-color: var(--band-line); color: #fff; color-scheme: dark; min-height: 32px; padding: 4px 10px; }
+.band #tlPlay { background: #ffd23f; border-color: #ffd23f; color: #14171a; font-weight: 800; min-width: 70px; }
+.band .tl-track { height: 44px; }
+
+/* ---- narrower screens: one column, the calendar scrolls sideways ---- */
+@media (max-width: 1180px) {
+  :root { --bar-h: 132px; }
+  .bar { flex-wrap: wrap; align-content: center; gap: 8px 16px; padding: 10px 16px; }
+  .actions { width: 100%; align-self: auto; height: 40px; overflow-x: auto; }
+  .actions button:first-child { border-left: 0; }
+}
+@media (max-width: 860px) {
+  html, body { height: auto; }
+  body { display: block; overflow: auto; }
+  .bar { position: sticky; top: var(--sw); z-index: 25; }
+  .title p, .bar label { display: none; }
+  .bar .search { flex: 1 1 160px; width: auto; }
+  .spread { display: flex; flex-direction: column-reverse; }
+  .plate { height: 56vh; }
+  .column { border-right: 0; padding: 20px 16px; }
+  .band { padding: 14px 16px 24px; }
+  .cal { overflow-x: auto; height: 250px; }
+  .cal svg { width: 900px; }
+  .band .timeline { grid-template-columns: 1fr; gap: 8px; }
+  .sheet, .sat-panel { top: auto; bottom: 0; width: 100%; max-height: 74vh; border-right: 0; border-top: 2px solid var(--ink); padding: 18px 16px 24px; }
+  .sat-hero { margin: -18px -16px 0; }
+}

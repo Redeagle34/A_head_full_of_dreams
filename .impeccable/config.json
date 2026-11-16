@@ -1,0 +1,38 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(.34, 1.56, .64, 1)",
+        "createdAt": "2026-11-15T21:31:33.217Z",
+        "reason": "design decision: the Guide map draft's lobes swell with an overshoot as their signature motion; the owner chose this draft (rated it 10/10) on 2026-11-15"
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "web/draft-guide.css"
+        ],
+        "createdAt": "2026-11-15T21:33:13.724Z",
+        "reason": "design decision: the Guide map lobes morph in size as the draft's signature swell, a few fixed elements, owner chose this draft 2026-11-15"
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "web/draft-park.css"
+        ],
+        "createdAt": "2026-11-15T21:33:15.273Z",
+        "reason": "design decision: the five danger-sign plates rise in height; five small elements, no measurable layout cost"
+      },
+      {
+        "rule": "bounce-easing",
+        "value": "cubic-bezier(.3, 1.4, .4, 1)",
+        "createdAt": "2026-11-15T21:33:16.104Z",
+        "reason": "design decision: the Forecast dial needle settles past its mark like a gauge needle; one element"
+      }
+    ]
+  }
+}

@@ -236,17 +236,23 @@ server/                 FastAPI application
   db.py                 read-only DuckDB connection
   config.py             paths, limits, .env loading
 web/
-  index.html            map page: layout
-  style.css             map page: appearance
-  app.js                map page: behaviour (sections are listed at the top)
-  fires.js              map page: the Fires panel, fire markers and the search around a point
-  prevention.js         map page: the Prevention panel and its layers
-  tour.js               map page: the first-visit tour of the tools (the ? button starts it again)
+  index.html            map page (the Guide map design): cover with play and the tutorial video,
+                        then the full map; draft-guide.css and draft-guide.js are its look and its parts
+  draft-base.css, draft-common.js   shared by the design pages (index.html, draft-park, draft-forecast)
+  app.js                map behaviour shared by every map page (sections are listed at the top)
+  fires.js              the Fires panel, fire markers and the search around a point
+  prevention.js         the Prevention panel and its layers
+  satellites.js         satellites, their 3D models, scan lines and passes
+  timeline.js           the time bar
+  media/                tutorial.mp4 and its poster (made from video/, see video/README.md)
+  classic.html, style.css, layout.js, tour.js   the previous map page, kept as classic.html
+  drafts.html           the three design drafts side by side (draft-park, draft-forecast, the Guide map)
   report.html, report.css, report.js   scientific report page
   states.html           state overview page
   data/                 calendar.json, states.geojson (generated, committed)
 data/                   raw CSV, Parquet, fire.duckdb (generated, not in git)
 proofs/                 early feasibility scripts and their saved results
+video/                  the 37 s presentation video: animation source, script, render tools (see its README.md)
 .project/
   SPEC.md               plan, decisions and measured results for every step
   research/             background research, sources and findings

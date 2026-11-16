@@ -12,3 +12,5 @@ pipeline/*
 # data/: only data/deploy/, written by pipeline/prepare_deploy.py
 data/*
 !data/deploy
+# presentation video sources (not served; the page plays web/media/tutorial.mp4)
+video

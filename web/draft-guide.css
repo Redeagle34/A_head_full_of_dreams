@@ -1,0 +1,297 @@
+/* Draft 3, "Guide map".
+
+   The page opens on three things: the name, the Earth under a white veil, and a play button,
+   with the report builder below the name. Play sends the Earth to the centre, then its blue
+   fills the window and the tools come in around it:
+     top left     the name and Find a place
+     top right    Exit the map, My location, Settings (fires, satellites, layers, numbers, report)
+     left column  every card stacks here and pushes the others down, so nothing covers anything:
+                  a picked satellite, an open panel, the fires around the red dot, the year wheel
+     right        the legend
+     bottom       the time bar, beside the column
+   Cards are white with red controls; corners are small.
+
+   Palette (from the owner, 2026-11-15)
+     Cosmos blue #003049 · Blue Marble #669BBC · Crimson Blaze #C1121F · Varden #AE1F23 · Gochujang Red #780000
+     The five danger-level colors stay as they are, because they are the U.S. fire danger signs.
+
+   Change here
+     tokens (first block)        palette, face, corners
+     body[data-stage=...]        intro, opening, live: the three stages of the page
+     .rail                       the left column and its cards
+*/
+:root {
+  --cosmos: #003049; --marble: #669bbc; --crimson: #c1121f; --varden: #ae1f23; --gochujang: #780000; --white: #ffffff;
+  --paper: #ffffff; --paper-2: #eef3f6;
+  --act: #751505; --act-hover: #5a0f03;          /* main actions: Play, Exit the map, Get the report, … (owner, 2026-11-15) */
+  --ink: var(--cosmos); --muted: #476576; --surface: var(--paper); --field: var(--paper-2); --line: rgba(0, 48, 73, .18);
+  --accent: var(--crimson); --on-accent: var(--white); --focus: var(--crimson);
+  --r-panel: 14px; --r-control: 10px; --r-track: 8px;
+  --font: "Comfortaa", system-ui, sans-serif; --font-display: var(--font);
+  --track: rgba(0, 48, 73, .1); --window: rgba(193, 18, 31, .16); --window-edge: var(--crimson);
+  --left-col: 340px;                  /* intro: the name and the report */
+  --rail: 380px;                      /* live: the left column */
+  --gap: 20px;
+  /* the Earth area: the owner's drawn curve (intro), a round globe (opening), the whole window (live);
+     same number of points in each, so one morphs into the next (made by a small script, see git log) */
+  --shape-intro: polygon(30.00% 0.00%, 30.39% 5.41%, 30.92% 10.60%, 31.59% 15.61%, 32.40% 20.48%, 33.33% 25.24%, 34.38% 29.93%, 35.55% 34.58%, 36.83% 39.22%, 38.21% 43.89%, 39.69% 48.63%, 41.26% 53.47%, 42.92% 58.44%, 44.66% 63.59%, 46.48% 68.94%, 48.37% 74.53%, 50.32% 80.40%, 52.33% 86.57%, 54.39% 93.10%, 56.50% 100.00%, 67.38% 100.00%, 78.25% 100.00%, 89.12% 100.00%, 100.00% 100.00%, 100.00% 83.33%, 100.00% 66.67%, 100.00% 50.00%, 100.00% 33.33%, 100.00% 16.67%, 100.00% 0.00%, 86.00% 0.00%, 72.00% 0.00%, 58.00% 0.00%, 44.00% 0.00%);
+  --shape-globe: polygon(calc(50% + -23.60vh) calc(50% + -31.05vh), calc(50% + -25.14vh) calc(50% + -29.81vh), calc(50% + -26.73vh) calc(50% + -28.40vh), calc(50% + -28.35vh) calc(50% + -26.78vh), calc(50% + -30.02vh) calc(50% + -24.89vh), calc(50% + -31.74vh) calc(50% + -22.66vh), calc(50% + -33.49vh) calc(50% + -19.99vh), calc(50% + -35.22vh) calc(50% + -16.74vh), calc(50% + -36.86vh) calc(50% + -12.75vh), calc(50% + -38.21vh) calc(50% + -7.83vh), calc(50% + -38.95vh) calc(50% + -1.89vh), calc(50% + -38.68vh) calc(50% + 5.02vh), calc(50% + -36.96vh) calc(50% + 12.44vh), calc(50% + -33.70vh) calc(50% + 19.62vh), calc(50% + -29.28vh) calc(50% + 25.77vh), calc(50% + -24.37vh) calc(50% + 30.45vh), calc(50% + -19.61vh) calc(50% + 33.71vh), calc(50% + -15.36vh) calc(50% + 35.85vh), calc(50% + -11.74vh) calc(50% + 37.19vh), calc(50% + -8.74vh) calc(50% + 38.01vh), calc(50% + -0.49vh) calc(50% + 39.00vh), calc(50% + 7.83vh) calc(50% + 38.21vh), calc(50% + 15.18vh) calc(50% + 35.93vh), calc(50% + 21.02vh) calc(50% + 32.85vh), calc(50% + 27.01vh) calc(50% + 28.13vh), calc(50% + 34.59vh) calc(50% + 18.02vh), calc(50% + 39.00vh) calc(50% + 0.00vh), calc(50% + 34.59vh) calc(50% + -18.02vh), calc(50% + 27.01vh) calc(50% + -28.13vh), calc(50% + 21.02vh) calc(50% + -32.85vh), calc(50% + 13.21vh) calc(50% + -36.69vh), calc(50% + 3.11vh) calc(50% + -38.88vh), calc(50% + -7.65vh) calc(50% + -38.24vh), calc(50% + -16.88vh) calc(50% + -35.16vh));
+  --shape-full: polygon(11.24% -1.00%, 6.99% -1.00%, 2.01% -1.00%, -1.00% 1.83%, -1.00% 7.72%, -1.00% 13.58%, -1.00% 19.55%, -1.00% 25.76%, -1.00% 32.36%, -1.00% 39.54%, -1.00% 47.53%, -1.00% 56.62%, -1.00% 67.17%, -1.00% 79.69%, -1.00% 94.88%, 9.18% 101.00%, 20.33% 101.00%, 28.15% 101.00%, 33.89% 101.00%, 38.27% 101.00%, 49.36% 101.00%, 60.45% 101.00%, 71.55% 101.00%, 82.64% 101.00%, 98.96% 101.00%, 101.00% 76.56%, 101.00% 50.00%, 101.00% 23.44%, 98.96% -1.00%, 82.64% -1.00%, 68.36% -1.00%, 54.08% -1.00%, 39.80% -1.00%, 25.52% -1.00%);
+}
+html, body { height: 100%; }
+body { background: var(--cosmos); color: var(--white); overflow: hidden; padding-top: var(--sw); }
+body { font-weight: 500; }
+:is(h1, h2, .brand, .year-line b, .stepper b, .wheel .yr, .count, button, .button, .sat-id h2) { font-weight: 700 !important; }
+:is(p, .hint, small, label, select, input, td, th, dd, dt, .sub, .credits) { font-weight: 500 !important; }
+button, .button { background: var(--act); color: var(--white); border: 0; border-radius: var(--r-control); }
+button:hover, .button:hover { background: var(--act-hover); color: var(--white); }
+input[type="search"], input[type="date"], select { background: var(--paper-2); color: var(--cosmos); border: 0; border-radius: var(--r-control); color-scheme: light; }
+input::placeholder { color: #4e6a7b; }
+h3 { letter-spacing: 0; text-transform: none; font-size: 14px; color: var(--muted); margin: 4px 0 0; }
+
+/* white surfaces: cards, panels, popups, the legend, the time bar, the enlarged picture */
+.card, .sheet, .sat-panel, .results, .legend, .timeline, .actions, .lightbox-inner, .maplibregl-popup-content {
+  background: var(--paper); color: var(--ink); border-radius: var(--r-panel); }
+
+/* ---- the Earth ---- */
+.lobe-map { position: fixed; z-index: 1; left: 0; top: var(--sw); width: 100vw; height: calc(100vh - var(--sw)); overflow: hidden;
+            background: var(--marble); clip-path: var(--shape-intro); transition: clip-path .7s cubic-bezier(.3, .9, .3, 1); }
+#map { position: absolute; inset: 0; }
+body:not([data-stage="live"]) .cross, body:has(.lobe-near.min) .cross { display: none; }
+.cross { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; pointer-events: none; z-index: 2;
+         border-radius: 50%; background: var(--crimson); border: 3px solid var(--white); }
+.sat-label { z-index: 2; background: var(--cosmos); border-radius: 6px; }
+.maplibregl-ctrl-attrib { display: none !important; }
+.maplibregl-ctrl-bottom-right { bottom: 152px; right: var(--gap); }
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group { margin: 0; border-radius: var(--r-control); overflow: hidden; box-shadow: none; }
+.maplibregl-ctrl-group button { width: 40px; height: 40px; background: var(--paper); border-radius: 0; }
+.maplibregl-ctrl-group button:hover { background: var(--paper-2); }       /* the credits are at the foot of the settings */
+
+/* ---- 1. intro: the name, the Earth under a white veil, play; the report below the name ---- */
+.bar { position: fixed; z-index: 4; left: 28px; top: calc(var(--sw) + 24px); width: calc(var(--left-col) - 28px); display: grid; gap: 12px;
+       transition: opacity .3s, transform .45s; }
+.brand { font-size: clamp(50px, 5vw, 78px); line-height: 1; letter-spacing: -.04em; color: var(--white); }
+.bar label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.results { color: var(--ink); }
+
+.veil { position: absolute; inset: 0; z-index: 8; display: grid; place-content: center; justify-items: center; gap: 16px;
+        padding: 0 0 0 42vw; background: rgba(255, 255, 255, .55); cursor: pointer; transition: opacity .35s; }
+.veil p { color: var(--cosmos); font-size: 19px; letter-spacing: -.01em; }
+/* play: a soft-cornered triangle, like the owner's sample */
+.begin, .begin:hover { width: 150px; height: 150px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 24px;
+         background: none; color: #231f20; transition: transform .3s cubic-bezier(.34, 1.56, .64, 1); }
+.begin svg { width: 128px; height: 128px; margin-left: 14px; overflow: visible; }
+.veil:hover .begin { transform: scale(1.08); }
+.begin:focus-visible { outline: 4px solid var(--cosmos); outline-offset: 6px; }
+
+.intro-report { position: fixed; z-index: 4; left: 28px; bottom: 28px; width: calc(var(--left-col) - 8px); display: grid; gap: 10px;
+                transition: opacity .3s, transform .45s; }
+.intro-report h2 { font-size: 26px; letter-spacing: -.03em; }
+.intro-report p { color: rgba(255, 255, 255, .82); font-size: 14.5px; line-height: 1.4; }
+.include { display: flex; flex-wrap: wrap; gap: 6px; }
+.include label { position: relative; cursor: pointer; }
+.include input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.include span { display: block; padding: 5px 11px; border-radius: 8px; border: 2px solid rgba(255, 255, 255, .5); font-size: 13px; line-height: 1.25; }
+.include input:checked + span { background: var(--white); color: var(--cosmos); border-color: var(--white); }
+.include input:focus-visible + span { outline: 3px solid var(--marble); outline-offset: 2px; }
+.intro-report .get { justify-self: start; min-height: 46px; padding: 0 24px; font-size: 16px; }
+
+/* the cover scrolls: the name, the Earth and the report go up, and the tutorial comes in below */
+body[data-stage="intro"] { overflow: visible; height: auto; min-height: 100%; position: relative; display: flow-root; }   /* flow-root: the tutorial margin must not push the cover down */
+html:has(body[data-stage="intro"]) { overflow-x: hidden; overflow-y: auto; }
+body.scrolled .sat-label { display: none !important; }       /* the name tags float over the page; not over the tutorial */
+body[data-stage="intro"] :is(.lobe-map, .bar, .intro-report) { position: absolute; }
+body[data-stage="intro"] .intro-report { top: calc(100vh - 28px); bottom: auto; translate: 0 -100%; }   /* on the first screen, not the page bottom */
+body:not([data-stage="intro"]) :is(.tutorial, .scroll-cue) { display: none; }
+.scroll-cue { position: absolute; z-index: 9; left: 71vw; top: calc(100vh - 64px); transform: translateX(-50%); display: inline-flex; align-items: center; gap: 6px;
+              padding: 8px 16px; border-radius: var(--r-control); background: var(--paper); color: var(--cosmos); text-decoration: none; font-size: 15px; font-weight: 700; }
+.scroll-cue svg { width: 18px; height: 18px; }
+.scroll-cue:hover { background: var(--paper-2); }
+.tutorial { position: relative; z-index: 5; margin: 100vh auto 0; padding: 72px 24px 64px; width: min(1180px, 100%); display: grid; gap: 14px; justify-items: center; text-align: center; }
+.tutorial h2 { font-size: clamp(30px, 3.4vw, 48px); letter-spacing: -.03em; }
+.tutorial > p { max-width: 62ch; color: rgba(255, 255, 255, .84); font-size: 17px; line-height: 1.5; }
+.tutorial video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin-top: 12px; border-radius: var(--r-panel); background: #000; }
+.tutorial .fine { font-size: 13px; color: rgba(255, 255, 255, .62); }
+html { scroll-behavior: smooth; }
+
+body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { opacity: 0; pointer-events: none; visibility: hidden; }
+body[data-stage="intro"] .maplibregl-ctrl-bottom-right { display: none; }
+
+/* ---- 2. opening: the veil lifts, the Earth goes to the centre as a round globe ---- */
+body:not([data-stage="intro"]) .veil { opacity: 0; pointer-events: none; }
+body[data-stage="opening"] .lobe-map { clip-path: var(--shape-globe); }
+body:not([data-stage="intro"]) .intro-report { opacity: 0; transform: translateY(40px); pointer-events: none; }
+body[data-stage="opening"] .bar { opacity: 0; transform: translateX(-40px); }
+
+/* ---- 3. live: the blue fills the window and the tools come in around the Earth ---- */
+body[data-stage="live"] .lobe-map { clip-path: var(--shape-full); }
+body.settled .lobe-map { clip-path: none; transition: none; }     /* once open, no cut at all: the corners stay covered */
+body[data-stage="live"] :is(.bar, .tools, .rail, .timeline, .legend) { animation: arrive .5s .25s both cubic-bezier(.2, .8, .2, 1); }
+@keyframes arrive { from { opacity: 0; } to { opacity: 1; } }
+body[data-stage="live"] .bar { left: var(--gap); top: calc(var(--sw) + 16px); width: auto; display: flex; align-items: center; gap: 14px; }
+body[data-stage="live"] .brand { font-size: 30px; line-height: 1; letter-spacing: -.04em; white-space: nowrap; text-shadow: 0 1px 8px rgba(0, 30, 50, .55); }
+body[data-stage="live"] .brand br { display: none; }
+body[data-stage="live"] .bar .search { width: 300px; }
+.bar .search input { min-height: 44px; padding: 10px 16px; font-size: 16px; background: var(--paper); }
+
+/* top right: exit, my location, settings */
+.tools { position: fixed; z-index: 20; right: var(--gap); top: calc(var(--sw) + 16px); display: flex; gap: 8px; align-items: center; }
+.tools > button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 12px; background: var(--paper); color: var(--cosmos); }
+.tools > button:hover { background: var(--paper-2); color: var(--cosmos); }
+.tools > button svg { width: 20px; height: 20px; flex: none; }
+.tools .exit { background: var(--act); color: var(--white); font-size: 16px; }
+.tools .exit:hover { background: var(--act-hover); color: var(--white); }
+.tools .gear svg { transition: transform .5s cubic-bezier(.34, 1.56, .64, 1); }
+.tools .gear[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
+.tools .gear[aria-expanded="true"] svg { transform: rotate(90deg); }
+.actions { position: absolute; right: 0; top: calc(100% + 8px); width: 280px; padding: 10px; display: grid; gap: 6px;
+           box-shadow: 0 14px 40px -12px rgba(0, 20, 35, .5); }
+.actions[hidden] { display: none; }
+.actions button, .actions button[aria-expanded] { width: 100%; text-align: left; min-height: 44px; font-size: 16px; padding: 0 14px; background: var(--paper-2); color: var(--cosmos); }
+.actions button:hover { background: #dde8ee; color: var(--cosmos); }
+.actions button[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
+.credits { font-size: 11.5px; line-height: 1.35; color: var(--muted); padding: 4px 6px 2px; }
+.credits:empty { display: none; }
+
+/* right: the legend */
+.legend { position: fixed; z-index: 3; right: var(--gap); top: calc(var(--sw) + 76px); width: 260px; padding: 14px 16px; }
+.legend-note { display: none; }
+
+/* bottom: time, beside the column */
+.timeline { position: fixed; z-index: 4; left: calc(var(--gap) * 2 + var(--rail)); right: var(--gap); bottom: var(--gap); padding: 12px 18px 4px; display: grid; gap: 6px; }
+.timeline button { min-height: 38px; padding: 0 14px; }
+#tlPlay { min-width: 80px; }
+#tlPlay[aria-pressed="true"] { background: var(--cosmos); }
+.tl-more, .timeline .tl-extra button { background: var(--paper-2); color: var(--cosmos); }
+.tl-more:hover, .timeline .tl-extra button:hover { background: #dde8ee; color: var(--cosmos); }
+.tl-more[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
+.tl-date select { min-height: 38px; }
+
+/* ---- the left column: cards stack, never on top of each other ---- */
+.rail { position: fixed; z-index: 8; left: var(--gap); top: calc(var(--sw) + 76px); bottom: var(--gap); width: var(--rail);
+        display: flex; flex-direction: column; gap: 12px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, .5) transparent; border-radius: var(--r-panel); }
+.rail > * { flex: none; }
+.card, .rail > .sheet, .rail > .sat-panel { position: relative; width: auto; padding: 18px 20px 20px; display: grid; gap: 10px; align-content: start;
+        animation: drop .3s cubic-bezier(.2, .8, .2, 1); }
+.rail > [hidden] { display: none !important; }
+@keyframes drop { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
+.card .hint, .rail .hint { font-size: 13.5px; line-height: 1.4; color: var(--muted); }
+.rail .panel-head h2 { font-size: 22px; }
+.rail .sheet button, .rail .sat-panel button { white-space: normal; }
+.rail select { min-height: 38px; }
+.choices label { border: 2px solid var(--line); border-radius: var(--r-control); }
+.choices label:has(input:checked) { border-color: var(--act); background: #f6ecea; box-shadow: none; }
+.panel .chart { background: var(--cosmos); border-radius: var(--r-control); padding: 10px; }
+
+.lobe-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lobe-head h2, .mini-label { font-size: 21px; line-height: 1.15; letter-spacing: -.02em; }
+.mini, .mini[aria-expanded] { width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 8px; display: grid; place-items: center; flex: none; background: var(--paper-2); color: var(--cosmos); }
+.mini:hover { background: var(--marble); color: var(--cosmos); }
+.mini svg { width: 16px; height: 16px; }
+.lobe.min { padding-top: 12px; padding-bottom: 12px; }
+.lobe.min > :not(.lobe-head) { display: none !important; }
+.quiet-btn { justify-self: start; background: var(--paper-2); color: var(--cosmos); min-height: 38px; padding: 0 14px; }
+.quiet-btn:hover { background: var(--marble); color: var(--cosmos); }
+
+/* the fires around the red dot */
+.year-line { display: flex; align-items: baseline; gap: 12px; margin-top: 2px; }
+.year-line b { font-size: 46px; line-height: 1; letter-spacing: -.05em; color: var(--crimson); font-variant-numeric: tabular-nums; }
+.year-line span { font-size: 15px; color: var(--muted); }
+.lobe-near .sub { font-size: 15px; line-height: 1.4; }
+.near-where { display: flex; gap: 6px; }
+.near-where button { flex: 1; min-height: 40px; padding: 0 10px; }
+.near-where button + button { background: var(--paper-2); color: var(--cosmos); }
+.near-where button[aria-pressed="true"] { background: var(--cosmos); color: var(--white); }
+.near-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.near-filters label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.sign { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.sign span { display: grid; gap: 4px; font-size: 11.5px; line-height: 1.15; color: var(--muted); text-align: center; padding: 4px 2px 5px; border-radius: 8px; border: 2px solid transparent; }
+.sign i { height: 10px; border-radius: 4px; background: var(--c); }
+.sign span.on { border-color: var(--cosmos); color: var(--cosmos); }
+.sign span.on i { height: 16px; }
+.count { font-size: 15px; }
+.fire { background: var(--paper-2); color: var(--ink); border-radius: var(--r-control); border: 0; padding: 10px 12px; }
+.fire:hover { background: #dde8ee; color: var(--ink); }
+.fire .badge { border-radius: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: -1px; }
+
+/* the year wheel */
+.lobe-wheel .grow[aria-expanded="false"] { justify-self: start; background: var(--paper-2); color: var(--cosmos); min-height: 38px; padding: 0 14px; }
+.lobe-wheel .grow[aria-expanded="true"] { background: var(--cosmos); color: var(--white); }
+.wheel { width: 100%; max-width: 320px; justify-self: center; aspect-ratio: 1; }
+.wheel svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.wheel .petal { cursor: pointer; transition: opacity .15s; }
+.wheel .petal:hover { opacity: .7; }
+.wheel text { font: 15px var(--font); fill: var(--muted); }
+.wheel .yr { font-size: 46px; letter-spacing: -.05em; fill: var(--cosmos); }
+.wheel-side { display: grid; gap: 10px; }
+.wheel-side .hint { display: none; }
+body[data-open="wheel"] .wheel-side .hint { display: block; }
+.lobe-wheel > .grow { order: 5; }
+.stepper { display: flex; align-items: center; gap: 10px; }
+.stepper button { min-height: 36px; padding: 0 12px; background: var(--paper-2); color: var(--cosmos); }
+.stepper button:hover { background: #dde8ee; color: var(--cosmos); }
+.stepper b { font-size: 26px; letter-spacing: -.04em; min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* ---- the satellite card, at the top of the column ---- */
+#satBack { display: none !important; }
+#satCard .sat-facts { font-variant-numeric: normal; }
+#satCard .sat-id { order: -2; grid-template-columns: 96px 1fr; padding: 0 44px 8px 0; border-top: 0; }
+#satCard .sat-id canvas { width: 96px; height: 66px; }
+#satCard .sat-id h2 { font-size: 28px; letter-spacing: -.03em; }
+#satCard .sat-hero { order: -1; margin: 0; }
+#satCard .sat-image { border-radius: var(--r-control); min-height: 160px; }
+#satCard .sat-image.empty { background: var(--paper-2); cursor: default; }
+#satCard .sat-enlarge { right: 8px; bottom: 8px; width: 40px; height: 40px; min-height: 0; padding: 0; display: grid; place-items: center;
+                        background: var(--white); color: var(--cosmos); border-radius: 8px; }
+#satCard .sat-enlarge svg { width: 20px; height: 20px; }
+#satCard .sat-what b { font-size: 16px; }
+#satCard #satPassesOne button, #satList button, #satPasses button { background: var(--paper-2); color: var(--ink); }
+.sat-close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; min-height: 0; padding: 0; border-radius: 8px; display: grid; place-items: center;
+             background: var(--paper-2) !important; color: var(--cosmos) !important; z-index: 2; }
+.sat-close svg { width: 18px; height: 18px; }
+.lightbox-inner { padding: 24px; }
+.maplibregl-popup-content { border: 0; }
+
+/* ---- first-visit tour (section 7 of draft-guide.js) ---- */
+.tour-spot { position: fixed; z-index: 50; border-radius: var(--r-panel); pointer-events: none; box-shadow: 0 0 0 4px var(--white), 0 0 0 9999px rgba(0, 25, 40, .45);
+             transition: left .3s, top .3s, width .3s, height .3s; }
+.tour-card { position: fixed; z-index: 51; width: min(340px, calc(100vw - 24px)); padding: 18px 20px; display: grid; gap: 10px;
+             background: var(--paper); color: var(--ink); border-radius: var(--r-panel); box-shadow: 0 18px 50px -14px rgba(0, 20, 35, .6); }
+.tour-card[hidden], .tour-spot[hidden] { display: none; }
+.tour-card.welcome { left: 50% !important; top: 50% !important; transform: translate(-50%, -50%); width: min(440px, calc(100vw - 24px)); padding: 24px; }
+.tour-card h2 { font-size: 19px; line-height: 1.2; letter-spacing: -.01em; }
+.tour-card.welcome h2 { font-size: 24px; }
+.tour-card p { color: var(--muted); font-size: 15px; line-height: 1.45; }
+.tour-count { font-size: 13px; color: var(--muted); }
+.tour-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.tour-buttons button { min-height: 40px; padding: 0 16px; }
+.tour-card .quiet, .tour-try { background: var(--paper-2); color: var(--cosmos); }
+.tour-card .quiet:hover, .tour-try:hover { background: #dde8ee; color: var(--cosmos); }
+.tour-try { justify-self: start; min-height: 38px; padding: 0 14px; }
+.tools .help { width: 44px; padding: 0; justify-content: center; font-size: 19px; }
+@media (prefers-reduced-motion: reduce) { .tour-spot { transition: none; } }
+
+/* ---- smaller screens: the page scrolls, everything stacks ---- */
+@media (max-width: 1180px) {
+  html, body { height: auto; }
+  body { overflow: auto; padding-bottom: 30px; }
+  .bar, .timeline, .legend, .intro-report, .rail, .tools { position: static; width: auto; margin: 16px; transform: none !important; }
+  .brand { font-size: clamp(48px, 13vw, 84px); }
+  .lobe-map { position: relative; right: auto; top: auto; width: auto; height: 62vh; margin: 16px; }
+  body[data-stage="intro"] .veil { padding: 0; }
+  .lobe-map, body[data-stage] .lobe-map { clip-path: none; }
+  body:not([data-stage="intro"]) .lobe-map { width: auto; height: 62vh; border-radius: var(--r-panel); }
+  body:not([data-stage="intro"]) .intro-report { display: none; }
+  .tutorial { margin-top: 0; }
+  body[data-stage="intro"] :is(.bar, .intro-report) { position: static; }
+  body[data-stage="intro"] .intro-report { translate: none; }
+  body[data-stage="intro"] .lobe-map { position: relative; }
+  .scroll-cue { display: none; }
+  body:not([data-stage="live"]) :is(.bar .field, .tools, .rail, .timeline, .legend) { display: none; }
+  .tools { flex-wrap: wrap; }
+  .tools .actions { left: 0; right: auto; }
+  body[data-stage="live"] .bar { flex-wrap: wrap; }
+  .rail { overflow: visible; }
+}

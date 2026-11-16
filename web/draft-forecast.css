@@ -1,0 +1,134 @@
+/* Draft 2, "Forecast".
+
+   Read like the weather: the page opens on one plain sentence about fire near you, and the
+   whole page takes the color of the highest danger level nearby, in the colors of the U.S.
+   fire danger signs (green, blue, yellow, orange, red; teal when nothing is rated). Below the
+   answer the page scrolls: time, the last twelve months, a usual year, the fires, the satellites.
+
+   Change here
+     body[data-level=...]     the ground and its text colors for each danger level
+     .now                     the opening: sentence and dial beside the map
+     .weekstrip, .curve       the two pictures of time (drawn by draft-forecast.js)
+*/
+:root {
+  --r-panel: 26px; --r-control: 999px; --r-track: 999px;
+  --font: "Atkinson Hyperlegible", system-ui, sans-serif; --font-display: "Bricolage Grotesque", var(--font);
+  --night: #0e1418; --night-2: #1a2329;
+  --bar-h: 76px;
+}
+/* ground per level; text and controls follow */
+body { --ground: #0d5c6e; --ink: #ffffff; --muted: rgba(255, 255, 255, .8); --card: rgba(0, 0, 0, .2); --field: rgba(255, 255, 255, .16);
+       --line: rgba(255, 255, 255, .34); --accent: #ffd23f; --on-accent: #1b1500; --focus: #ffffff; --surface: var(--night);
+       --track: rgba(0, 0, 0, .28); --window: rgba(255, 255, 255, .3); --window-edge: #ffffff; }
+body[data-level="0"] { --ground: #1c6b40; }
+body[data-level="1"] { --ground: #1f55ab; }
+body[data-level="4"] { --ground: #a5121d; }
+body[data-level="2"], body[data-level="3"] { --ink: #1c1400; --muted: rgba(28, 20, 0, .78); --card: rgba(255, 255, 255, .34); --field: rgba(28, 20, 0, .1);
+       --line: rgba(28, 20, 0, .36); --accent: #1c1400; --on-accent: #ffe07a; --focus: #1c1400;
+       --track: rgba(28, 20, 0, .18); --window: rgba(28, 20, 0, .22); --window-edge: #1c1400; }
+body[data-level="2"] { --ground: #ffd23f; }
+body[data-level="3"] { --ground: #ff8c1a; }
+
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--sw) + var(--bar-h) + 12px); }
+body { background: var(--ground); padding-top: var(--sw); transition: background-color .9s cubic-bezier(.2, .7, .2, 1), color .5s; font-size: 16px; }
+h2 { font: 800 clamp(22px, 2vw, 28px)/1.1 var(--font-display); letter-spacing: -.02em; }
+section > .hint { margin: 6px 0 14px; font-size: 15px; }
+
+/* ---- top bar ---- */
+.bar { position: sticky; top: var(--sw); z-index: 25; height: var(--bar-h); display: flex; align-items: center; gap: 14px; padding: 0 clamp(16px, 3vw, 40px);
+       background: var(--ground); transition: background-color .9s cubic-bezier(.2, .7, .2, 1); border-bottom: 1px solid var(--line); }
+.brand { font: 800 21px/1 var(--font-display); letter-spacing: -.02em; text-decoration: none; white-space: nowrap; margin-right: 6px; }
+.bar label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.bar .search { flex: 1 1 260px; max-width: 460px; }
+.bar .search input { font-size: 16px; padding: 10px 18px; min-height: 44px; }
+.bar .dates select { min-height: 44px; }
+.actions { display: flex; gap: 6px; margin-left: auto; }
+.actions button { min-height: 40px; }
+
+/* ---- the opening ---- */
+main { max-width: 1320px; margin: 0 auto; padding: clamp(18px, 3vw, 40px); display: grid; gap: clamp(34px, 5vw, 64px); }
+.now { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(20px, 3vw, 44px); align-items: start; }
+.where { font-size: 16px; color: var(--muted); margin-bottom: 10px; }
+.now h1 { font: 800 clamp(34px, 4.3vw, 66px)/1 var(--font-display); letter-spacing: -.035em; text-wrap: balance; }
+.sub { font-size: clamp(17px, 1.4vw, 20px); line-height: 1.4; margin-top: 18px; max-width: 40ch; }
+.dial-row { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 18px; align-items: center; margin-top: 26px; padding: 16px 20px;
+            background: var(--night); color: #fff; border-radius: var(--r-panel); --muted: rgba(255, 255, 255, .78); }
+.dial { width: 200px; height: auto; display: block; }
+.dial .needle { transition: transform 1s cubic-bezier(.3, 1.4, .4, 1); transform-origin: 120px 120px; }
+.dial text { font: 700 11px var(--font); fill: #fff; }
+.mapframe { position: relative; height: clamp(360px, 56vh, 580px); border-radius: var(--r-panel); overflow: hidden; background: var(--night); }
+#map { position: absolute; inset: 0; }
+.cross { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; pointer-events: none; z-index: 2;
+         border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px rgba(0, 0, 0, .55), inset 0 0 0 2px rgba(0, 0, 0, .55); }
+.legend { margin-top: 12px; padding: 0 6px; }
+.legend-title { font-size: 15px; }
+
+/* ---- time ---- */
+.timeline { background: var(--card); border-radius: var(--r-panel); padding: 16px 20px 10px; display: grid; gap: 10px; }
+#tlPlay { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; min-width: 86px; min-height: 44px; }
+.tl-date input { color-scheme: dark; }
+body[data-level="2"] .tl-date input, body[data-level="3"] .tl-date input { color-scheme: light; }
+
+/* ---- the last twelve months: one bar a week ---- */
+.weekstrip { display: grid; grid-template-columns: repeat(53, minmax(0, 1fr)); gap: 3px; align-items: end; height: 190px; position: relative; padding-bottom: 26px; }
+.weekstrip button { all: unset; cursor: pointer; position: relative; height: 100%; display: flex; align-items: flex-end; border-radius: 6px; }
+.weekstrip button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.weekstrip i { display: block; width: 100%; height: 100%; border-radius: 6px 6px 2px 2px; background: var(--ink); opacity: .55;
+               transform-origin: bottom; transition: transform .5s cubic-bezier(.2, .8, .2, 1), opacity .2s; }
+.weekstrip button:hover i, .weekstrip button.in i { opacity: 1; }
+.weekstrip button.flag i { background: var(--accent); opacity: 1; }
+.weekstrip u { position: absolute; left: -1px; right: -1px; height: 2px; background: var(--ink); text-decoration: none; }   /* what is usual */
+.weekstrip span { position: absolute; bottom: -24px; left: 0; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.weekstrip .tip { position: absolute; z-index: 4; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); display: none; white-space: nowrap;
+                  background: var(--night); color: #fff; padding: 7px 11px; border-radius: 12px; font-size: 13.5px; line-height: 1.3; }
+.weekstrip button:hover .tip, .weekstrip button:focus-visible .tip { display: block; }
+
+/* ---- a usual year ---- */
+.curve svg { display: block; width: 100%; height: auto; overflow: visible; }
+.curve text { fill: var(--muted); font: 13px var(--font); }
+.curve .band { fill: var(--ink); opacity: .2; }
+.curve .usual { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 4 5; opacity: .8; }
+.curve .this { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linejoin: round; }
+.curve .season { fill: var(--accent); }
+.curve .label { fill: var(--ink); font-weight: 700; }
+
+/* ---- fires and satellites ---- */
+.near .fires { grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; margin-top: 14px; }
+.fire { background: var(--card); border: 0; border-radius: 20px; padding: 14px 16px; }
+.fire:hover { background: var(--field); }
+.fire .badge { border-radius: 999px; }
+.passes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.passes div { background: var(--card); border-radius: 18px; padding: 12px 16px; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; }
+.passes i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .4); }
+.passes b { font: 800 20px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.passes small { grid-column: 2; color: var(--muted); font-size: 14px; }
+.fine { border-top: 1px solid var(--line); padding-top: 18px; }
+.fine p { max-width: 72ch; font-size: 14.5px; color: var(--muted); }
+
+/* ---- panels: a night sheet from the right ---- */
+.sheet, .sat-panel { position: fixed; z-index: 40; right: 12px; top: calc(var(--sw) + var(--bar-h) + 12px); bottom: 12px; width: min(430px, calc(100vw - 24px));
+                     overflow: auto; padding: 22px; background: var(--night); color: #fff; border-radius: var(--r-panel); display: grid; gap: 12px; align-content: start;
+                     box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .7); animation: slide .4s cubic-bezier(.2, .9, .2, 1);
+                     --ink: #fff; --muted: rgba(255, 255, 255, .76); --field: rgba(255, 255, 255, .12); --line: rgba(255, 255, 255, .26);
+                     --accent: #ffd23f; --on-accent: #1b1500; --focus: #fff; --r-control: 14px; }
+@keyframes slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.sat-hero { margin: -22px -22px 0; }
+.sat-image { border-radius: var(--r-panel) var(--r-panel) 0 0; }
+.sat-back, .sat-enlarge { background: var(--night); color: #fff; }
+.lightbox-inner, .maplibregl-popup-content { --ink: #fff; --muted: rgba(255, 255, 255, .76); --line: rgba(255, 255, 255, .26); --field: rgba(255, 255, 255, .12); color: #fff; }
+
+@media (max-width: 1100px) {
+  .actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; margin: 0; padding: 8px 10px; background: var(--night); overflow-x: auto;
+             --ink: #fff; --field: rgba(255, 255, 255, .14); --line: rgba(255, 255, 255, .3); color: #fff; }
+  .actions button { flex: none; color: #fff; }
+  main { padding-bottom: 90px; }
+  .sheet, .sat-panel { bottom: 66px; }
+}
+@media (max-width: 860px) {
+  .now { grid-template-columns: 1fr; }
+  .bar .dates { display: none; }
+  .dial-row { grid-template-columns: 150px minmax(0, 1fr); }
+  .dial { width: 150px; }
+  .weekstrip { gap: 1px; height: 150px; }
+  .sheet, .sat-panel { right: 0; left: 0; top: auto; bottom: 58px; width: 100%; max-height: 72vh; border-radius: var(--r-panel) var(--r-panel) 0 0; }
+}

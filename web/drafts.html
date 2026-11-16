@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Burning Calendar: three design drafts</title>
+<style>
+  /* Three live drafts, side by side or one at a time. Each frame is the real page, working. */
+  :root { --ink: #f2f3f0; --muted: #a4aaa6; --ground: #15181b; --line: #353a3e; --accent: #ffd23f; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--ground); color: var(--ink); font: 15px/1.45 system-ui, "Segoe UI", sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; padding: 14px 22px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 23px; margin: 0; letter-spacing: -.015em; }
+  header p { margin: 0; color: var(--muted); flex: 1 1 280px; }
+  .tabs { display: flex; gap: 4px; padding: 4px; background: #23272b; border-radius: 999px; }
+  .tabs button { font: inherit; color: var(--ink); background: none; border: 0; padding: 8px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+  .tabs button[aria-pressed="true"] { background: var(--accent); color: #17130a; font-weight: 600; }
+  .tabs button:focus-visible, a:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  a { color: var(--ink); text-underline-offset: 3px; }
+  main { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 16px 22px 22px; min-height: 0; overflow: auto; }
+  article { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 6px; min-width: 0; }
+  article h2 { font-size: 17px; margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  article h2 a { font-size: 14px; font-weight: 400; }
+  article p { margin: 0 0 6px; color: var(--muted); font-size: 14px; }
+  /* each frame is drawn at desktop size and scaled to its column, so it shows the real layout */
+  .stage { position: relative; overflow: hidden; border-radius: 10px; border: 1px solid var(--line); background: #000; aspect-ratio: 1440 / 900; }
+  .stage iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; transform: scale(var(--k, .3)); }
+  body.single main { grid-template-columns: 1fr; padding: 0; overflow: hidden; }
+  body.single article { display: none; }
+  body.single article.on { display: block; height: 100%; }
+  body.single article.on h2, body.single article.on p { display: none; }
+  body.single .stage { height: 100%; aspect-ratio: auto; border: 0; border-radius: 0; }
+  body.single .stage iframe { width: 100%; height: 100%; transform: none; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Burning Calendar: three design drafts</h1>
+  <p>Same data, same four tools (fire map and time, burning calendar, fires near you, satellites), three different pages. Every frame is live.</p>
+  <div class="tabs" role="group" aria-label="What to show">
+    <button type="button" data-show="all" aria-pressed="true">Side by side</button>
+    <button type="button" data-show="park" aria-pressed="false">1. Field guide</button>
+    <button type="button" data-show="forecast" aria-pressed="false">2. Forecast</button>
+    <button type="button" data-show="guide" aria-pressed="false">3. Guide map</button>
+  </div>
+  <a href="classic.html">Classic page</a>
+</header>
+<main>
+  <article data-key="park">
+    <h2>1. Field guide <a href="draft-park.html">Open full size</a></h2>
+    <p>A park brochure: words beside the map, and the whole calendar as a black band you click to travel in time.</p>
+    <div class="stage"><iframe src="draft-park.html" title="Draft 1, Field guide" loading="lazy"></iframe></div>
+  </article>
+  <article data-key="forecast">
+    <h2>2. Forecast <a href="draft-forecast.html">Open full size</a></h2>
+    <p>Read like the weather: one sentence first, and the page takes the color of the danger near you.</p>
+    <div class="stage"><iframe src="draft-forecast.html" title="Draft 2, Forecast" loading="lazy"></iframe></div>
+  </article>
+  <article data-key="guide">
+    <h2>3. Guide map (the main page) <a href="index.html">Open full size</a></h2>
+    <p>A fold-out guide map: flat color shapes that swell when picked, and the year drawn as a wheel.</p>
+    <div class="stage"><iframe src="index.html" title="Draft 3, Guide map" loading="lazy"></iframe></div>
+  </article>
+</main>
+<script>
+  // Scale each frame to its column.
+  const fit = () => { for (const s of document.querySelectorAll(".stage")) s.style.setProperty("--k", s.clientWidth / 1440); };
+  new ResizeObserver(fit).observe(document.querySelector("main"));
+  // Side by side, or one draft filling the window.
+  function show(key) {
+    document.body.classList.toggle("single", key !== "all");
+    for (const a of document.querySelectorAll("article")) a.classList.toggle("on", a.dataset.key === key);
+    for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-pressed", String(b.dataset.show === key));
+    fit();
+  }
+  for (const b of document.querySelectorAll(".tabs button")) b.onclick = () => show(b.dataset.show);
+  if (location.hash) show(location.hash.slice(1));
+</script>
+</body>
+</html>

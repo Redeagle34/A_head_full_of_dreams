@@ -105,8 +105,9 @@ function drawQuick() {
 }
 
 function drawSections(list) {
+  const wanted = new URLSearchParams(location.search).get("sections")?.split(",");   // ticked on the map page
   $("sections").replaceChildren(...list.map(s =>
-    el("label", {}, el("input", { type: "checkbox", value: s.key, checked: true }), s.title)));
+    el("label", {}, el("input", { type: "checkbox", value: s.key, checked: !wanted || wanted.includes(s.key) }), s.title)));
 }
 const chosenSections = () => [...$("sections").querySelectorAll("input:checked")].map(i => i.value);
 
