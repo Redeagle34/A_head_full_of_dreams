@@ -9,7 +9,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? [...a, [v.slice(2), arr[i + 1] && !arr[i + 1].startsWith('--') ? arr[i + 1] : true]] : a), []));
-const PAGE = args.url || 'http://localhost:8767/?render';
+// --local reads the video folder straight from disk (no server needed)
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const PAGE = args.local ? 'http://video.local/index.html?render' : (args.url || 'http://localhost:8767/?render');
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png',
+                '.jpg': 'image/jpeg', '.glb': 'model/gltf-binary', '.css': 'text/css', '.mp3': 'audio/mpeg', '.wav': 'audio/wav' };
 const FPS = +(args.fps || 60), FROM = +(args.from || 0);
 let TO = args.to ? +args.to : null;
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'out');
@@ -18,6 +22,11 @@ fs.mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--use-angle=d3d11', '--enable-gpu-rasterization', '--ignore-gpu-blocklist', '--hide-scrollbars'] });
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
 page.on('console', m => { if (m.type() === 'error') console.log('[page]', m.text()); });
+if (args.local) await page.route('http://video.local/**', route => {
+  const file = path.join(ROOT, decodeURIComponent(new URL(route.request().url()).pathname));
+  if (!file.startsWith(ROOT) || !fs.existsSync(file)) return route.fulfill({ status: 404, body: '' });
+  route.fulfill({ path: file, contentType: TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream' });
+});
 await page.goto(PAGE);
 await page.waitForFunction(() => window.__ready === true || document.querySelector('pre'), null, { timeout: 120000 });
 const err = await page.evaluate(() => document.querySelector('pre')?.textContent);

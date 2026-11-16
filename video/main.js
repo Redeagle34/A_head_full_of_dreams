@@ -65,7 +65,7 @@ async function loadAll() {
     loadJSON('assets/land-110m.json'), loadJSON('data/fires_ca_20200908.json'), loadJSON('data/fires_us_sep2020.json'),
     loadJSON('data/mosaics.json'), loadJSON('data/patches.json'), loadJSON('data/weekly_ca_2020.json')]);
   const mosImgs = await Promise.all(mosaics.map(m => loadImg(m.src)));
-  const web = await Promise.all(['main', 'satellites', 'history'].map(n => loadImg(`assets/web/${n}.png`)));
+  const web = await Promise.all(['intro', 'live', 'zoomed', 'satellite', 'settings', 'history'].map(n => loadImg(`assets/web/guide_${n}.png`)));   // the Guide map design (tools/capture_guide.mjs)
   const people = await Promise.all(PEOPLE.map(async (_, i) => (await loadImg(`assets/people/persona${i + 1}.png`)) || (await loadImg(`assets/people/persona${i + 1}.jpg`))));
   await fontsP; await document.fonts.ready;
   return { land, firesCA, firesUS, mosaics, mosImgs, patches, weekly, people, web };
@@ -1006,9 +1006,15 @@ function captureFreeze() {
   }
   f.globalAlpha = 1;
 }
-const WEB_CLICKS = [ // cursor targets on the real page (1920x1080 screenshots): Satellites, Area history
-  { x: 1602, y: 58, t: TF + 4.4, img: 1 }, { x: 1769, y: 58, t: TF + 6.4, img: 2 },
-];
+const WEB_CLICKS = [ // cursor targets on the Guide map (1920x1080 captures, assets/web/guide_clicks.json):
+  // Play, zoom out twice, a satellite, Settings, Area numbers
+  { x: 1363, y: 518, t: TF + 3.2, img: 1 },
+  { x: 1880, y: 908, t: TF + 3.9, img: 1 },
+  { x: 1880, y: 908, t: TF + 4.45, img: 2 },
+  { x: 1543, y: 236, t: TF + 5.15, img: 3 },
+  { x: 1840, y: 38, t: TF + 5.95, img: 4 },
+  { x: 1760, y: 250, t: TF + 6.6, img: 5 },
+]
 function drawCursor(g, x, y, s, a) {
   g.save(); g.translate(x, y); g.scale(s, s); g.globalAlpha = a;
   g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 22); g.lineTo(5.5, 17); g.lineTo(9.5, 26); g.lineTo(13, 24.5); g.lineTo(9, 16); g.lineTo(16, 16); g.closePath();
