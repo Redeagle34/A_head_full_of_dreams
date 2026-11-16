@@ -3,6 +3,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
@@ -10,18 +12,21 @@ import { geoOrthographic, geoPath, geoGraticule10, geoDistance } from 'https://c
 import { feature } from 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm';
 
 const W = 1920, H = 1080, CX = W / 2, CY = H / 2;
-const DURATION = 30;
+const DURATION = 27;
+window.__duration = DURATION;
 const RENDER = new URLSearchParams(location.search).has('render');
 const F = CY / Math.tan(THREE.MathUtils.degToRad(15)); // focal length in px for fov 30
 const R0 = 280; // chalk globe radius (px)
+const T_FREEZE = 18.0; // the picture freezes here (satellite settling into orbit) and becomes a laptop screen
+const TF = T_FREEZE;
 
 // ------------------------------------------------------------------ people (placeholders)
 // Put photos in assets/people/persona1.png ... persona5.png (or .jpg) and change the names.
-const PEOPLE = [ // img: assets/people/personaN.png (background removed), h: height in px, bottom-anchored
-  { img: 3, x: 185, h: 640, from: 'left', t: 11.1, rot: -0.04, paper: '#f3e7cf' },
-  { img: 2, x: 1610, h: 770, from: 'right', t: 11.35, rot: 0.035, paper: '#dfe9f2' },
-  { img: 1, x: 560, h: 450, from: 'left', t: 11.6, rot: 0.03, paper: '#f6d9c4' },
-  { img: 4, x: 960, h: 335, from: 'bottom', t: 11.85, rot: -0.015, paper: '#d9efd9' },
+const PEOPLE = [ // img: assets/people/personaN.png (background removed); s: scale so every head is ~100 px wide
+  { img: 3, x: 170, s: 0.42, from: 'left', t: 11.1 },   // arm up to the right -> left side
+  { img: 1, x: 470, s: 0.93, from: 'left', t: 11.35 },  // both hands to the right -> left side
+  { img: 2, x: 1480, s: 0.7, from: 'right', t: 11.6 },  // points up-left -> right side
+  { img: 4, x: 960, s: 0.585, from: 'bottom', t: 11.85 }, // arms up -> centre, holding the Earth
 ];
 
 // ------------------------------------------------------------------ math
@@ -58,9 +63,10 @@ async function loadAll() {
     loadJSON('assets/land-110m.json'), loadJSON('data/fires_ca_20200908.json'), loadJSON('data/fires_us_sep2020.json'),
     loadJSON('data/mosaics.json'), loadJSON('data/patches.json'), loadJSON('data/weekly_ca_2020.json')]);
   const mosImgs = await Promise.all(mosaics.map(m => loadImg(m.src)));
+  const web = await Promise.all(['main', 'satellites', 'history'].map(n => loadImg(`assets/web/${n}.png`)));
   const people = await Promise.all(PEOPLE.map(async (_, i) => (await loadImg(`assets/people/persona${i + 1}.png`)) || (await loadImg(`assets/people/persona${i + 1}.jpg`))));
   await fontsP; await document.fonts.ready;
-  return { land, firesCA, firesUS, mosaics, mosImgs, patches, weekly, people };
+  return { land, firesCA, firesUS, mosaics, mosImgs, patches, weekly, people, web };
 }
 
 // ------------------------------------------------------------------ backgrounds
@@ -271,6 +277,12 @@ const HOT = [[-121.5, 39.5], [-60, -9], [-116, 57], [22, -12], [24, 39], [118, 6
 const globeLon = t => -60 - (t - 9.6) * 5;
 const GLOBE_LAT = 12;
 let LAND, GRAT;
+function rainbowPoly(ctx, pts, o, hue0, chunk = 10) { // a chalk line whose colour runs through the rainbow
+  for (let k = 0; k < pts.length - 1; k += chunk) {
+    const seg = pts.slice(k, Math.min(pts.length, k + chunk + 1));
+    drawPoly(ctx, seg, { ...o, color: `hsl(${(hue0 + (k / pts.length) * 360) % 360} 90% 72%)`, seed: (o.seed || 0) + k });
+  }
+}
 function chalkGlobe(ctx, t, cx, cy, R, alpha, flameAlpha = 1) {
   if (alpha <= 0) return;
   const lon = globeLon(t), lat = GLOBE_LAT;
@@ -279,13 +291,21 @@ function chalkGlobe(ctx, t, cx, cy, R, alpha, flameAlpha = 1) {
   const grat = recorder(); geoPath(proj, grat)(GRAT);
   const bb = [cx - R, cy - R, cx + R, cy + R];
   ctx.save();
-  ctx.globalAlpha = alpha; ctx.fillStyle = 'rgba(156,208,255,0.07)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
-  hatch(ctx, c => c.arc(cx, cy, R, 0, Math.PI * 2), bb, { spacing: 15, angle: 0.6, color: CH.blue, alpha: 0.13 * alpha, w: 1.6, seed: 3 });
-  grat.segs.forEach((s, i) => drawPoly(ctx, s, { w: 1.2, color: CH.blue, alpha: 0.22 * alpha, amp: 0.7, seed: 500 + i * 37, passes: 1 }));
-  hatch(ctx, c => rec.replay(c), bb, { spacing: 7, angle: -0.7, color: CH.green, alpha: 0.5 * alpha, w: 2, seed: 7 });
-  rec.segs.forEach((s, i) => drawPoly(ctx, s, { w: 2.6, color: CH.green, alpha, amp: 1.1, closed: !!s.closed, seed: 900 + i * 101 }));
-  drawPoly(ctx, circlePts(cx, cy, R, 140), { w: 4.5, color: CH.white, closed: true, amp: 1.6, alpha, seed: 13 });
-  drawPoly(ctx, circlePts(cx, cy, R + 10, 140), { w: 1.6, color: CH.white, closed: true, amp: 2.2, alpha: alpha * 0.35, seed: 17, passes: 1 });
+  ctx.globalAlpha = alpha; const og = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.1, cx, cy, R); og.addColorStop(0, 'rgba(120,200,255,0.22)'); og.addColorStop(0.6, 'rgba(110,120,255,0.14)'); og.addColorStop(1, 'rgba(190,110,255,0.16)'); ctx.fillStyle = og; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+  hatch(ctx, c => c.arc(cx, cy, R, 0, Math.PI * 2), bb, { spacing: 14, angle: 0.6, color: '#7fd3ff', alpha: 0.22 * alpha, w: 1.7, seed: 3 });
+  grat.segs.forEach((s, i) => drawPoly(ctx, s, { w: 1.3, color: i % 2 ? '#c4a7ff' : '#8fe3ff', alpha: 0.3 * alpha, amp: 0.7, seed: 500 + i * 37, passes: 1 }));
+  // each landmass takes the rainbow hue of its direction from the centre, slowly cycling (matches the team colours)
+  rec.segs.forEach((sg, i) => {
+    let mx = 0, my = 0, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [x, y] of sg) { mx += x; my += y; x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+    mx /= sg.length; my /= sg.length;
+    const hue = ((Math.atan2(my - cy, mx - cx) * 180) / Math.PI + 360 + t * 45) % 360, col = `hsl(${hue} 85% 70%)`;
+    if (sg.closed && (x1 - x0) * (y1 - y0) > 30) hatch(ctx, c => pathOf(c, sg), [x0, y0, x1, y1], { spacing: 7, angle: -0.7, color: col, alpha: 0.6 * alpha, w: 2, seed: 7 + i });
+    drawPoly(ctx, sg, { w: 2.6, color: col, alpha, amp: 1.1, closed: !!sg.closed, seed: 900 + i * 101 });
+  });
+  const rim = circlePts(cx, cy, R, 140); rim.push(rim[0]);
+  rainbowPoly(ctx, rim, { w: 5, amp: 1.6, alpha }, (t * 60) % 360, 6);
+  drawPoly(ctx, circlePts(cx, cy, R + 11, 140), { w: 1.6, color: '#fff3d6', closed: true, amp: 2.2, alpha: alpha * 0.4, seed: 17, passes: 1 });
   HOT.forEach(([lo, la], i) => {
     const dist = geoDistance([lo, la], [lon, lat]); const vis = clamp((Math.PI / 2 - 0.2 - dist) / 0.25);
     if (vis <= 0) return;
@@ -355,48 +375,42 @@ function scene1(ctx, t, alpha, titleXf) {
 }
 
 // ------------------------------------------------------------------ people cards
+const HALO_PAD = 34;
+const HALOS = new Map();
+function haloFor(i, img, w, h) { // the person's own silhouette, grown outwards: white sticker edge + rainbow band
+  if (HALOS.has(i)) return HALOS.get(i);
+  const c = document.createElement('canvas'); c.width = w + HALO_PAD * 2; c.height = h + HALO_PAD * 2; const g = c.getContext('2d');
+  const ring = (r, fill) => {
+    const t = document.createElement('canvas'); t.width = c.width; t.height = c.height; const x = t.getContext('2d');
+    for (let k = 0; k < 32; k++) { const a = (k / 32) * Math.PI * 2; x.drawImage(img, HALO_PAD + Math.cos(a) * r, HALO_PAD + Math.sin(a) * r, w, h); }
+    x.globalCompositeOperation = 'source-in'; x.fillStyle = fill(x); x.fillRect(0, 0, t.width, t.height); return t;
+  };
+  g.drawImage(ring(24, x => { const gr = x.createLinearGradient(0, 0, c.width, c.height); ['#ff5e8a', '#ff9f43', '#ffd93d', '#5ee08f', '#4dabf7', '#a78bfa', '#ff5e8a'].forEach((col, k, a) => gr.addColorStop(k / (a.length - 1), col)); return gr; }), 0, 0);
+  g.drawImage(ring(9, () => '#fffaf0'), 0, 0);
+  HALOS.set(i, c); return c;
+}
 function personPos(P, i, t, img) {
   const pin = E.outBack(prog(t, P.t, P.t + 0.7));
   const pout = E.inCubic(prog(t, 14.0 + i * 0.06, 14.5 + i * 0.06));
-  const w = (P.h * img.width) / img.height;
-  const y = H + 24 - P.h / 2;
+  const w = img.width * P.s, h = img.height * P.s;
+  const y = H + 10 - h / 2;
   let x0 = P.x, y0 = y;
-  if (P.from === 'right') x0 = W + w; else if (P.from === 'left') x0 = -w; else y0 = H + P.h;
+  if (P.from === 'right') x0 = W + w / 2 + HALO_PAD; else if (P.from === 'left') x0 = -w / 2 - HALO_PAD; else y0 = H + h / 2 + HALO_PAD;
   const k = pin * (1 - pout);
-  return { x: lerp(x0, P.x, k), y: lerp(y0, y, k), w, rot: P.rot + (1 - k) * (P.from === 'left' ? -0.25 : P.from === 'right' ? 0.25 : 0.05), vis: pin > 0 && k > 0.001 };
-}
-const PAPER = new Map();
-function paperPts(i, w, h) { // torn edges, fixed per person (real paper does not boil)
-  const key = `${i}:${Math.round(w)}:${Math.round(h)}`; if (PAPER.has(key)) return PAPER.get(key);
-  const r = mulberry32(40 + i), pts = [], step = 13;
-  const edge = (x0, y0, x1, y1, nx, ny) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / step)); for (let k = 0; k < n; k++) { const d = r() * 7; pts.push([lerp(x0, x1, k / n) + nx * d, lerp(y0, y1, k / n) + ny * d]); } };
-  edge(-w / 2, -h / 2, w / 2, -h / 2, 0, 1); edge(w / 2, -h / 2, w / 2, h / 2, -1, 0); edge(w / 2, h / 2, -w / 2, h / 2, 0, -1); edge(-w / 2, h / 2, -w / 2, -h / 2, 1, 0);
-  PAPER.set(key, pts); return pts;
+  return { x: lerp(x0, P.x, k), y: lerp(y0, y, k), w, h, vis: pin > 0 && k > 0.001 };
 }
 function drawPeople(cx, t, imgs) {
   PEOPLE.forEach((P, i) => {
     const img = imgs[P.img - 1]; if (!img) return;
-    const { x, y, w, rot, vis } = personPos(P, i, t, img);
+    const { x, y, w, h, vis } = personPos(P, i, t, img);
     if (!vis) return;
-    const h = P.h;
-    const pw = w * 0.92, ph = h * 0.78, py = -h * 0.08;
-    phx.save(); phx.translate(x, y); phx.rotate(rot * 2.2); phx.translate(0, py);
-    const pp = paperPts(i, pw, ph);
-    phx.shadowColor = 'rgba(0,0,0,0.45)'; phx.shadowBlur = 26; phx.shadowOffsetX = 8; phx.shadowOffsetY = 14;
-    phx.fillStyle = P.paper; phx.beginPath(); pathOf(phx, pp); phx.fill();
-    phx.shadowColor = 'transparent';
-    phx.globalAlpha = 0.08; phx.strokeStyle = '#6b5a3a'; phx.lineWidth = 1;
-    phx.beginPath(); for (let k = -ph / 2 + 22; k < ph / 2; k += 22) { phx.moveTo(-pw / 2 + 10, k); phx.lineTo(pw / 2 - 10, k); } phx.stroke();
-    phx.globalAlpha = 1;
-    phx.fillStyle = 'rgba(255,240,190,0.75)'; phx.save(); phx.translate(0, -ph / 2); phx.rotate(-0.08); phx.fillRect(-46, -14, 92, 28); phx.restore();
+    const halo = haloFor(i, img, Math.round(w), Math.round(h));
+    phx.save();
+    phx.shadowColor = 'rgba(0,0,0,0.4)'; phx.shadowBlur = 24; phx.shadowOffsetX = 6; phx.shadowOffsetY = 12;
+    phx.filter = `hue-rotate(${(t * 120 + i * 70) % 360}deg)`;
+    phx.drawImage(halo, x - w / 2 - HALO_PAD, y - h / 2 - HALO_PAD);
     phx.restore();
-    phx.save(); phx.translate(x, y); phx.rotate(rot);
-    phx.shadowColor = 'rgba(0,0,0,0.35)'; phx.shadowBlur = 18; phx.shadowOffsetX = 6; phx.shadowOffsetY = 8;
-    phx.drawImage(img, -w / 2, -h / 2, w, h);
-    phx.restore();
-    cx.save(); cx.translate(x, y); cx.rotate(rot * 2.2); cx.translate(0, py);
-    drawPoly(cx, resample([[-pw / 2 - 12, -ph / 2 - 12], [pw / 2 + 12, -ph / 2 - 12], [pw / 2 + 12, ph / 2 + 12], [-pw / 2 - 12, ph / 2 + 12], [-pw / 2 - 12, -ph / 2 - 12]], 16), { w: 2.5, color: CH.white, amp: 1.6, alpha: 0.5, seed: 700 + i * 60, passes: 1 });
-    cx.restore();
+    phx.drawImage(img, x - w / 2, y - h / 2, w, h);
   });
 }
 
@@ -698,6 +712,10 @@ const strokeC = document.createElement('canvas'); strokeC.width = W; strokeC.hei
 
 function seek(t) {
   t = clamp(t, 0, DURATION - 1e-4);
+  if (t >= T_FREEZE) { finalScene(t); return; }
+  seekScene(t);
+}
+function seekScene(t) {
   BOIL = Math.floor(t * 12);
   const chalkScene = t < 17.6;
 
@@ -736,8 +754,8 @@ function seek(t) {
         if (k < 1e-3) pts.push([CX + sN * L, top]);
         else { const th = k * 2 * Math.PI, r = L / th, ph = sN * th; pts.push([CX + r * Math.sin(ph), top + r * (1 - Math.cos(ph))]); }
       }
-      drawPoly(stx, pts, { w: 6, color: CH.white, amp: 1.6, alpha: lineA, seed: 1500 });
-      drawPoly(stx, pts, { w: 3, color: CH.orange, amp: 2.4, alpha: lineA * 0.6, seed: 1600, passes: 1 });
+      rainbowPoly(stx, pts, { w: 6, amp: 1.6, alpha: lineA, seed: 1500 }, (t * 60) % 360, 6);
+      drawPoly(stx, pts, { w: 2, color: '#fff3d6', amp: 2.4, alpha: lineA * 0.5, seed: 1600, passes: 1 });
     }
     if (t >= 10.85) {
       const ga = prog(t, 10.85, 11.4) * (1 - prog(t, 15.85, 16.6));
@@ -755,7 +773,7 @@ function seek(t) {
       drawPeopleOn(stx, t);
     }
     // hero satellite chalk speed lines
-    const ra = prog(t, 14.3, 14.6) * (1 - prog(t, 16.0, 16.5));
+    const ra = prog(t, 14.3, 14.6) * (1 - prog(t, 15.0, 15.5));
     if (ra > 0) {
       const sy = heroScreenY(t);
       for (let i = 0; i < 7; i++) {
@@ -780,19 +798,19 @@ function seek(t) {
     G.atmo.material.uniforms.uOpacity.value = gA * (1 - prog(c.Z, 3.6, 4.6));
     G.rim.material.uniforms.uOpacity.value = gA;
     G.fireMat.uniforms.uTime.value = t; G.fireMat.uniforms.uOpacity.value = gA; G.fireMat.uniforms.uScale.value = 3.4 * Math.pow(2, (c.Z - ZG0) * 0.3);
-    const orbA = prog(t, 16.6, 16.9) * (1 - prog(t, 19.4, 20.1)) * gA;
+    const orbA = prog(t, 16.6, 16.9) * (1 - prog(c.Z, 3.9, 4.4)) * gA;
     G.rings.forEach((R, i) => {
       const draw = E.inOutCubic(prog(t, 16.6 + i * 0.18, 17.7 + i * 0.18));
       R.line.geometry.instanceCount = Math.floor(256 * draw);
       R.line.material.opacity = 0.5 * orbA; R.line.visible = draw > 0 && orbA > 0;
       const th = R.th0 + R.speed * (t - 17.4);
       const sp = ringPoint(R.b, R.r, th);
-      const vis = (R.hero ? (t >= 17.4 ? 1 : 0) : prog(t, 17.2 + i * 0.2, 17.6 + i * 0.2)) * orbA;
-      R.sprite.position.copy(sp); R.sprite.material.opacity = vis * 0.6; R.sprite.visible = vis > 0;
-      const om = G.orbitModels[i]; om.visible = vis > 0.02; om.position.copy(sp);
+      const vis = (R.hero ? prog(t, 17.15, 17.6) : prog(t, 17.2 + i * 0.2, 17.6 + i * 0.2)) * orbA;
+      R.sprite.position.copy(sp); R.sprite.material.opacity = vis * 0.6; R.sprite.visible = vis > 0 && !R.hero;
+      const om = G.orbitModels[i]; om.visible = vis > 0.02 && !R.hero; om.position.copy(sp);
       om.lookAt(ringPoint(R.b, R.r, th + Math.sign(R.speed) * 0.05)); om.rotateY(Math.PI / 2); om.rotateX(t * 0.4 + i);
       om.scale.setScalar(0.18 * Math.min(1, vis * 1.5));
-      const tp = []; for (let k = 0; k <= 60; k++) tp.push(ringPoint(R.b, R.r, th - Math.sign(R.speed) * k * 0.012 * Math.min(1, Math.max(0, t - 17.2) * 2)));
+      const tp = []; for (let k = 0; k <= 60; k++) tp.push(ringPoint(R.b, R.r, th - Math.sign(R.speed) * k * 0.012 * Math.min(1, Math.max(0, t - (R.hero ? 17.3 : 17.2)) * 1.2)));
       R.trail.geometry.setPositions(tp.flatMap(p => [p.x, p.y, p.z])); R.trail.material.opacity = vis; R.trail.visible = vis > 0;
       const len = sp.length() - 1; R.beam.position.copy(sp); R.beam.lookAt(0, 0, 0); R.beam.scale.set(1, 1, len);
       R.beam.material.uniforms.uOpacity.value = vis * prog(t, 17.5 + i * 0.15, 17.9 + i * 0.15);
@@ -844,22 +862,35 @@ function rainbowTitle(ctx, text, x, y, size, reveal, t, alpha) {
   ctx.restore();
 }
 
-// hero satellite: rises from the bottom, then flies into orbit (shares the globe camera)
-function heroOffsetY(t) { const e = E.outCubic(prog(t, 14.3, 16.3)); return lerp(-1.25, 0, e) + Math.sin(t * 1.7) * 0.015; }
+// hero satellite: rises from the bottom and glides into orbit without ever stopping (shares the globe camera)
+function heroOffsetY(t) { // rising speed decays smoothly but never reaches zero
+  const u = Math.max(0, (t - 14.3) / 2.0), k = 1.6;
+  return -1.25 + 1.25 * (1 - Math.exp(-k * u)) / (1 - Math.exp(-k)) + Math.sin(t * 1.7) * 0.012;
+}
 function heroScreenY(t) { return CY - (heroOffsetY(t) / (2.2 * Math.tan(THREE.MathUtils.degToRad(15)))) * CY; }
+const smoother = x => x * x * x * (x * (x * 6 - 15) + 10);
+let heroMats = null;
+function heroOpacity(a) {
+  if (!heroMats) { heroMats = []; S.hero.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.transparent = true; heroMats.push(m); }); }); }
+  heroMats.forEach(m => (m.opacity = a));
+}
 function heroSat(t) {
-  const on = t >= 14.3 && t < 17.4;
+  const on = t >= 14.3 && t < T_FREEZE;
   S.hero.visible = on;
   if (!on) return;
   const c = camPath(t), d = globeDistance(c.Z, c.lat);
   cam.position.copy(latLonToVec(c.lat, c.lon, d)); cam.up.set(0, 1, 0); cam.lookAt(0, 0, 0); cam.updateMatrixWorld();
   const near = cam.localToWorld(new THREE.Vector3(0, heroOffsetY(t), -2.2));
   const R = G.rings[0], th = R.th0 + R.speed * (t - 17.4), orbitP = ringPoint(R.b, R.r, th);
-  const pB = E.inOutCubic(prog(t, 16.3, 17.4));
-  S.hero.position.copy(near.lerp(orbitP, pB));
-  S.hero.scale.setScalar(lerp(0.62, 0.18, E.inOutSine(pB)));
+  const w = smoother(prog(t, 15.3, 17.4));
+  S.hero.position.copy(near.lerp(orbitP, w));
+  S.hero.scale.setScalar(lerp(0.62, 0.18, w));
   S.hero.quaternion.copy(cam.quaternion);
   S.hero.rotateY(0.6 + t * 0.55); S.hero.rotateX(-0.35 + Math.sin(t * 0.8) * 0.1); S.hero.rotateZ(0.25);
+  // fade only while the Earth hides it (closest approach of the view ray to the Earth's centre)
+  const toS = S.hero.position.clone().sub(cam.position), L = toS.length(); toS.normalize();
+  const tc = -cam.position.dot(toS), closest = cam.position.clone().add(toS.clone().multiplyScalar(tc)).length();
+  heroOpacity(tc > 0 && tc < L ? smoother(clamp((closest - 0.95) / 0.12)) : 1);
   topRender(cam);
 }
 const SPLIT = [
@@ -901,6 +932,155 @@ function splitBeams(ctx, t) {
   });
 }
 
+// ------------------------------------------------------------------ ending: laptop
+const lapScene = new THREE.Scene();
+const lapCam = new THREE.PerspectiveCamera(30, W / H, 0.05, 100);
+const LAP = {};
+const screenC = document.createElement('canvas'); screenC.width = W; screenC.height = H; const scx = screenC.getContext('2d');
+let FREEZE = null, STUDIO = null;
+function keyboardTexture() {
+  const c = document.createElement('canvas'); c.width = 2048; c.height = 1400; const g = c.getContext('2d');
+  g.fillStyle = '#b9bdc4'; g.fillRect(0, 0, c.width, c.height);
+  const kx = 150, ky = 120, kw = 1748, kh = 720, cols = 14, rows = 6, gap = 14, w = (kw - gap * (cols - 1)) / cols, h = (kh - gap * (rows - 1)) / rows;
+  g.fillStyle = '#16181c';
+  g.beginPath(); g.roundRect(kx - 26, ky - 26, kw + 52, kh + 52, 26); g.fillStyle = '#9fa3aa'; g.fill();
+  g.fillStyle = '#121418';
+  for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
+    let x = kx + k * (w + gap), ww = w;
+    if (r === 5) { if (k === 5) { ww = w * 5 + gap * 4; } else if (k > 5 && k < 10) continue; else if (k >= 10) x -= 0; }
+    g.beginPath(); g.roundRect(x, ky + r * (h + gap), ww, h, 12); g.fill();
+  }
+  g.beginPath(); g.roundRect(724, 930, 600, 380, 28); g.fillStyle = '#aeb2b9'; g.fill(); g.strokeStyle = '#9a9ea5'; g.lineWidth = 4; g.stroke();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 16; return t;
+}
+function makeStudio() {
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, '#0b0f17'); grd.addColorStop(1, '#05070b'); g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  const glow = g.createRadialGradient(CX, CY * 0.9, 50, CX, CY * 0.9, 1000);
+  glow.addColorStop(0, 'rgba(255,120,40,0.32)'); glow.addColorStop(0.45, 'rgba(255,80,30,0.10)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, W, H);
+  const r = mulberry32(5); g.fillStyle = 'rgba(255,190,120,0.5)';
+  for (let i = 0; i < 160; i++) { const x = r() * W, y = r() * H * 0.8, s = r() * 2.2; g.globalAlpha = 0.15 + r() * 0.4; g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); }
+  return c;
+}
+function buildLaptop() {
+  const pm = new THREE.PMREMGenerator(gl); lapScene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  const alu = new THREE.MeshStandardMaterial({ color: 0x9ea3ab, metalness: 0.7, roughness: 0.38, envMapIntensity: 0.45 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x0a0b0d, metalness: 0.2, roughness: 0.25 });
+  const BW = 3.2, BD = 2.2, BT = 0.1;
+  const base = new THREE.Mesh(new RoundedBoxGeometry(BW, BT, BD, 4, 0.05), alu); base.position.y = BT / 2; lapScene.add(base);
+  const kb = new THREE.Mesh(new THREE.PlaneGeometry(BW * 0.96, BD * 0.94), new THREE.MeshStandardMaterial({ map: keyboardTexture(), metalness: 0.4, roughness: 0.5, envMapIntensity: 0.4 }));
+  kb.rotation.x = -Math.PI / 2; kb.position.set(0, BT + 0.001, 0.02); lapScene.add(kb);
+  const lid = new THREE.Group(); lid.position.set(0, BT, -BD / 2 + 0.03); lid.rotation.x = THREE.MathUtils.degToRad(-14); lapScene.add(lid);
+  const LH = 2.06, LT = 0.06;
+  const shell = new THREE.Mesh(new RoundedBoxGeometry(BW, LH, LT, 4, 0.03), alu); shell.position.set(0, LH / 2, -LT / 2); lid.add(shell);
+  const bezel = new THREE.Mesh(new THREE.PlaneGeometry(BW - 0.04, LH - 0.04), dark); bezel.position.set(0, LH / 2, 0.001); lid.add(bezel);
+  const SW = 2.98, SH = (SW * 9) / 16;
+  LAP.tex = new THREE.CanvasTexture(screenC); LAP.tex.colorSpace = THREE.SRGBColorSpace; LAP.tex.anisotropy = 16;
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(SW, SH), new THREE.MeshBasicMaterial({ map: LAP.tex, toneMapped: false }));
+  screen.position.set(0, LH / 2 + 0.05, 0.003); lid.add(screen);
+  const shadowC = document.createElement('canvas'); shadowC.width = shadowC.height = 256; const sg = shadowC.getContext('2d');
+  const gr = sg.createRadialGradient(128, 128, 10, 128, 128, 128); gr.addColorStop(0, 'rgba(0,0,0,0.75)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); sg.fillStyle = gr; sg.fillRect(0, 0, 256, 256);
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(BW * 1.9, BD * 2.2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(shadowC), transparent: true, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.002; lapScene.add(shadow);
+  lapScene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const key = new THREE.DirectionalLight(0xfff1e0, 1.5); key.position.set(4, 6, 5); lapScene.add(key);
+  const rim = new THREE.DirectionalLight(0xff8a3d, 1.1); rim.position.set(-5, 3, -6); lapScene.add(rim);
+  lapScene.updateMatrixWorld(true);
+  LAP.screen = screen; LAP.SH = SH;
+  LAP.center = screen.getWorldPosition(new THREE.Vector3());
+  const q = screen.getWorldQuaternion(new THREE.Quaternion());
+  LAP.normal = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+  LAP.up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+  STUDIO = makeStudio();
+}
+function captureFreeze() {
+  seekScene(T_FREEZE - 1e-3);
+  FREEZE = document.createElement('canvas'); FREEZE.width = W; FREEZE.height = H; const f = FREEZE.getContext('2d');
+  for (const id of ['bg', 'map', 'gl', 'photo', 'chalk', 'gltop']) {
+    const el = $(id), a = +(el.style.opacity || 1);
+    if (a > 0) { f.globalAlpha = a; f.drawImage(el, 0, 0); }
+  }
+  f.globalAlpha = 1;
+}
+const WEB_CLICKS = [ // cursor targets on the real page (1920x1080 screenshots): Satellites, Area history
+  { x: 1602, y: 58, t: TF + 4.4, img: 1 }, { x: 1769, y: 58, t: TF + 6.4, img: 2 },
+];
+function drawCursor(g, x, y, s, a) {
+  g.save(); g.translate(x, y); g.scale(s, s); g.globalAlpha = a;
+  g.beginPath(); g.moveTo(0, 0); g.lineTo(0, 22); g.lineTo(5.5, 17); g.lineTo(9.5, 26); g.lineTo(13, 24.5); g.lineTo(9, 16); g.lineTo(16, 16); g.closePath();
+  g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.6; g.strokeStyle = '#111'; g.stroke(); g.restore();
+}
+function drawScreen(t) {
+  const g = scx; g.clearRect(0, 0, W, H);
+  const swap = prog(t, TF + 1.9, TF + 2.6);
+  if (swap < 1) { // the frozen frame, darkened under the title, zooms away into the site
+    const z = 1 + 0.35 * E.inCubic(swap);
+    g.save(); g.globalAlpha = 1 - E.inQuad(swap); g.translate(CX, CY); g.scale(z, z); g.drawImage(FREEZE, -CX, -CY); g.restore();
+    g.fillStyle = `rgba(0,0,0,${0.38 * E.outCubic(prog(t, TF, TF + 0.4)) * (1 - swap)})`; g.fillRect(0, 0, W, H);
+  }
+  if (swap > 0) {
+    const base = A.web[0], z = lerp(0.92, 1, E.outCubic(swap));
+    g.save(); g.globalAlpha = swap; g.translate(CX, CY); g.scale(z, z); g.translate(-CX, -CY);
+    g.drawImage(base, 0, 0, W, H);
+    WEB_CLICKS.forEach(c => { const a = prog(t, c.t + 0.1, c.t + 0.45); if (a > 0 && A.web[c.img]) { g.globalAlpha = Math.min(1, a); g.drawImage(A.web[c.img], 0, 0, W, H); } });
+    g.restore();
+    // cursor
+    const ca = prog(t, TF + 2.9, TF + 3.2);
+    if (ca > 0) {
+      let px = 980, py = 640;
+      const path = [{ x: 980, y: 640, t: TF + 2.9 }, ...WEB_CLICKS.map(c => ({ x: c.x, y: c.y, t: c.t }))];
+      for (let k = 1; k < path.length; k++) {
+        const a = path[k - 1], b = path[k], t0 = a.t + 0.35, t1 = b.t - 0.15;
+        if (t >= t0) { const e = E.inOutCubic(prog(t, t0, t1)); px = lerp(a.x, b.x, e); py = lerp(a.y, b.y, e); }
+      }
+      WEB_CLICKS.forEach(c => { const r = prog(t, c.t, c.t + 0.5); if (r > 0 && r < 1) { g.strokeStyle = `rgba(255,170,60,${1 - r})`; g.lineWidth = 4; g.beginPath(); g.arc(c.x, c.y, 10 + r * 46, 0, 7); g.stroke(); } });
+      const press = WEB_CLICKS.reduce((m, c) => m + Math.exp(-(((t - c.t) / 0.07) ** 2)), 0);
+      drawCursor(g, px, py, 2.1 * (1 - 0.18 * press), ca);
+    }
+  }
+  // glass sheen once it is a real screen
+  const sh = prog(t, TF + 0.8, TF + 1.9) * 0.9;
+  if (sh > 0) { const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, `rgba(255,255,255,${0.10 * sh})`); gr.addColorStop(0.35, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+  LAP.tex.needsUpdate = true;
+}
+function finalScene(t) {
+  if (!FREEZE) captureFreeze();
+  // hide every layer of the main film
+  for (const id of ['map', 'photo']) $(id).style.opacity = 0;
+  ui.root.style.opacity = 0; $('gl').style.opacity = 1;
+  stx.clearRect(0, 0, W, H); phx.clearRect(0, 0, W, H); mpx.clearRect(0, 0, W, H);
+  S.hero.visible = false; ['terra', 'aqua', 'npp', 'n20'].forEach(k => (S[k].visible = false));
+  topDirty = false; glTop.clear();
+  bgx.drawImage(STUDIO, 0, 0);
+  drawScreen(t);
+  // camera: starts exactly framing the screen (invisible cut), then dollies straight back along the screen's
+  // normal, so the screen stays parallel to the frame; ends with the screen ~2/3 of the frame, slightly low for the title
+  const d0 = LAP.SH / 2 / Math.tan(THREE.MathUtils.degToRad(15));
+  const e = E.inOutCubic(prog(t, TF + 0.45, TF + 1.9));
+  const push = E.inOutSine(prog(t, TF + 1.9, DURATION));
+  const dist = lerp(d0, lerp(4.45, 4.05, push), e);
+  const lift = lerp(0, 0.15, e);
+  const look = LAP.center.clone().add(LAP.up.clone().multiplyScalar(lift));
+  lapCam.position.copy(look.clone().add(LAP.normal.clone().multiplyScalar(dist)));
+  lapCam.up.copy(LAP.up);
+  lapCam.lookAt(look);
+  gl.render(lapScene, lapCam);
+  // OUR WEBPAGE
+  const pop = E.outBack(prog(t, TF, TF + 0.45)), mv = E.inOutCubic(prog(t, TF + 0.55, TF + 1.9));
+  if (pop > 0) {
+    const size = lerp(176, 80, mv), y = lerp(CY, 70, mv);
+    stx.save(); stx.translate(CX, y); stx.scale(pop, pop);
+    stx.font = `700 ${size}px "Space Grotesk"`; stx.textAlign = 'center'; stx.textBaseline = 'middle';
+    if ('letterSpacing' in stx) stx.letterSpacing = `${size * 0.04}px`;
+    const gr = stx.createLinearGradient(0, -size / 2, 0, size / 2); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(0.55, '#ff9a3d'); gr.addColorStop(1, '#ff5a3a');
+    stx.shadowColor = 'rgba(0,0,0,0.55)'; stx.shadowBlur = 30; stx.shadowOffsetY = 8;
+    stx.fillStyle = gr; stx.fillText('OUR WEBPAGE', 0, 0);
+    stx.restore();
+  }
+  chx.clearRect(0, 0, W, H); chx.drawImage(strokeC, 0, 0);
+}
+
 // ------------------------------------------------------------------ boot
 async function boot() {
   A = await loadAll();
@@ -908,7 +1088,7 @@ async function boot() {
   WEEKLY = A.weekly;
   BOARD = makeBoard(); SPACE = makeSpace(); GRAIN = makeGrain(); grainPat = stx.createPattern(GRAIN, 'repeat');
   prepMap(A);
-  await buildGlobe(A); await buildSats();
+  await buildGlobe(A); await buildSats(); buildLaptop();
   // patch: per-frame clear of the top layer when nothing is drawn there
   const origSeek = seek;
   window.seek = t => { topDirty = false; origSeek(t); if (!topDirty) glTop.clear(); };

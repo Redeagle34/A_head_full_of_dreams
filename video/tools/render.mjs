@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => (v.startsWith('--') ? [...a, [v.slice(2), arr[i + 1] && !arr[i + 1].startsWith('--') ? arr[i + 1] : true]] : a), []));
 const PAGE = args.url || 'http://localhost:8767/?render';
-const FPS = +(args.fps || 60), FROM = +(args.from || 0), TO = +(args.to || 30);
+const FPS = +(args.fps || 60), FROM = +(args.from || 0);
+let TO = args.to ? +args.to : null;
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'out');
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -20,6 +21,7 @@ page.on('console', m => { if (m.type() === 'error') console.log('[page]', m.text
 await page.goto(PAGE);
 await page.waitForFunction(() => window.__ready === true || document.querySelector('pre'), null, { timeout: 120000 });
 const err = await page.evaluate(() => document.querySelector('pre')?.textContent);
+if (TO === null) TO = await page.evaluate(() => window.__duration || 30);
 if (err) { console.error(err); process.exit(1); }
 // warm-up: compile shaders / upload textures for every scene
 for (const t of [1, 10.5, 12, 15, 16.5, 17.5, 19, 21, 22.5, 24, 26, 28]) await page.evaluate(t => window.seek(t), t);
@@ -40,7 +42,7 @@ if (args.stills) {
   await browser.close(); process.exit(0);
 }
 
-const name = args.out || `video_1080p${FPS}${FROM > 0 || TO < 30 ? `_${FROM}-${TO}` : ''}.mp4`;
+const name = args.out || `video_1080p${FPS}${FROM > 0 || args.to ? `_${FROM}-${TO}` : ''}.mp4`;
 const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
   '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-movflags', '+faststart', path.join(OUT, name)], { stdio: ['pipe', 'inherit', 'inherit'] });
 const n = Math.round((TO - FROM) * FPS), t0 = Date.now();
